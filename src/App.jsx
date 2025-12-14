@@ -1,4 +1,4 @@
-import SpaceShooter from './components/SpaceShooter';
+import SpaceShooter from './components/SpaceShooter.jsx';
 
 function App() {
   return <SpaceShooter />;

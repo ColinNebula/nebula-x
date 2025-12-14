@@ -1,23 +1,140 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# =========================
+# ENVIRONMENT & SECRETS
+# =========================
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+*.pem
+*.key
+*.cert
+secrets/
+config/secrets.json
+
+# =========================
+# DEPENDENCIES
+# =========================
 /node_modules
 /.pnp
 .pnp.js
 
-# testing
-/coverage
-
-# production
+# =========================
+# BUILD & OUTPUT
+# =========================
 /build
+/dist
+/out
+*.tsbuildinfo
 
-# misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# =========================
+# TESTING & COVERAGE
+# =========================
+/coverage
+*.lcov
+.nyc_output
 
+# =========================
+# LOGS & DEBUG
+# =========================
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# =========================
+# OS FILES
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# =========================
+# EDITOR & IDE
+# =========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# =========================
+# LARGE MEDIA FILES BACKUP
+# =========================
+*.wav.bak
+*.mp3.bak
+
+# =========================
+# LARGE FILES (150MB+)
+# =========================
+# Video file too large for GitHub (155MB)
+# Recommend hosting externally (YouTube/Vimeo) or compressing
+public/Nebula X Cinematic.mp4
+*.mp4
+
+# =========================
+# DEVELOPMENT TOOLS
+# =========================
+# Emscripten SDK (large, users should install separately)
+emsdk/
+wasm/
+
+# =========================
+# TEMPORARY/DEBUG FILES
+# =========================
+temp-*.js
+temp-*.jsx
+temp-*.txt
+fix-*.js
+add-*.js
+check-*.js
+find-*.js
+locate-*.js
+trace-*.js
+bisect-*.js
+debug-*.js
+strip-*.js
+parse-*.js
+NUL.css
+t.jsx
+test-subset.jsx
+use-effect-body.jsx
+
+# =========================
+# TEMPORARY FILES
+# =========================
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# =========================
+# SECURITY - NEVER COMMIT
+# =========================
+*.sql
+*.sqlite
+*.db
+private/
+credentials/
+api-keys.json
+firebase-adminsdk*.json
+google-credentials.json
+aws-credentials.json
+
+# Added by prepare-github
+.env.*.local
+*.tgz
