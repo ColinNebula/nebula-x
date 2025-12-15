@@ -872,7 +872,7 @@ class SoundSystem {
 const soundSystem = new SoundSystem();
 
 // ============= GAME CONSTANTS =============
-const GAME_WIDTH = 1000;
+const GAME_WIDTH = 1400;
 const GAME_HEIGHT = 500;
 const PLAYER_WIDTH = 50;
 const PLAYER_HEIGHT = 30;
@@ -3529,6 +3529,8 @@ const SpaceShooter = () => {
 
   const spawnEnemy = useCallback(() => {
     // Play spawn alert sound occasionally (not every enemy to avoid noise)
+    // DISABLED temporarily - audio file path issue
+    /*
     if (Math.random() < 0.15) {
       try {
         const spawnSound = new Audio(asset('mixkit-technology-alert-transition-3121.mp3'));
@@ -3536,6 +3538,7 @@ const SpaceShooter = () => {
         spawnSound.play().catch(() => {});
       } catch (e) {}
     }
+    */
     
     // Chance for enemy to come from behind increases with wave
     const waveNum = waveRef.current;
@@ -6820,10 +6823,59 @@ const SpaceShooter = () => {
         ctx.restore();
       });
 
+      // Draw off-screen enemy warning indicators
+      ctx.save();
+      enemiesRef.current.forEach(enemy => {
+        if (!isFinite(enemy.x) || !isFinite(enemy.y)) return;
+        
+        const ew = enemy.width || ENEMY_WIDTH;
+        const eh = enemy.height || ENEMY_HEIGHT;
+        const isOffScreenRight = enemy.x > GAME_WIDTH;
+        const isOffScreenLeft = enemy.x + ew < 0;
+        const isOnScreen = !isOffScreenRight && !isOffScreenLeft;
+        
+        if (!isOnScreen) {
+          // Draw warning arrow at edge of screen
+          const arrowY = Math.max(20, Math.min(GAME_HEIGHT - 20, enemy.y + eh / 2));
+          const arrowX = isOffScreenRight ? GAME_WIDTH - 15 : 15;
+          const arrowDirection = isOffScreenRight ? -1 : 1; // -1 = point left, 1 = point right
+          
+          // Pulsing effect
+          const pulse = Math.sin(Date.now() / 150) * 0.3 + 0.7;
+          ctx.globalAlpha = pulse;
+          
+          // Danger color based on enemy type
+          const isDangerous = enemy.type === 'heavy' || enemy.type === 'bomber' || enemy.type === 'sniper';
+          ctx.fillStyle = isDangerous ? '#ff4444' : '#ffaa00';
+          ctx.strokeStyle = isDangerous ? '#ff0000' : '#ff6600';
+          ctx.lineWidth = 2;
+          
+          // Draw triangle arrow
+          ctx.beginPath();
+          ctx.moveTo(arrowX + arrowDirection * 10, arrowY);
+          ctx.lineTo(arrowX - arrowDirection * 5, arrowY - 10);
+          ctx.lineTo(arrowX - arrowDirection * 5, arrowY + 10);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          
+          ctx.globalAlpha = 1;
+        }
+      });
+      ctx.restore();
+      
       // Draw enemies
+      let renderCounter = 0;
       enemiesRef.current.forEach(enemy => {
         // Guard against non-finite coordinates
         if (!isFinite(enemy.x) || !isFinite(enemy.y)) return;
+        
+        // DEBUG: Log first enemy render position
+        const isFirst = renderCounter === 0;
+        renderCounter++;
+        if (isFirst) {
+          console.log('🎨 RENDERING first enemy at x:', enemy.x, 'type:', enemy.type);
+        }
         
         ctx.save();
         const ex = enemy.x;
@@ -11712,11 +11764,21 @@ const SpaceShooter = () => {
       }
       
       if (gameStateRef.current !== 'playing') {
+        // Debug: Log when not playing
+        if (enemiesRef.current.length > 0) {
+          console.log('❌ NOT UPDATING - Game state:', gameStateRef.current, 'Enemies:', enemiesRef.current.length);
+        }
         // Still render but don't update (for menu, paused, etc.)
         render(ctx, timestamp);
         animationFrameRef.current = requestAnimationFrame(gameLoop);
         return;
       }
+      
+      // Debug: Confirm we're updating
+      if (enemiesRef.current.length > 0) {
+        console.log('✅ UPDATING GAME - State:', gameStateRef.current, 'Enemies:', enemiesRef.current.length);
+      }
+      console.log('📍 After UPDATING GAME log, about to continue...');
 
       // Update challenge mode timers
       const mode = gameModeRef.current;
@@ -11728,6 +11790,7 @@ const SpaceShooter = () => {
           challengeStatsRef.current.timeAttackTime = elapsed;
         }
       }
+      console.log('📍 Before stars update, count:', starsRef.current.length);
 
       // Update stars (parallax background)
       starsRef.current.forEach(star => {
@@ -11737,8 +11800,11 @@ const SpaceShooter = () => {
           star.y = Math.random() * GAME_HEIGHT;
         }
       });
+      console.log('📍 After stars update');
+      console.log('📍 About to log checkpoint check...');
       
       // Update checkpoint transition
+      console.log('📍 Checkpoint check - transition active:', checkpointTransitionRef.current.active);
       const transition = checkpointTransitionRef.current;
       if (transition.active) {
         transition.timer++;
@@ -11930,6 +11996,7 @@ const SpaceShooter = () => {
       // Poll gamepad
       const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
       let gamepad = null;
+      console.log('📍 Execution at line ~12000 (gamepad check)');
       for (let i = 0; i < gamepads.length; i++) {
         if (gamepads[i] && gamepads[i].connected) {
           gamepad = gamepads[i];
@@ -12433,6 +12500,7 @@ const SpaceShooter = () => {
         triggerScreenShake(3, 5);
       }
       
+      console.log('📍 Execution at line ~12500 (player movement)');
       // Apply acceleration based on input (skip if dashing)
       if (inputX !== 0 || inputY !== 0) {
         // Normalize diagonal movement
@@ -12680,6 +12748,7 @@ const SpaceShooter = () => {
         return p.lifetime > 0 && p.size > 0.2;
       });
       
+      console.log('📍 Execution at line ~12750 (particles update)');
       // Update spark particles  
       sparkParticlesRef.current = sparkParticlesRef.current.filter(p => {
         p.prevX = p.x;
@@ -12803,6 +12872,7 @@ const SpaceShooter = () => {
         playerLaser.charge = 0;
       }
       
+      console.log('📍 Execution at line ~12875 (laser update)');
       // Update laser firing
       if (playerLaser.firing) {
         playerLaser.duration--;
@@ -12866,6 +12936,7 @@ const SpaceShooter = () => {
         }
       }
       
+      console.log('📍 Execution at line ~12937 (before shooting)');
       // Normal shooting (X button / Space - TAP TO FIRE, not hold)
       // Only fire when button is newly pressed (not held from previous frame)
       const spacePressed = keysRef.current['Space'];
@@ -12894,6 +12965,7 @@ const SpaceShooter = () => {
         const currentShip = SHIP_DESIGNS[selectedShipRef.current] || SHIP_DESIGNS[0];
         const shipAbility = currentShip.ability || null;
         
+        console.log('📍 Execution at line ~12968 (ship ability calc)');
         // Calculate damage modifier from abilities and weapon level
         let damageMultiplier = weaponData.damage;
         if (shipAbility === 'berserk') {
@@ -12940,6 +13012,7 @@ const SpaceShooter = () => {
           });
         }
         
+        console.log('📍 Execution at line ~13000 (bullet creation)');
         // Spread shot - adds additional diagonal bullets
         if (upgradesRef.current.spreadShot) {
           // Upper diagonal
@@ -12997,6 +13070,7 @@ const SpaceShooter = () => {
       // Update previous key/button states for tap detection
       prevKeysRef.current['Space'] = spacePressed;
       gamepadButtonsRef.current.shoot = gpShoot;
+      console.log('📍 Execution AFTER shooting block, line ~13168');
 
       // Update Force pod position
       if (forceRef.current) {
@@ -13498,11 +13572,12 @@ const SpaceShooter = () => {
         floatingTextsRef.current.push({
           x: GAME_WIDTH / 2,
           y: GAME_HEIGHT / 2 - 30,
-          text: '',
+          text: '⚠️ DANGER INCOMING ⚠️',
           color: '#ff4444',
           lifetime: 120,
           vy: 0,
-          flash: true
+          flash: true,
+          scale: 1.5
         });
         // Play warning sound
         soundSystem.playBossWarning();
@@ -13757,6 +13832,7 @@ const SpaceShooter = () => {
         return true;
       });
       
+      console.log('📍 Execution at line ~13834 (after hazards update)');
       // Update gravity wells
       hazards.gravityWells = hazards.gravityWells.filter(well => {
         well.x += well.vx;
@@ -13814,6 +13890,7 @@ const SpaceShooter = () => {
         return well.x > -well.radius * 2;
       });
       
+      console.log('📍 Execution at line ~13898 (after gravity wells)');
       // Update formation bonus display texts
       formationBonusDisplayRef.current = formationBonusDisplayRef.current.filter(bonus => {
         bonus.timer--;
@@ -13821,8 +13898,10 @@ const SpaceShooter = () => {
         return bonus.timer > 0;
       });
       
+      console.log('📍 Execution at line ~13904 (after formation bonus)');
       // Update mini-boss
       if (miniBossRef.current) {
+        console.log('📍 Mini-boss exists, updating...');
         const mb = miniBossRef.current;
         const player = playerRef.current;
         
@@ -13841,6 +13920,7 @@ const SpaceShooter = () => {
           mb.regenSpawnedSnipers = 0;
           mb.regenSpawnedSentinel = false;
           mb.regenSpawnedShielder = false;
+          console.log('📍 Execution at line ~13917 (mini-boss regenerating)');
           // Show floating text
           floatingTextsRef.current.push({
             x: mb.x + mb.width / 2,
@@ -13924,9 +14004,11 @@ const SpaceShooter = () => {
             mb.regenSpawnedSentinel = true;
           }
           
+          console.log('📍 Execution at line ~14000 (mini-boss regen)');
           // Spawn shielder support at 25% timer
           if (!mb.regenSpawnedShielder && mb.regenTimer === Math.floor(mb.regenDuration * 0.25)) {
             const shielderY = 50 + Math.random() * (GAME_HEIGHT - 100);
+            console.log('📍 Execution at line ~14000 (enemy spawning)');
             enemiesRef.current.push({
               x: GAME_WIDTH + 20,
               y: shielderY,
@@ -14098,6 +14180,7 @@ const SpaceShooter = () => {
               
               // === NEW MINI-BOSS ATTACK PATTERNS ===
               case 'snipe': {
+                console.log('📍 Execution at mini-boss snipe attack');
                 // Deadeye: Lock on to player position, then fire precise shot
                 if (!mb.sniperLocked) {
                   // Start locking on
@@ -14426,6 +14509,7 @@ const SpaceShooter = () => {
                 fromCarrier: true
               });
             } else if (dropRoll < 0.45) {
+              console.log('📍 Execution at line ~14500 (enemy spawning logic)');
               // Heavy gunship (15%)
               enemiesRef.current.push({
                 x: dropX,
@@ -14506,8 +14590,58 @@ const SpaceShooter = () => {
         }
       }
 
+      console.log('📍 Execution at line ~14593 (after mini-boss, before boss)');
+      
+      // === MOVE ENEMY UPDATE HERE TO FIX EXECUTION ISSUE ===
+      console.log('🚀 ENEMY UPDATE (moved before boss)');
+      // Update enemies and their shooting
+      // currentTime already declared above
+      let hitPlayer = false;
+      const timeWarpModifier = upgradesRef.current.timeWarp ? 0.3 : 1.0;
+      
+      // Basic enemy movement - move all enemies except special types that handle their own movement
+      enemiesRef.current = enemiesRef.current.filter(enemy => {
+        try {
+          const effectiveSpeed = (enemy.speed || ENEMY_SPEED) * timeWarpModifier;
+          
+          // Update spawn invulnerability timer for ALL enemies
+          if (enemy.spawnInvulnerable && enemy.spawnInvulnerableTimer > 0) {
+            enemy.spawnInvulnerableTimer--;
+            if (enemy.spawnInvulnerableTimer <= 0) {
+              enemy.spawnInvulnerable = false;
+            }
+          }
+          
+          // Types that handle their own movement in the main filter below
+          const specialMovementTypes = ['turret', 'bomber', 'cloaked', 'shielded', 'spiral', 'wave', 'sniper', 
+                                         'shielder', 'healer', 'teleporter', 'splitter', 'mine', 'flyby'];
+          
+          // Only apply basic movement to non-special types
+          if (!specialMovementTypes.includes(enemy.type)) {
+            if (enemy.fromBehind) {
+              enemy.x += effectiveSpeed;
+            } else {
+              enemy.x -= effectiveSpeed;
+            }
+          }
+          
+          // Remove if off screen
+          const ew = enemy.width || ENEMY_WIDTH;
+          if (enemy.x > GAME_WIDTH + ew || enemy.x < -ew) {
+            return false;
+          }
+          
+          return true;
+        } catch (err) {
+          console.error('Enemy update error:', err);
+          return false;
+        }
+      });
+      
       // Update boss
+      console.log('📍 About to check if boss exists...');
       if (bossRef.current) {
+        console.log('📍 Boss exists, updating boss...');
         const boss = bossRef.current;
         
         // Enter screen
@@ -14610,6 +14744,7 @@ const SpaceShooter = () => {
               if (Math.abs(distToPlayer - boss.empRadius) < 30 && upgradesRef.current.shield) {
                 upgradesRef.current.shield = false;
                 upgradesRef.current.shieldHits = 0;
+                console.log('📍 Execution at line ~14700 (boss EMP shield disable)');
                 floatingTextsRef.current.push({
                   x: playerCenterX,
                   y: playerCenterY - 20,
@@ -14712,6 +14847,7 @@ const SpaceShooter = () => {
                 spawnInvulnerable: true,
                 spawnInvulnerableTimer: 300
               });
+              console.log('📍 Execution at line ~14800 (boss regen shielder spawn)');
               floatingTextsRef.current.push({
                 x: boss.x + boss.width / 2,
                 y: boss.y + boss.height + 20,
@@ -14916,6 +15052,7 @@ const SpaceShooter = () => {
             });
           }
           
+          console.log('📍 Execution at line ~15000 (boss cannon shots)');
           // Super boss secondary guns - fire aimed shots from wing turrets (disabled during regen)
           if (boss.isSuperBoss && !isRegenerating && currentTime - boss.lastSecondaryShot > boss.secondaryFireRate) {
             const player = playerRef.current;
@@ -15931,6 +16068,7 @@ const SpaceShooter = () => {
                 return false; // Remove bullet
               }
               
+              console.log('📍 Execution at line ~16000 (wave advancement)');
               waveRef.current++;
               setWave(waveRef.current);
               waveKillsRef.current = 0;
@@ -16112,6 +16250,7 @@ const SpaceShooter = () => {
           }
         }
         
+        console.log('📍 Execution at line ~16200 (shield fx)');
         // Shield recharge (if below max and recharge timer expired)
         if (upgradesRef.current.shieldRechargeTimer > 0) {
           upgradesRef.current.shieldRechargeTimer--;
@@ -16136,6 +16275,7 @@ const SpaceShooter = () => {
         }
       }
       
+      console.log('📍 Execution at line ~16229 (after boss block, before ship abilities)');
       // === Ship Ability Updates ===
       const currentShipAbility = (SHIP_DESIGNS[selectedShipRef.current] || SHIP_DESIGNS[0]).ability;
       const ability = shipAbilityRef.current;
@@ -16200,21 +16340,42 @@ const SpaceShooter = () => {
           ability.phaseShiftActive = false;
         }
       }
+      
+      console.log('📍 Execution at line ~16293 (right before enemy update)');
+      console.log('📍 About to reach enemy update, line count check');
 
+      console.log('🚀 REACHED ENEMY UPDATE SECTION');
       // Update enemies and their shooting
-      // currentTime already declared above in carrier section
+      const currentTime = Date.now();
       let hitPlayer = false;
       const timeWarpModifier = upgradesRef.current.timeWarp ? 0.3 : 1.0; // Slow enemies during time warp
+      
+      // CRITICAL DEBUG: Always log when we have enemies
+      if (enemiesRef.current.length > 0) {
+        const firstEnemy = enemiesRef.current[0];
+        console.log('🎯 Enemy Update:', {
+          count: enemiesRef.current.length,
+          type: firstEnemy.type,
+          x: firstEnemy.x,
+          frozen: firstEnemy.frozen,
+          frozenTimer: firstEnemy.frozenTimer,
+          speed: firstEnemy.speed,
+          effectiveSpeed: (firstEnemy.speed || ENEMY_SPEED) * timeWarpModifier
+        });
+      }
+      
+      console.log('⚡ ABOUT TO RUN ENEMY FILTER, enemy count:', enemiesRef.current.length);
+      let enemyCounter = 0;
       enemiesRef.current = enemiesRef.current.filter(enemy => {
+        try {
         // Apply time warp slowdown
         const effectiveSpeed = (enemy.speed || ENEMY_SPEED) * timeWarpModifier;
         
-        // Update spawn invulnerability timer for all enemies
-        if (enemy.spawnInvulnerable && enemy.spawnInvulnerableTimer > 0) {
-          enemy.spawnInvulnerableTimer--;
-          if (enemy.spawnInvulnerableTimer <= 0) {
-            enemy.spawnInvulnerable = false;
-          }
+        // DEBUG: Log first enemy details
+        const isFirst = enemyCounter === 0;
+        enemyCounter++;
+        if (isFirst) {
+          console.log('🔥 FILTER RUNNING - Processing first enemy:', enemy.type, 'x BEFORE:', enemy.x, 'speed:', effectiveSpeed, 'fromBehind:', enemy.fromBehind);
         }
         
         // Update frozen status (from GLACIER ship ability)
@@ -16224,11 +16385,13 @@ const SpaceShooter = () => {
             enemy.frozen = false;
             enemy.speed = enemy.originalSpeed || ENEMY_SPEED;
           }
+          // Skip all movement while frozen
+          return true;
         }
         
-        // Move enemy based on type and direction
+        // Special type behaviors (movement already handled in basic filter above)
         if (enemy.type === 'turret') {
-          // Turret doesn't move but rotates to aim at player
+          // Turret rotates to aim at player (no movement since it's stationary)
           const dx = player.x + PLAYER_WIDTH / 2 - (enemy.x + ENEMY_WIDTH / 2);
           const dy = player.y + PLAYER_HEIGHT / 2 - (enemy.y + ENEMY_HEIGHT / 2);
           const targetAngle = Math.atan2(dy, dx);
@@ -16237,7 +16400,9 @@ const SpaceShooter = () => {
           while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
           while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
           enemy.angle += angleDiff * 0.05; // Rotation speed
-        } else if (enemy.type === 'bomber') {
+        }
+        
+        if (enemy.type === 'bomber') {
           // Suicide bomber - homes in on player
           const dx = player.x + PLAYER_WIDTH / 2 - (enemy.x + ENEMY_WIDTH / 2);
           const dy = player.y + PLAYER_HEIGHT / 2 - (enemy.y + ENEMY_HEIGHT / 2);
@@ -16332,13 +16497,6 @@ const SpaceShooter = () => {
           }
         } else if (enemy.type === 'shielder') {
           // Shielder - cloaked support ship that generates shields for nearby enemies
-          // Decrement spawn invulnerability timer
-          if (enemy.spawnInvulnerable && enemy.spawnInvulnerableTimer > 0) {
-            enemy.spawnInvulnerableTimer--;
-            if (enemy.spawnInvulnerableTimer <= 0) {
-              enemy.spawnInvulnerable = false;
-            }
-          }
           
           // Move to mid-screen position and hover
           if (enemy.x > GAME_WIDTH * 0.7) {
@@ -16593,10 +16751,6 @@ const SpaceShooter = () => {
               }
             }
           }
-        } else if (enemy.fromBehind) {
-          enemy.x += effectiveSpeed; // Move right (from left side)
-        } else {
-          enemy.x -= effectiveSpeed; // Move left (from right side)
         }
         
         // Enemy shooting
@@ -16818,10 +16972,14 @@ const SpaceShooter = () => {
         } else {
           return enemy.x > -ENEMY_WIDTH;
         }
-      });
+      } catch (error) {
+        console.error('❌ ERROR in enemy update:', error);
+        console.error('Enemy that caused error:', enemy);
+        return true; // Keep enemy to avoid cascade failures
+      }
+    });
 
       // Update enemy bullets
-      // Practice mode: slow bullets option
       const bulletSpeedMult = (gameModeRef.current === 'practice' && practiceSettingsRef.current.slowBullets) ? 0.5 : 1;
       
       enemyBulletsRef.current = enemyBulletsRef.current.filter(bullet => {
@@ -17414,6 +17572,7 @@ const SpaceShooter = () => {
         return !missileHit;
       });
       }
+      
       render(ctx, timestamp);
       animationFrameRef.current = requestAnimationFrame(gameLoop);
     };
@@ -18632,7 +18791,7 @@ const SpaceShooter = () => {
         
         {gameState === 'paused' && !showPauseControls && (
           <div className="overlay pause-overlay">
-            <h2>¢ÂÂ¸¯Â¸Â PAUSED</h2>
+            <h2> PAUSED</h2>
             <div className="pause-buttons">
               <button 
                 onClick={() => setGameState('playing')} 
