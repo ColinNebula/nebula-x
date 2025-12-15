@@ -1,6 +1,9 @@
 ﻿import React, { useEffect, useRef, useState, useCallback } from 'react';
 import './SpaceShooter.css';
 
+// DEBUG: Verify file is loaded
+console.log('🚀 SpaceShooter.jsx LOADED - Version:', new Date().toISOString());
+
 // Helper to resolve public assets (Vite serves public/ folder at root)
 const asset = (path) => `/${path.replace(/^\//, '')}`;
 
@@ -3151,6 +3154,14 @@ const SpaceShooter = () => {
     }
   }, []);
 
+  // Helper function for AABB collision detection
+  const checkCollision = useCallback((rect1, rect2) => {
+    return rect1.x < rect2.x + rect2.width &&
+           rect1.x + rect1.width > rect2.x &&
+           rect1.y < rect2.y + rect2.height &&
+           rect1.y + rect1.height > rect2.y;
+  }, []);
+
   // Create explosion effect
   const createExplosion = useCallback((x, y, size = 'normal', useSprite = false) => {
     // Play explosion sound
@@ -3254,6 +3265,8 @@ const SpaceShooter = () => {
         frameDelay: size === 'boss' ? 4 : 3,
         spriteSize: spriteSize,
         lifetime: size === 'boss' ? 32 : 24,
+        maxLifetime: size === 'boss' ? 32 : 24,
+        startTime: Date.now(),
         particles: []
       };
       explosionsRef.current.push(explosion);
@@ -4248,6 +4261,11 @@ const SpaceShooter = () => {
     }
 
     const render = (ctx, timestamp) => {
+      // DEBUG: Log render call to verify new code is running
+      if (Math.random() < 0.01) { // Log 1% of frames to avoid spam
+        console.log('🎨 RENDER CALLED - Powerups:', powerupsRef.current.length, 'Explosions:', explosionsRef.current.length, 'Timestamp:', timestamp);
+      }
+      
       // Apply screen shake
       ctx.save();
       if (screenShakeRef.current.duration > 0) {
@@ -4545,12 +4563,19 @@ const SpaceShooter = () => {
         // Guard against non-finite coordinates
         if (!isFinite(explosion.x) || !isFinite(explosion.y)) return;
         
+        // Calculate lifetime progress for animations
+        const age = (Date.now() - (explosion.startTime || Date.now())) / 16.67; // frames at 60fps
+        const maxLifetime = explosion.maxLifetime || 30;
+        const remainingLifetime = Math.max(0, maxLifetime - age);
+        const alpha = remainingLifetime / maxLifetime;
+        
         // Handle sprite-based explosions
         if (explosion.isSprite && explosionSpriteRef.current) {
           const sprite = explosionSpriteRef.current;
           const frameWidth = sprite.width / explosion.totalFrames;
           const frameHeight = sprite.height;
-          const srcX = Math.floor(explosion.frame) * frameWidth;
+          const currentFrame = Math.min(Math.floor(age / (explosion.frameDelay || 3)), explosion.totalFrames - 1);
+          const srcX = currentFrame * frameWidth;
           const srcY = 0;
           const destSize = explosion.spriteSize;
           
@@ -4558,8 +4583,8 @@ const SpaceShooter = () => {
           ctx.globalAlpha = 1;
           
           // Add screen flash for big explosions
-          if (explosion.spriteSize > 100 && explosion.frame < 2) {
-            ctx.globalAlpha = 0.15 * (1 - explosion.frame / 2);
+          if (explosion.spriteSize > 100 && currentFrame < 2) {
+            ctx.globalAlpha = 0.15 * (1 - currentFrame / 2);
             ctx.fillStyle = '#ffff88';
             ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
             ctx.globalAlpha = 1;
@@ -4575,9 +4600,6 @@ const SpaceShooter = () => {
           ctx.restore();
           return; // Skip particle rendering for sprite explosions
         }
-        
-        const maxLifetime = explosion.isMissileExplosion ? 45 : explosion.isPlayerExplosion ? 30 : (explosion.lifetime > 15 ? 30 : 15);
-        const alpha = explosion.lifetime / maxLifetime;
         
         // Draw shockwave ring for larger explosions
         if (!perfMode && (explosion.isMissileExplosion || explosion.isPlayerExplosion)) {
@@ -4854,7 +4876,9 @@ const SpaceShooter = () => {
 
       // Draw power-ups with enhanced visuals based on rarity
       powerupsRef.current.forEach(powerup => {
-        const bobY = powerup.y + Math.sin(powerup.bobOffset || 0) * 5;
+        // Use elapsed time for smooth animation independent of update loop
+        const elapsedTime = (Date.now() - (powerup.spawnTime || Date.now())) / 1000;
+        const bobY = powerup.y + Math.sin((powerup.bobOffset || 0) + elapsedTime * 2) * 5;
         const config = POWERUP_TYPES[powerup.type];
         if (!config) return; // Skip invalid power-ups
         
@@ -4864,7 +4888,7 @@ const SpaceShooter = () => {
         const cx = powerup.x + POWERUP_SIZE / 2;
         const cy = bobY + POWERUP_SIZE / 2;
         const time = Date.now() / 1000;
-        const rotation = powerup.rotation || 0;
+        const rotation = elapsedTime * 0.8; // Continuous rotation based on time alive
         
         ctx.save();
         ctx.translate(cx, cy);
@@ -14609,6 +14633,7 @@ const SpaceShooter = () => {
             enemy.spawnInvulnerableTimer--;
             if (enemy.spawnInvulnerableTimer <= 0) {
               enemy.spawnInvulnerable = false;
+              console.log('✅ Enemy spawn invulnerability ENDED:', enemy.type);
             }
           }
           
@@ -14625,10 +14650,12 @@ const SpaceShooter = () => {
             }
           }
           
-          // Remove if off screen
+          // Remove if off screen (only for types that were moved in this filter)
           const ew = enemy.width || ENEMY_WIDTH;
-          if (enemy.x > GAME_WIDTH + ew || enemy.x < -ew) {
-            return false;
+          if (!specialMovementTypes.includes(enemy.type)) {
+            if (enemy.x > GAME_WIDTH + ew || enemy.x < -ew) {
+              return false;
+            }
           }
           
           return true;
@@ -14636,6 +14663,149 @@ const SpaceShooter = () => {
           console.error('Enemy update error:', err);
           return false;
         }
+      });
+      
+      console.log('🔄 After FIRST filter - Enemies remaining:', enemiesRef.current.length);
+      
+      // SECOND FILTER: Special enemy behaviors and collision detection
+      console.log('⚡ SECOND FILTER - Special behaviors and collisions, enemy count:', enemiesRef.current.length);
+      let collisionChecks = 0;
+      enemiesRef.current = enemiesRef.current.filter(enemy => {
+        try {
+        // Apply time warp slowdown
+        const effectiveSpeed = (enemy.speed || ENEMY_SPEED) * timeWarpModifier;
+        
+        // Update frozen status (from GLACIER ship ability)
+        if (enemy.frozen && enemy.frozenTimer > 0) {
+          enemy.frozenTimer--;
+          if (enemy.frozenTimer <= 0) {
+            enemy.frozen = false;
+            enemy.speed = enemy.originalSpeed || ENEMY_SPEED;
+          }
+          // Skip all movement while frozen
+          return true;
+        }
+        
+        // Special type behaviors (movement already handled in basic filter above)
+        if (enemy.type === 'turret') {
+          // Turret rotates to aim at player (no movement since it's stationary)
+          const dx = player.x + PLAYER_WIDTH / 2 - (enemy.x + ENEMY_WIDTH / 2);
+          const dy = player.y + PLAYER_HEIGHT / 2 - (enemy.y + ENEMY_HEIGHT / 2);
+          const targetAngle = Math.atan2(dy, dx);
+          // Smooth rotation
+          let angleDiff = targetAngle - enemy.angle;
+          while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+          while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+          enemy.angle += angleDiff * 0.05; // Rotation speed
+        }
+        
+        // TODO: Copy all the rest of the special type behaviors from line 16400+ here
+        
+        // Check collision with player
+        const ew = enemy.width || ENEMY_WIDTH;
+        const eh = enemy.height || ENEMY_HEIGHT;
+        const playerCenterX = player.x + PLAYER_WIDTH / 2;
+        const playerCenterY = player.y + PLAYER_HEIGHT / 2;
+        const enemyCenterX = enemy.x + ew / 2;
+        const enemyCenterY = enemy.y + eh / 2;
+        const dx = playerCenterX - enemyCenterX;
+        const dy = playerCenterY - enemyCenterY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const collisionRadius = PLAYER_HITBOX_RADIUS + Math.min(ew, eh) / 3;
+        
+        collisionChecks++;
+        if (playerInvincibleRef.current <= 0 && distance < collisionRadius) {
+          console.log('💥 PLAYER HIT BY ENEMY:', enemy.type, 'distance:', distance, 'collisionRadius:', collisionRadius);
+          createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, enemy.type === 'heavy' ? 'heavy' : 'normal', true);
+          
+          if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
+            upgradesRef.current.shieldHits--;
+            upgradesRef.current.shieldRechargeTimer = 180;
+            if (upgradesRef.current.shieldHits <= 0) {
+              upgradesRef.current.shield = false;
+            }
+            createShieldImpact(enemy.x + ew / 2, enemy.y + eh / 2);
+          } else {
+            hitPlayer = true;
+            createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
+          }
+          return false;
+        }
+        
+        // Remove if off screen
+        if (enemy.type === 'turret') {
+          return true;
+        } else if (enemy.fromBehind) {
+          return enemy.x < GAME_WIDTH + ENEMY_WIDTH;
+        } else {
+          return enemy.x > -ENEMY_WIDTH;
+        }
+      } catch (error) {
+        console.error('❌ ERROR in enemy collision update:', error);
+        return true;
+      }
+    });
+    
+      console.log('🔄 After SECOND filter - Collision checks:', collisionChecks, 'Enemies remaining:', enemiesRef.current.length);
+      
+      // Check bullet-enemy collisions
+      console.log('🎯 BULLET COLLISION CHECK - Enemies:', enemiesRef.current.length, 'Bullets:', bulletsRef.current.length);
+      bulletsRef.current = bulletsRef.current.filter(bullet => {
+        let bulletHit = false;
+        const bulletW = bullet.isWaveCannon ? bullet.size : BULLET_WIDTH;
+        const bulletH = bullet.isWaveCannon ? bullet.size : BULLET_HEIGHT;
+        const bulletX = bullet.isWaveCannon ? bullet.x - bullet.size / 2 : bullet.x;
+        const bulletY = bullet.isWaveCannon ? bullet.y - bullet.size / 2 : bullet.y;
+        let damage = bullet.damage || 1;
+        
+        enemiesRef.current = enemiesRef.current.filter(enemy => {
+          const ew = enemy.width || ENEMY_WIDTH;
+          const eh = enemy.height || ENEMY_HEIGHT;
+          
+          // Simple AABB collision detection
+          const collision = bulletX < enemy.x + ew &&
+                          bulletX + bulletW > enemy.x &&
+                          bulletY < enemy.y + eh &&
+                          bulletY + bulletH > enemy.y;
+          
+          if (collision) {
+            // Check spawn invulnerability
+            if (enemy.spawnInvulnerable) {
+              console.log('🛡️ Enemy still invulnerable:', enemy.type, 'timer:', enemy.spawnInvulnerableTimer);
+              floatingTextsRef.current.push({
+                x: enemy.x + ew / 2,
+                y: enemy.y,
+                text: '🛡️',
+                color: '#00ffff',
+                lifetime: 20,
+                vy: -1
+              });
+              if (!bullet.isWaveCannon) bulletHit = true;
+              return true; // Enemy survives
+            }
+            
+            if (!bullet.isWaveCannon) bulletHit = true;
+            
+            // Apply damage
+            enemy.health -= damage;
+            console.log('💥 DAMAGE APPLIED to', enemy.type, '- damage:', damage, 'health remaining:', enemy.health);
+            
+            createImpactParticles(bulletX, bulletY, '#ffaa00', 4);
+            
+            if (enemy.health > 0) {
+              return true; // Enemy survives
+            }
+            
+            // Enemy destroyed
+            createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, 'normal', true);
+            scoreRef.current += enemy.points || 10;
+            setScore(scoreRef.current);
+            return false; // Remove enemy
+          }
+          return true; // No hit
+        });
+        
+        return !bulletHit; // Remove bullet if it hit
       });
       
       // Update boss
@@ -15509,10 +15679,16 @@ const SpaceShooter = () => {
       }
 
       // Update power-ups
+      console.log('🎁 POWERUP UPDATE - Count before:', powerupsRef.current.length);
+      let firstPowerupLogged = false;
       powerupsRef.current = powerupsRef.current.filter(powerup => {
         powerup.x -= 1.5; // Drift left slowly
-        powerup.bobOffset += 0.1;
+        powerup.bobOffset = (powerup.bobOffset || 0) + 0.1;
         powerup.rotation = (powerup.rotation || 0) + 0.05; // Spin effect
+        if (!firstPowerupLogged && powerupsRef.current.length > 0) {
+          console.log('🎁 Powerup sample - x:', powerup.x, 'bobOffset:', powerup.bobOffset, 'rotation:', powerup.rotation);
+          firstPowerupLogged = true;
+        }
         
         // Magnet attraction - pull power-ups toward player
         if (upgradesRef.current.magnet && upgradesRef.current.magnetTimer > 0) {
@@ -15528,10 +15704,12 @@ const SpaceShooter = () => {
         
         // Check collision with player
         const bobY = powerup.y + Math.sin(powerup.bobOffset || 0) * 5;
-        if (checkCollision(
+        const collisionCheck = checkCollision(
           { x: player.x, y: player.y, width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
           { x: powerup.x, y: bobY, width: POWERUP_SIZE, height: POWERUP_SIZE }
-        )) {
+        );
+        if (collisionCheck) {
+          console.log('🎁 POWERUP COLLISION DETECTED!', powerup.type, 'at', powerup.x, bobY);
           const config = POWERUP_TYPES[powerup.type];
           if (!config) return false; // Remove invalid power-ups
           
@@ -16103,18 +16281,11 @@ const SpaceShooter = () => {
         return true; // Keep bullet
       });
       
-      // Update visual effects
-      specialEffectsRef.current = specialEffectsRef.current.filter(effect => {
+      // Update pickup effects (debris, sparks from explosions, etc.)
+      pickupEffectsRef.current = pickupEffectsRef.current.filter(effect => {
         effect.lifetime--;
-        if (effect.type === 'ring') {
-          effect.radius += (effect.maxRadius - effect.radius) * 0.2;
-        } else if (effect.type === 'sparkle') {
-          effect.x += effect.vx;
-          effect.y += effect.vy;
-          effect.vx *= 0.92;
-          effect.vy *= 0.92;
-          effect.size *= 0.95;
-        } else if (effect.type === 'debris') {
+        
+        if (effect.type === 'debris') {
           // Flying debris particles with gravity
           effect.x += effect.vx;
           effect.y += effect.vy;
@@ -16141,6 +16312,34 @@ const SpaceShooter = () => {
           effect.flicker += 0.2;
           effect.vx *= 0.99;
           effect.size *= 0.98;
+        } else if (effect.type === 'ring') {
+          // Expanding ring
+          effect.radius += (effect.maxRadius - effect.radius) * 0.2;
+        } else if (effect.type === 'sparkle') {
+          // Sparkle particles
+          effect.x += effect.vx;
+          effect.y += effect.vy;
+          effect.vx *= 0.92;
+          effect.vy *= 0.92;
+          effect.size *= 0.95;
+        } else if (effect.type === 'flash') {
+          // Screen flash (no movement)
+        }
+        
+        return effect.lifetime > 0;
+      });
+      
+      // Update visual effects (other special effects)
+      specialEffectsRef.current = specialEffectsRef.current.filter(effect => {
+        effect.lifetime--;
+        if (effect.type === 'ring') {
+          effect.radius += (effect.maxRadius - effect.radius) * 0.2;
+        } else if (effect.type === 'sparkle') {
+          effect.x += effect.vx;
+          effect.y += effect.vy;
+          effect.vx *= 0.92;
+          effect.vy *= 0.92;
+          effect.size *= 0.95;
         }
         
         return effect.lifetime > 0;
@@ -16169,8 +16368,14 @@ const SpaceShooter = () => {
       }
 
       // Update explosions
+      console.log('💥 EXPLOSION UPDATE - Count before:', explosionsRef.current.length);
+      let firstExplosionLogged = false;
       explosionsRef.current = explosionsRef.current.filter(explosion => {
         explosion.lifetime--;
+        if (!firstExplosionLogged && explosionsRef.current.length > 0) {
+          console.log('💥 Explosion sample - lifetime:', explosion.lifetime, 'isSprite:', explosion.isSprite);
+          firstExplosionLogged = true;
+        }
         
         // Handle sprite-based explosions
         if (explosion.isSprite) {
@@ -16341,31 +16546,12 @@ const SpaceShooter = () => {
         }
       }
       
-      console.log('📍 Execution at line ~16293 (right before enemy update)');
-      console.log('📍 About to reach enemy update, line count check');
+      // Second enemy filter moved to run right after first filter (before boss update)
+      // This section used to be here but was relocated to line ~14644
 
-      console.log('🚀 REACHED ENEMY UPDATE SECTION');
-      // Update enemies and their shooting
-      const currentTime = Date.now();
-      let hitPlayer = false;
-      const timeWarpModifier = upgradesRef.current.timeWarp ? 0.3 : 1.0; // Slow enemies during time warp
-      
-      // CRITICAL DEBUG: Always log when we have enemies
-      if (enemiesRef.current.length > 0) {
-        const firstEnemy = enemiesRef.current[0];
-        console.log('🎯 Enemy Update:', {
-          count: enemiesRef.current.length,
-          type: firstEnemy.type,
-          x: firstEnemy.x,
-          frozen: firstEnemy.frozen,
-          frozenTimer: firstEnemy.frozenTimer,
-          speed: firstEnemy.speed,
-          effectiveSpeed: (firstEnemy.speed || ENEMY_SPEED) * timeWarpModifier
-        });
-      }
-      
       console.log('⚡ ABOUT TO RUN ENEMY FILTER, enemy count:', enemiesRef.current.length);
       let enemyCounter = 0;
+      let collisionChecks = 0;
       enemiesRef.current = enemiesRef.current.filter(enemy => {
         try {
         // Apply time warp slowdown
@@ -16946,7 +17132,9 @@ const SpaceShooter = () => {
         const distance = Math.sqrt(dx * dx + dy * dy);
         const collisionRadius = PLAYER_HITBOX_RADIUS + Math.min(ew, eh) / 3; // Small hitbox vs enemy
         
+        collisionChecks++;
         if (playerInvincibleRef.current <= 0 && distance < collisionRadius) {
+          console.log('💥 PLAYER HIT BY ENEMY:', enemy.type, 'distance:', distance, 'collisionRadius:', collisionRadius);
           createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, enemy.type === 'heavy' ? 'heavy' : 'normal', true);
           
           if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
@@ -16978,6 +17166,8 @@ const SpaceShooter = () => {
         return true; // Keep enemy to avoid cascade failures
       }
     });
+    
+      console.log('🔄 After SECOND filter - Collision checks:', collisionChecks, 'Enemies remaining:', enemiesRef.current.length);
 
       // Update enemy bullets
       const bulletSpeedMult = (gameModeRef.current === 'practice' && practiceSettingsRef.current.slowBullets) ? 0.5 : 1;
@@ -17167,6 +17357,7 @@ const SpaceShooter = () => {
       }
 
       // Check bullet-enemy collisions
+      console.log('🎯 BEFORE bullet collision check - Enemies:', enemiesRef.current.length, 'Bullets:', bulletsRef.current.length);
       bulletsRef.current = bulletsRef.current.filter(bullet => {
         let bulletHit = false;
         const bulletW = bullet.isWaveCannon ? bullet.size : BULLET_WIDTH;
@@ -17187,6 +17378,7 @@ const SpaceShooter = () => {
           )) {
             // All enemies have spawn invulnerability - skip damage
             if (enemy.spawnInvulnerable) {
+              console.log('🛡️ Enemy still invulnerable:', enemy.type, 'timer:', enemy.spawnInvulnerableTimer);
               // Show deflect effect
               floatingTextsRef.current.push({
                 x: enemy.x + ew / 2,
@@ -17301,6 +17493,7 @@ const SpaceShooter = () => {
             
             // Apply damage to enemy
             enemy.health -= finalDamage;
+            console.log('💥 DAMAGE APPLIED to', enemy.type, '- damage:', finalDamage, 'health remaining:', enemy.health);
             
             // Create impact particles based on bullet type
             const impactColor = bullet.isLaser ? '#ff00ff' : 
