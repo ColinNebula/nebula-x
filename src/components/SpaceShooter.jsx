@@ -15965,15 +15965,7 @@ const SpaceShooter = () => {
           return false;
         }
         
-        // Drift left faster so player can actually catch them
-        powerup.x -= 4; // Increased from 1.5 to 4
-        powerup.bobOffset = (powerup.bobOffset || 0) + 0.1;
-        powerup.rotation = (powerup.rotation || 0) + 0.05; // Spin effect
-        
-        // Check collision with player using circular distance (more reliable)
-        const bobY = powerup.y + Math.sin(powerup.bobOffset || 0) * 5;
-        
-        // Guard against undefined player
+        // Guard against undefined player first
         if (!player || !isFinite(player.x) || !isFinite(player.y)) {
           console.warn('[POWERUP] Player position invalid:', player);
           return true; // Keep powerup, don't remove it
@@ -15987,16 +15979,23 @@ const SpaceShooter = () => {
         if (pullDist < 600 && pullDist > 1) { // Pull from up to 600px away
           const pullStrength = upgradesRef.current.magnet && upgradesRef.current.magnetTimer > 0 
             ? 12 * (1 - pullDist / 400)  // Very strong magnet pull
-            : 6 * (1 - pullDist / 600);  // Strong natural pull (increased from 2)
+            : 6 * (1 - pullDist / 600);  // Strong natural pull
           powerup.x += (pullDx / pullDist) * pullStrength;
           powerup.y += (pullDy / pullDist) * pullStrength;
+        } else {
+          // Drift left slower when not being pulled
+          powerup.x -= 2;
         }
         
+        powerup.bobOffset = (powerup.bobOffset || 0) + 0.1;
+        powerup.rotation = (powerup.rotation || 0) + 0.05; // Spin effect
+        
         // Circular collision detection (center to center distance)
+        // Use actual powerup position, not bobY which is visual only
         const playerCenterX = player.x + PLAYER_WIDTH / 2;
         const playerCenterY = player.y + PLAYER_HEIGHT / 2;
         const powerupCenterX = powerup.x + POWERUP_SIZE / 2;
-        const powerupCenterY = bobY + POWERUP_SIZE / 2;
+        const powerupCenterY = powerup.y + POWERUP_SIZE / 2;
         
         const dx = playerCenterX - powerupCenterX;
         const dy = playerCenterY - powerupCenterY;
@@ -16029,7 +16028,7 @@ const SpaceShooter = () => {
           try {
             createPickupEffect(
               powerup.x + POWERUP_SIZE / 2,
-              bobY + POWERUP_SIZE / 2,
+              powerup.y + POWERUP_SIZE / 2,
               config.color,
               config.name,
               config.rarity
