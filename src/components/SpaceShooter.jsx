@@ -2595,10 +2595,14 @@ const SpaceShooter = () => {
         const force = forceRef.current;
         if (force.attached === 'front') {
           force.attached = 'back';
+          force.returning = false; // Already attached
         } else if (force.attached === 'back') {
           force.attached = null; // Detach
+          force.returning = false;
         } else {
-          force.attached = 'front'; // Re-attach
+          // Start returning to front position
+          force.targetAttachment = 'front';
+          force.returning = true;
         }
       }
       
@@ -4583,26 +4587,84 @@ const SpaceShooter = () => {
           const destSize = explosion.spriteSize;
           
           ctx.save();
-          ctx.globalAlpha = 1;
           
           // Add screen flash for big explosions
           if (explosion.spriteSize > 100 && currentFrame < 2) {
             ctx.globalAlpha = 0.15 * (1 - currentFrame / 2);
             ctx.fillStyle = '#ffff88';
             ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-            ctx.globalAlpha = 1;
           }
           
-          // Center explosion sprite at explosion position
-          const drawX = explosion.x - destSize / 2;
-          const drawY = explosion.y - destSize / 2;
+          // Add expanding shockwave ring for large explosions
+          if (explosion.spriteSize > 80 && currentFrame < 5 && !perfMode) {
+            const shockwaveProgress = currentFrame / 5;
+            const shockwaveRadius = destSize * 0.3 + (destSize * 0.8 * shockwaveProgress);
+            ctx.save();
+            ctx.globalAlpha = (1 - shockwaveProgress) * 0.6;
+            ctx.strokeStyle = explosion.spriteSize > 150 ? '#ffaa00' : '#ff6600';
+            ctx.lineWidth = 4 - (shockwaveProgress * 3);
+            ctx.shadowColor = '#ff8800';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(explosion.x, explosion.y, shockwaveRadius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+          
+          // Add glow/heat distortion effect behind sprite
+          if (!perfMode && currentFrame < 6) {
+            const glowSize = destSize * (1 + currentFrame * 0.15);
+            const glowAlpha = (6 - currentFrame) / 6 * 0.4;
+            ctx.save();
+            const gradient = ctx.createRadialGradient(
+              explosion.x, explosion.y, 0,
+              explosion.x, explosion.y, glowSize * 0.6
+            );
+            gradient.addColorStop(0, `rgba(255, 220, 100, ${glowAlpha})`);
+            gradient.addColorStop(0.3, `rgba(255, 140, 40, ${glowAlpha * 0.7})`);
+            gradient.addColorStop(0.6, `rgba(255, 80, 0, ${glowAlpha * 0.4})`);
+            gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(explosion.x, explosion.y, glowSize * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+          
+          // Draw sprite - save context for transformation
+          ctx.save();
+          ctx.globalAlpha = 1;
+          
+          // Add slight rotation and scale variation for more dynamic feel
+          const rotationAngle = (currentFrame * 0.1) * (explosion.spriteSize > 100 ? 0.05 : 0);
+          const scaleVariation = 1 + Math.sin(currentFrame * 0.8) * 0.05;
+          const finalSize = destSize * scaleVariation;
+          
+          // Transform to explosion center for proper rotation
+          ctx.translate(explosion.x, explosion.y);
+          ctx.rotate(rotationAngle);
+          
+          // Draw sprite centered at origin (0, 0) after translation
           ctx.drawImage(
             sprite,
             srcX, srcY, frameWidth, frameHeight,
-            drawX, drawY,
-            destSize, destSize
+            -finalSize / 2, -finalSize / 2,
+            finalSize, finalSize
           );
-          ctx.restore();
+          
+          // Add bright center flash for first few frames
+          if (currentFrame < 3 && !perfMode) {
+            ctx.globalAlpha = (3 - currentFrame) / 3 * 0.5;
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#ffff00';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(0, 0, finalSize * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          
+          ctx.restore(); // Restore sprite transformation
+          ctx.restore(); // Restore main context
           return; // Skip particle rendering for sprite explosions
         }
         
@@ -4786,7 +4848,9 @@ const SpaceShooter = () => {
 
       // Draw floating texts
       floatingTextsRef.current.forEach(text => {
-        let alpha = Math.min(1, text.lifetime / 30);
+        // Fade based on remaining lifetime - full fade over entire lifetime for smoother effect
+        const fadeStart = text.flash ? 90 : 30; // Flash warnings fade over longer period
+        let alpha = Math.min(1, text.lifetime / fadeStart);
         
         // Flash effect for danger warnings
         if (text.flash) {
@@ -12510,10 +12574,13 @@ const SpaceShooter = () => {
             const force = forceRef.current;
             if (force.attached === 'front') {
               force.attached = 'back';
+              force.returning = false;
             } else if (force.attached === 'back') {
               force.attached = null;
+              force.returning = false;
             } else {
-              force.attached = 'front';
+              force.targetAttachment = 'front';
+              force.returning = true;
             }
             lastForceToggleRef.current = timestamp;
           }
@@ -13211,6 +13278,32 @@ const SpaceShooter = () => {
         } else if (force.attached === 'back') {
           force.x = player.x - currentSize / 2 - 5;
           force.y = player.y + PLAYER_HEIGHT / 2;
+        } else if (force.returning) {
+          // Smoothly move towards target attachment position
+          const targetX = force.targetAttachment === 'front' 
+            ? player.x + PLAYER_WIDTH + currentSize / 2 + 5
+            : player.x - currentSize / 2 - 5;
+          const targetY = player.y + PLAYER_HEIGHT / 2;
+          
+          // Smooth interpolation (ease-in)
+          const returnSpeed = 0.15; // 15% of distance per frame
+          const dx = targetX - force.x;
+          const dy = targetY - force.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          // Move towards target
+          force.x += dx * returnSpeed;
+          force.y += dy * returnSpeed;
+          
+          // Snap to position when close enough and complete attachment
+          if (distance < 5) {
+            force.x = targetX;
+            force.y = targetY;
+            force.attached = force.targetAttachment;
+            force.returning = false;
+            force.targetAttachment = null;
+            soundSystem.playPowerupPickup(); // Play attachment sound
+          }
         } else {
           // Float freely - slowly drift towards mouse or just hover
           force.x += 2;
@@ -18226,17 +18319,62 @@ const SpaceShooter = () => {
               {/* Enhanced Player Profile Display */}
               <div className={`menu-profile rarity-${AVATAR_OPTIONS[userSettings.avatar]?.rarity || 'common'}`}>
                 <div className="profile-avatar-frame">
-                  <div className="avatar-ring"></div>
-                  <div className="avatar-ring ring-2"></div>
+                  <div 
+                    className="avatar-ring"
+                    style={{
+                      borderColor: (() => {
+                        const colorObj = AVATAR_COLORS.find(c => c.color === userSettings.avatarColor);
+                        return colorObj?.glow || 'rgba(0, 255, 136, 0.5)';
+                      })()
+                    }}
+                  ></div>
+                  <div 
+                    className="avatar-ring ring-2"
+                    style={{
+                      borderColor: (() => {
+                        const colorObj = AVATAR_COLORS.find(c => c.color === userSettings.avatarColor);
+                        const glow = colorObj?.glow || 'rgba(0, 255, 136, 0.3)';
+                        // Reduce opacity for ring-2
+                        return glow.replace(/[\d.]+\)$/, '0.3)');
+                      })()
+                    }}
+                  ></div>
                   <div className="avatar-particles">
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="avatar-particle" style={{ '--i': i }}></div>
+                      <div 
+                        key={i} 
+                        className="avatar-particle" 
+                        style={{ 
+                          '--i': i,
+                          background: userSettings.avatarColor || '#00ff88',
+                          boxShadow: (() => {
+                            const colorObj = AVATAR_COLORS.find(c => c.color === userSettings.avatarColor);
+                            return `0 0 6px ${colorObj?.glow || 'rgba(0, 255, 136, 0.6)'}`;
+                          })()
+                        }}
+                      ></div>
                     ))}
                   </div>
-                  <span className="profile-avatar">{AVATAR_OPTIONS[userSettings.avatar]?.icon || '🚀'}</span>
+                  <span 
+                    className="profile-avatar"
+                    style={{
+                      filter: (() => {
+                        const colorObj = AVATAR_COLORS.find(c => c.color === userSettings.avatarColor);
+                        return `drop-shadow(0 0 8px ${colorObj?.glow || 'rgba(0, 255, 136, 0.6)'})`;
+                      })()
+                    }}
+                  >{AVATAR_OPTIONS[userSettings.avatar]?.icon || '🚀'}</span>
                 </div>
                 <div className="profile-info">
-                  <span className="profile-name">{userSettings.playerName || 'PILOT'}</span>
+                  <span 
+                    className="profile-name"
+                    style={{
+                      background: userSettings.avatarColor?.includes('gradient') ? userSettings.avatarColor : 'transparent',
+                      color: userSettings.avatarColor?.includes('gradient') ? 'transparent' : (userSettings.avatarColor || '#00ff88'),
+                      WebkitBackgroundClip: userSettings.avatarColor?.includes('gradient') ? 'text' : 'unset',
+                      backgroundClip: userSettings.avatarColor?.includes('gradient') ? 'text' : 'unset'
+                    }}
+                  >{userSettings.playerName || 'PILOT'}</span>
                   <div className="profile-rank" style={{ color: getRankTitle(highScore).color }}>
                     <span className="rank-icon">{getRankTitle(highScore).icon}</span>
                     <span className="rank-title">{getRankTitle(highScore).title}</span>
