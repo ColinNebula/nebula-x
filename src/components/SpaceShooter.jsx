@@ -18272,7 +18272,7 @@ const SpaceShooter = () => {
         
         {gameState === 'menu' && !showSettings && !showCustomize && (
           <div 
-            className="overlay menu-overlay"
+            className="overlay menu-overlay split-screen-menu"
             style={{
               background: `linear-gradient(180deg, rgba(5, 5, 25, 0.9) 0%, rgba(10, 20, 50, 0.75) 50%, rgba(5, 5, 25, 0.9) 100%), url(${asset('nebulax-bg.png')})`
             }}
@@ -18280,7 +18280,7 @@ const SpaceShooter = () => {
             <div className="menu-background">
               {/* Animated stars */}
               <div className="star-field">
-                {[...Array(30)].map((_, i) => (
+                {[...Array(50)].map((_, i) => (
                   <div key={i} className={`menu-star star-${(i % 3) + 1}`} style={{
                     left: `${Math.random() * 100}%`,
                     top: `${Math.random() * 100}%`,
@@ -18288,35 +18288,50 @@ const SpaceShooter = () => {
                   }} />
                 ))}
               </div>
-              {/* Nebula clouds */}
-              <div className="nebula-cloud cloud-1"></div>
-              <div className="nebula-cloud cloud-2"></div>
-              {/* Floating ships */}
-              <div className="floating-ship ship-1"></div>
-              <div className="floating-ship ship-2"></div>
-              <div className="floating-ship ship-3"></div>
-              {/* Particles */}
-              <div className="particle p1"></div>
-              <div className="particle p2"></div>
-              <div className="particle p3"></div>
-              <div className="particle p4"></div>
-              <div className="particle p5"></div>
+              {/* Nebula clouds with parallax */}
+              <div className="nebula-cloud cloud-1 parallax-slow"></div>
+              <div className="nebula-cloud cloud-2 parallax-slow"></div>
+              <div className="nebula-cloud cloud-3 parallax-medium"></div>
               {/* Scan lines overlay */}
               <div className="scan-lines"></div>
             </div>
-            <div className="menu-content">
-              {/* Decorative top border */}
-              <div className="menu-border-top"></div>
-              
-              <div className="logo-container">
-                <div className="logo-glow"></div>
-                <h1 className="menu-logo">NEBULA X</h1>
-                <p className="menu-tagline">SIDE-SCROLLING SPACE SHOOTER</p>
-                <div className="logo-underline"></div>
-              </div>
-              
-              {/* Enhanced Player Profile Display */}
-              <div className={`menu-profile rarity-${AVATAR_OPTIONS[userSettings.avatar]?.rarity || 'common'}`}>
+
+            {/* LEFT PANEL - 40% */}
+            <div className="menu-left-panel">
+              <div className="parallax-layer parallax-medium">
+                {/* Large Ship Preview */}
+                <div className="ship-showcase">
+                  <div className="ship-showcase-glow"></div>
+                  <div className="ship-showcase-icon">
+                    <span 
+                      style={{
+                        filter: (() => {
+                          const colorObj = AVATAR_COLORS.find(c => c.color === userSettings.avatarColor);
+                          return `drop-shadow(0 0 20px ${colorObj?.glow || 'rgba(0, 255, 136, 0.8)'})`;
+                        })()
+                      }}
+                    >{AVATAR_OPTIONS[userSettings.avatar]?.icon || '🚀'}</span>
+                  </div>
+                  <div className="ship-showcase-particles">
+                    {[...Array(8)].map((_, i) => (
+                      <div 
+                        key={i} 
+                        className="showcase-particle" 
+                        style={{ 
+                          '--i': i,
+                          background: userSettings.avatarColor || '#00ff88'
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                  <div className="ship-showcase-label">
+                    <span className="ship-name">{AVATAR_OPTIONS[userSettings.avatar]?.name || 'R-9A ARROWHEAD'}</span>
+                    <span className="ship-class">CLASS: {(AVATAR_OPTIONS[userSettings.avatar]?.rarity || 'standard').toUpperCase()}</span>
+                  </div>
+                </div>
+
+                {/* Enhanced Player Profile Display */}
+                <div className={`menu-profile split-profile rarity-${AVATAR_OPTIONS[userSettings.avatar]?.rarity || 'common'}`}>
                 <div className="profile-avatar-frame">
                   <div 
                     className="avatar-ring"
@@ -18381,7 +18396,7 @@ const SpaceShooter = () => {
                 </div>
               </div>
               
-              <div className="menu-stats">
+              <div className="menu-stats split-stats">
                 <div className="stat-box">
                   <span className="stat-icon">🏆</span>
                   <span className="stat-label">HIGH SCORE</span>
@@ -18392,9 +18407,33 @@ const SpaceShooter = () => {
                   <span className="stat-label">BEST WAVE</span>
                   <span className="stat-value">{Math.max(1, Math.floor(highScore / 500))}</span>
                 </div>
+                <div className="stat-box">
+                  <span className="stat-icon">💰</span>
+                  <span className="stat-label">CREDITS</span>
+                  <span className="stat-value">{(highScore * 10).toLocaleString()}</span>
+                </div>
+                <div className="stat-box">
+                  <span className="stat-icon">⚡</span>
+                  <span className="stat-label">PLAYTIME</span>
+                  <span className="stat-value">{Math.floor(highScore / 100)}h</span>
+                </div>
               </div>
-              
-              <div className="menu-buttons">
+            </div>
+          </div>
+
+          {/* RIGHT PANEL - 60% */}
+          <div className="menu-right-panel">
+            <div className="parallax-layer parallax-fast">
+              {/* Logo at top */}
+              <div className="logo-container split-logo">
+                <div className="logo-glow"></div>
+                <h1 className="menu-logo">NEBULA X</h1>
+                <p className="menu-tagline">SIDE-SCROLLING SPACE SHOOTER</p>
+                <div className="logo-underline"></div>
+              </div>
+
+              {/* Menu buttons */}
+              <div className="menu-buttons split-buttons">
                 <button 
                   onClick={() => {
                     const selectSound = new Audio(asset('mixkit-arcade-player-select-2036.mp3'));
@@ -18452,15 +18491,19 @@ const SpaceShooter = () => {
                 </button>
               </div>
               
-              <p className="start-hint">🎮 D-Pad to navigate ↩• ✓ to select ↩• ENTER to start</p>
+              <p className="start-hint split-hint">🎮 D-Pad to navigate • ✓ to select • ENTER to start</p>
               
               {/* Decorative bottom */}
-              <div className="menu-footer">
+              <div className="menu-footer split-footer">
                 <span className="version">v1.0</span>
-                <span className="divider">↩•</span>
+                <span className="divider">•</span>
                 <span className="credit">R-TYPE INSPIRED</span>
               </div>
             </div>
+          </div>
+
+          {/* Vertical divider between panels */}
+          <div className="split-divider"></div>
             
             {/* Challenge Modes Modal */}
             {showChallenges && (
@@ -18878,22 +18921,49 @@ const SpaceShooter = () => {
                     </div>
                   </div>
                   <div className="controls-section">
-                    <h3>🎮 Controller</h3>
+                    <h3>🎮 Xbox Controller</h3>
                     <div className="controls-info">
-                      <p>Left Stick / D-Pad - Move</p>
-                      <p>? / R1 / R2 - Shoot</p>
-                      <p>L3 / R3 - Dash</p>
-                      <p>⚡ - Laser Beam (L3 Rapid)</p>
-                      <p>L2 - Wave Cannon</p>
-                      <p>? - Missile</p>
-                      <p>? - Force Toggle</p>
-                      <p>L1 / R1 - Polarity Toggle</p>
-                      <p>SHARE - Bomb</p>
-                      <p>OPTIONS - Pause</p>
+                      <p><strong>Movement:</strong></p>
+                      <p>  Left Stick / D-Pad - Move Ship</p>
+                      <p><strong>Combat:</strong></p>
+                      <p>  A / RB / RT - Shoot</p>
+                      <p>  X - Missile</p>
+                      <p>  Y - Laser Beam (Lv3+ Rapid Fire)</p>
+                      <p>  LT (Hold) - Wave Cannon Charge</p>
+                      <p>  LS / RS Click - Dash</p>
+                      <p><strong>Force Pod:</strong></p>
+                      <p>  B - Force Toggle (Front/Back/Free)</p>
+                      <p><strong>Polarity System:</strong></p>
+                      <p>  LB - Toggle Light/Dark</p>
+                      <p>  Right Stick ← → - Quick Toggle</p>
+                      <p><strong>Special:</strong></p>
+                      <p>  View Button - Bomb (Screen Clear)</p>
+                      <p>  Menu Button - Pause Game</p>
+                    </div>
+                  </div>
+                  <div className="controls-section">
+                    <h3>🎮 PlayStation Controller</h3>
+                    <div className="controls-info">
+                      <p><strong>Movement:</strong></p>
+                      <p>  Left Stick / D-Pad - Move Ship</p>
+                      <p><strong>Combat:</strong></p>
+                      <p>  ✕ / R1 / R2 - Shoot</p>
+                      <p>  □ - Missile</p>
+                      <p>  △ - Laser Beam (Lv3+ Rapid Fire)</p>
+                      <p>  L2 (Hold) - Wave Cannon Charge</p>
+                      <p>  L3 / R3 Click - Dash</p>
+                      <p><strong>Force Pod:</strong></p>
+                      <p>  ○ - Force Toggle (Front/Back/Free)</p>
+                      <p><strong>Polarity System:</strong></p>
+                      <p>  L1 - Toggle Light/Dark</p>
+                      <p>  Right Stick ← → - Quick Toggle</p>
+                      <p><strong>Special:</strong></p>
+                      <p>  Share Button - Bomb (Screen Clear)</p>
+                      <p>  Options Button - Pause Game</p>
                     </div>
                   </div>
                   <div className="powerups-section">
-                    <h3>Power-Ups</h3>
+                    <h3>💎 Power-Ups</h3>
                     <div className="powerup-info">
                       <p>« Rapid Fire - Faster shooting (↩°👥3 = LASER!)</p>
                       <p>💥 Missiles - Homing missiles</p>
@@ -19387,24 +19457,45 @@ const SpaceShooter = () => {
                   <p>↩ Â↩ ↩ ↩  / WASD - Move</p>
                   <p>SPACE - Shoot</p>
                   <p>Q - Dash (while moving)</p>
+                  <p>B - Bomb (screen clear)</p>
+                  <p>C - Toggle Polarity</p>
                   <p>SHIFT - Wave Cannon</p>
                   <p>L - Laser Beam (↩°👥3 Rapid)</p>
                   <p>M - Missile</p>
                   <p>F - Force Toggle</p>
+                  <p>G - Force Shield (Lv4+)</p>
+                  <p>[ ] - Speed Setting</p>
                   <p>ESC - Pause</p>
                 </div>
               </div>
               <div className="controls-section">
-                <h3>🎮 Controller</h3>
+                <h3>🎮 Xbox Controller</h3>
                 <div className="controls-info">
                   <p>Left Stick / D-Pad - Move</p>
-                  <p>? / R1 / R2 - Shoot</p>
-                  <p>L3 / R3 - Dash</p>
-                  <p>{'⚡'} - Laser Beam ({'L'}3 Rapid)</p>
-                  <p>L2 - Wave Cannon</p>
-                  <p>? - Missile</p>
-                  <p>? - Force Toggle</p>
-                  <p>OPTIONS - Pause</p>
+                  <p>A / RB / RT - Shoot</p>
+                  <p>LS / RS Click - Dash</p>
+                  <p>Y - Laser Beam (Lv3+)</p>
+                  <p>LT (Hold) - Wave Cannon</p>
+                  <p>X - Missile</p>
+                  <p>B - Force Toggle</p>
+                  <p>LB - Polarity Toggle</p>
+                  <p>View - Bomb</p>
+                  <p>Menu - Pause</p>
+                </div>
+              </div>
+              <div className="controls-section">
+                <h3>🎮 PlayStation</h3>
+                <div className="controls-info">
+                  <p>Left Stick / D-Pad - Move</p>
+                  <p>✕ / R1 / R2 - Shoot</p>
+                  <p>L3 / R3 Click - Dash</p>
+                  <p>△ - Laser Beam (Lv3+)</p>
+                  <p>L2 (Hold) - Wave Cannon</p>
+                  <p>□ - Missile</p>
+                  <p>○ - Force Toggle</p>
+                  <p>L1 - Polarity Toggle</p>
+                  <p>Share - Bomb</p>
+                  <p>Options - Pause</p>
                 </div>
               </div>
             </div>
