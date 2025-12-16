@@ -5534,19 +5534,22 @@ const SpaceShooter = () => {
           const centerX = px + pw / 2;
           const centerY = py + ph / 2;
           
-          // Expanding circular waves
-          for (let i = 0; i < 3; i++) {
-            const waveDelay = i * 15;
+          // Save context state
+          ctx.save();
+          
+          // Expanding circular waves - brighter and more visible
+          for (let i = 0; i < 4; i++) {
+            const waveDelay = i * 12;
             if (spawnTimer < 90 - waveDelay) {
               const waveProgress = Math.min(1, (90 - spawnTimer - waveDelay) / 60);
-              const radius = waveProgress * 80;
-              const alpha = (1 - waveProgress) * 0.5;
+              const radius = waveProgress * 100;
+              const alpha = (1 - waveProgress) * 0.8;
               
               ctx.globalAlpha = alpha;
               ctx.strokeStyle = `rgba(0, 255, 255, ${alpha})`;
-              ctx.lineWidth = 3;
+              ctx.lineWidth = 4;
               ctx.shadowColor = '#00ffff';
-              ctx.shadowBlur = 20;
+              ctx.shadowBlur = 30;
               ctx.beginPath();
               ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
               ctx.stroke();
@@ -5554,39 +5557,56 @@ const SpaceShooter = () => {
             }
           }
           
-          // Bright core glow
-          const coreAlpha = spawnTimer > 60 ? (90 - spawnTimer) / 30 : Math.max(0, spawnTimer / 60);
-          const coreSize = 40 + Math.sin(spawnTimer / 10) * 10;
+          // Bright core glow - much more intense
+          const coreAlpha = spawnTimer > 60 ? (90 - spawnTimer) / 30 : Math.max(0.3, spawnTimer / 60);
+          const coreSize = 60 + Math.sin(spawnTimer / 8) * 15;
           const coreGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, coreSize);
-          coreGrad.addColorStop(0, `rgba(255, 255, 255, ${coreAlpha * 0.8})`);
-          coreGrad.addColorStop(0.5, `rgba(0, 255, 255, ${coreAlpha * 0.4})`);
+          coreGrad.addColorStop(0, `rgba(255, 255, 255, ${coreAlpha})`);
+          coreGrad.addColorStop(0.3, `rgba(0, 255, 255, ${coreAlpha * 0.8})`);
+          coreGrad.addColorStop(0.7, `rgba(0, 200, 255, ${coreAlpha * 0.4})`);
           coreGrad.addColorStop(1, 'rgba(0, 255, 255, 0)');
           ctx.globalAlpha = 1;
           ctx.fillStyle = coreGrad;
+          ctx.shadowColor = '#00ffff';
+          ctx.shadowBlur = 40;
           ctx.beginPath();
           ctx.arc(centerX, centerY, coreSize, 0, Math.PI * 2);
           ctx.fill();
+          ctx.shadowBlur = 0;
           
-          // Radiating particles
-          const particleCount = 12;
+          // Energy burst effect at start
+          if (spawnTimer > 75) {
+            const burstAlpha = (90 - spawnTimer) / 15;
+            ctx.globalAlpha = burstAlpha * 0.6;
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 50;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 80 - (90 - spawnTimer) * 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+          
+          // Radiating particles - more and larger
+          const particleCount = 16;
           for (let i = 0; i < particleCount; i++) {
             const angle = (i / particleCount) * Math.PI * 2 + spawnProgress * Math.PI;
-            const distance = spawnProgress * 50;
+            const distance = spawnProgress * 70;
             const particleX = centerX + Math.cos(angle) * distance;
             const particleY = centerY + Math.sin(angle) * distance;
-            const particleAlpha = (1 - spawnProgress) * 0.8;
+            const particleAlpha = (1 - spawnProgress) * 0.9;
             
             ctx.globalAlpha = particleAlpha;
             ctx.fillStyle = i % 2 === 0 ? '#00ffff' : '#ffffff';
             ctx.shadowColor = '#00ffff';
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 15;
             ctx.beginPath();
-            ctx.arc(particleX, particleY, 3, 0, Math.PI * 2);
+            ctx.arc(particleX, particleY, 4, 0, Math.PI * 2);
             ctx.fill();
           }
           
-          ctx.globalAlpha = 1;
-          ctx.shadowBlur = 0;
+          // Reset context
+          ctx.restore();
         }
         
         // Apply tilt transform for dynamic movement feel
@@ -14943,6 +14963,42 @@ const SpaceShooter = () => {
           if (boss.y < boss.targetY) boss.y += 2;
           if (boss.y > boss.targetY) boss.y -= 2;
           
+          // Check player collision with boss
+          const player = playerRef.current;
+          const playerCenterX = player.x + PLAYER_WIDTH / 2;
+          const playerCenterY = player.y + PLAYER_HEIGHT / 2;
+          const bossCenterX = boss.x + boss.width / 2;
+          const bossCenterY = boss.y + boss.height / 2;
+          const dx = playerCenterX - bossCenterX;
+          const dy = playerCenterY - bossCenterY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const collisionRadius = PLAYER_HITBOX_RADIUS + Math.min(boss.width, boss.height) / 3;
+          
+          if (playerInvincibleRef.current <= 0 && distance < collisionRadius) {
+            if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
+              upgradesRef.current.shieldHits--;
+              upgradesRef.current.shieldRechargeTimer = 180;
+              if (upgradesRef.current.shieldHits <= 0) {
+                upgradesRef.current.shield = false;
+              }
+              createShieldImpact(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2);
+            } else {
+              // Player takes damage from boss collision
+              soundSystem.playPlayerDestroy();
+              createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
+              const newLives = livesRef.current - 1;
+              setLives(newLives);
+              livesRef.current = newLives;
+              playerInvincibleRef.current = 120;
+              triggerGamepadVibration(0.7, 1.0, 300);
+              
+              if (newLives <= 0) {
+                triggerGamepadVibration(1.0, 1.0, 500);
+                handleGameOver();
+              }
+            }
+          }
+          
           // Boss shooting
           const currentTime = Date.now();
           
@@ -17391,6 +17447,23 @@ const SpaceShooter = () => {
           const bulletPolarity = bullet.polarity || 'light';
           const playerPolarity = polarityRef.current;
           
+          // Boss bullets ignore polarity system - always damage
+          if (bullet.isBossShot) {
+            if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
+              upgradesRef.current.shieldHits--;
+              upgradesRef.current.shieldRechargeTimer = 180;
+              if (upgradesRef.current.shieldHits <= 0) {
+                upgradesRef.current.shield = false;
+              }
+              createShieldImpact(bullet.x, bullet.y);
+              createExplosion(bullet.x, bullet.y, 'small');
+            } else {
+              hitPlayer = true;
+              createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
+            }
+            return false;
+          }
+          
           // Polarity system: absorb same-polarity bullets!
           if (bulletPolarity === playerPolarity) {
             // Absorb the bullet, charge special attack
@@ -17503,6 +17576,9 @@ const SpaceShooter = () => {
         
         // Give player invincibility frames (about 2 seconds at 60fps)
         playerInvincibleRef.current = 120;
+        
+        // Trigger spawn glow animation on respawn
+        playerSpawnGlowRef.current = 90;
         
         if (newLives <= 0) {
           // Game over
@@ -18489,7 +18565,7 @@ const SpaceShooter = () => {
                     </div>
                   </div>
                   <div className="volume-control">
-                    <label>Å½Âµ Music Volume</label>
+                    <label>🎵 Music Volume</label>
                     <div className="slider-row">
                       <input 
                         type="range" 
@@ -18503,7 +18579,7 @@ const SpaceShooter = () => {
                     </div>
                   </div>
                   <div className="volume-control">
-                    <label>Å  SFX Volume</label>
+                    <label>🔊 SFX Volume</label>
                     <div className="slider-row">
                       <input 
                         type="range" 
@@ -18520,11 +18596,11 @@ const SpaceShooter = () => {
                     className="test-sound-button"
                     onClick={() => soundSystem.playShoot()}
                   >
-                    Å  Test Sound
+                    🔊 Test Sound
                   </button>
                   
                   <div className="performance-section">
-                    <h4 style={{ marginTop: '20px', marginBottom: '10px', color: '#00ffff' }}>? PERFORMANCE</h4>
+                    <h4 style={{ marginTop: '20px', marginBottom: '10px', color: '#00ffff' }}>⚡ PERFORMANCE</h4>
                     <div className="toggle-option">
                       <label className="toggle-label">
                         <span>⚡ Performance Mode</span>
@@ -18539,7 +18615,7 @@ const SpaceShooter = () => {
                     </div>
                     <div className="toggle-option">
                       <label className="toggle-label">
-                        <span>Å  Show FPS</span>
+                        <span>🔊 Show FPS</span>
                         <span className="toggle-desc">Display frames per second counter</span>
                       </label>
                       <button 
@@ -18725,10 +18801,10 @@ const SpaceShooter = () => {
             </div>
             <div className="settings-buttons-row">
               <button onClick={() => setShowSettings(false)} className="back-button">
-                ? BACK
+                ◀ BACK
               </button>
               <button onClick={() => { soundSystem.playUISparkle(); setShowSettings(false); }} className="settings-ok-button">
-                ? OK
+                ✓ OK
               </button>
             </div>
             <p className="start-hint">{'\ud83c\udfae'} Press {'\u274c'} or {'\ud83d\udd19'} to go back</p>
@@ -19378,7 +19454,7 @@ const SpaceShooter = () => {
                   <span className="volume-val">{userSettings.musicVolume}%</span>
                 </div>
                 <div className="volume-row">
-                  <span className="volume-label">Å  SFX</span>
+                  <span className="volume-label">🔊 SFX</span>
                   <input 
                     type="range" 
                     min="0" 
