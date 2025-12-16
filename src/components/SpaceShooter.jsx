@@ -2,7 +2,6 @@
 import './SpaceShooter.css';
 
 // DEBUG: Verify file is loaded
-console.log('🚀 SpaceShooter.jsx LOADED - Version:', new Date().toISOString());
 
 // Helper to resolve public assets (Vite serves public/ folder at root)
 const asset = (path) => `/${path.replace(/^\//, '')}`;
@@ -910,30 +909,30 @@ const DASH_DURATION = 8; // Frames of invincibility during dash
 // Power-up types with rarity system
 const POWERUP_TYPES = {
   // Common power-ups (55% of drops)
-  RAPID_FIRE: { color: '#ffff00', icon: '?', name: 'Rapid Fire', rarity: 'common', glowColor: '#ffaa00', description: 'Increases fire rate' },
+  RAPID_FIRE: { color: '#ffff00', icon: '⚡', name: 'Rapid Fire', rarity: 'common', glowColor: '#ffaa00', description: 'Increases fire rate' },
   MISSILES: { color: '#ff6600', icon: '💥', name: 'Missiles', rarity: 'common', glowColor: '#ff3300', description: 'Homing missiles' },
   SHIELD: { color: '#00ffff', icon: '🛡️', name: 'Shield', rarity: 'common', glowColor: '#0088ff', description: '+3 shield hits' },
-  REPAIR: { color: '#00ff00', icon: '¢ÂÂ¤¯Â¸Â', name: 'Repair', rarity: 'common', glowColor: '#00cc00', description: 'Restore 1 life' },
-  SCORE_BONUS: { color: '#ffd700', icon: 'Â°', name: 'Score Bonus', rarity: 'common', glowColor: '#ffaa00', description: '+500 points' },
+  REPAIR: { color: '#00ff00', icon: '🩹', name: 'Repair', rarity: 'common', glowColor: '#00cc00', description: 'Restore 1 life' },
+  SCORE_BONUS: { color: '#ffd700', icon: '⭐', name: 'Score Bonus', rarity: 'common', glowColor: '#ffaa00', description: '+500 points' },
   // Rare power-ups (25% of drops)
-  FORCE: { color: '#ff00ff', icon: 'Â®', name: 'Force Pod', rarity: 'rare', glowColor: '#aa00ff', description: 'Attach Force Pod' },
-  OPTION: { color: '#00ff88', icon: 'Âµ', name: 'Option', rarity: 'rare', glowColor: '#00aa44', description: 'Add satellite drone' },
+  FORCE: { color: '#ff00ff', icon: '🔮', name: 'Force Pod', rarity: 'rare', glowColor: '#aa00ff', description: 'Attach Force Pod' },
+  OPTION: { color: '#00ff88', icon: '🛸', name: 'Option', rarity: 'rare', glowColor: '#00aa44', description: 'Add satellite drone' },
   SPEED: { color: '#00ffaa', icon: '⚡', name: 'Speed Boost', rarity: 'rare', glowColor: '#00ddff', description: '+25% speed' },
-  PIERCING: { color: '#ff8800', icon: 'Â«', name: 'Piercing', rarity: 'rare', glowColor: '#ff6600', description: 'Bullets pierce enemies' },
-  DOUBLE_SCORE: { color: '#ffff88', icon: '¢Å¯Â¸Â2', name: 'Double Score', rarity: 'rare', glowColor: '#ffee00', description: '2x score for 20s' },
-  RICOCHET: { color: '#88ffff', icon: 'Æ', name: 'Ricochet', rarity: 'rare', glowColor: '#44ddff', description: 'Bullets bounce' },
+  PIERCING: { color: '#ff8800', icon: '«', name: 'Piercing', rarity: 'rare', glowColor: '#ff6600', description: 'Bullets pierce enemies' },
+  DOUBLE_SCORE: { color: '#ffff88', icon: '×2', name: 'Double Score', rarity: 'rare', glowColor: '#ffee00', description: '2x score for 20s' },
+  RICOCHET: { color: '#88ffff', icon: '🔄', name: 'Ricochet', rarity: 'rare', glowColor: '#44ddff', description: 'Bullets bounce' },
   // Legendary power-ups (15% of drops)
-  SPREAD: { color: '#ff0066', icon: '?', name: 'Spread Shot', rarity: 'legendary', glowColor: '#ff0044', description: 'Multi-directional fire' },
+  SPREAD: { color: '#ff0066', icon: '✳️', name: 'Spread Shot', rarity: 'legendary', glowColor: '#ff0044', description: 'Multi-directional fire' },
   MAGNET: { color: '#ffff00', icon: '🧲', name: 'Magnet', rarity: 'legendary', glowColor: '#ffcc00', description: 'Attract power-ups' },
-  MEGA_BOMB: { color: '#ff4400', icon: 'Â£', name: 'Mega Bomb', rarity: 'legendary', glowColor: '#ff2200', description: 'Clear all enemies' },
-  INVINCIBILITY: { color: '#ffffff', icon: '?', name: 'Invincibility', rarity: 'legendary', glowColor: '#ffffaa', description: 'Immune for 8 seconds' },
-  LASER_BEAM: { color: '#ff00aa', icon: 'Â«', name: 'Laser Beam', rarity: 'legendary', glowColor: '#ff0088', description: 'Powerful beam attack' },
+  MEGA_BOMB: { color: '#ff4400', icon: '💣', name: 'Mega Bomb', rarity: 'legendary', glowColor: '#ff2200', description: 'Clear all enemies' },
+  INVINCIBILITY: { color: '#ffffff', icon: '✨', name: 'Invincibility', rarity: 'legendary', glowColor: '#ffffaa', description: 'Immune for 8 seconds' },
+  LASER_BEAM: { color: '#ff00aa', icon: '«', name: 'Laser Beam', rarity: 'legendary', glowColor: '#ff0088', description: 'Powerful beam attack' },
   CHAIN_LIGHTNING: { color: '#00aaff', icon: '⚡', name: 'Chain Lightning', rarity: 'legendary', glowColor: '#0088ff', description: 'Lightning chains enemies' },
   // Ultra power-ups (5% of drops - very rare!)
   BLACK_HOLE: { color: '#4400aa', icon: '⚫', name: 'Black Hole', rarity: 'ultra', glowColor: '#6600ff', description: 'Sucks in all enemies' },
-  TIME_WARP: { color: '#8800ff', icon: '?', name: 'Time Warp', rarity: 'ultra', glowColor: '#aa00ff', description: 'Slow motion for 10s' },
-  CLONE: { color: '#00ffff', icon: 'Â¥', name: 'Clone', rarity: 'ultra', glowColor: '#00ddff', description: 'Shadow clone mimics you' },
-  NUCLEAR: { color: '#ff0000', icon: '¢ËÂ¢¯Â¸Â', name: 'Nuclear', rarity: 'ultra', glowColor: '#ff4400', description: 'Devastating explosion' },
+  TIME_WARP: { color: '#8800ff', icon: '⏰', name: 'Time Warp', rarity: 'ultra', glowColor: '#aa00ff', description: 'Slow motion for 10s' },
+  CLONE: { color: '#00ffff', icon: '👥', name: 'Clone', rarity: 'ultra', glowColor: '#00ddff', description: 'Shadow clone mimics you' },
+  NUCLEAR: { color: '#ff0000', icon: '☢️', name: 'Nuclear', rarity: 'ultra', glowColor: '#ff4400', description: 'Devastating explosion' },
   PHOENIX: { color: '#ff8800', icon: '🔥', name: 'Phoenix', rarity: 'ultra', glowColor: '#ffaa00', description: 'Auto-revive on death' }
 };
 
@@ -4263,7 +4262,6 @@ const SpaceShooter = () => {
     const render = (ctx, timestamp) => {
       // DEBUG: Log render call to verify new code is running
       if (Math.random() < 0.01) { // Log 1% of frames to avoid spam
-        console.log('🎨 RENDER CALLED - Powerups:', powerupsRef.current.length, 'Explosions:', explosionsRef.current.length, 'Timestamp:', timestamp);
       }
       
       // Apply screen shake
@@ -6898,7 +6896,6 @@ const SpaceShooter = () => {
         const isFirst = renderCounter === 0;
         renderCounter++;
         if (isFirst) {
-          console.log('🎨 RENDERING first enemy at x:', enemy.x, 'type:', enemy.type);
         }
         
         ctx.save();
@@ -7981,7 +7978,7 @@ const SpaceShooter = () => {
             ctx.fillStyle = '#aa44ff';
             ctx.font = '6px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('¢Å¡Â ¯Â¸Â', centerX, ey - 5);
+            ctx.fillText('⚠️', centerX, ey - 5);
             ctx.globalAlpha = 1;
           }
           
@@ -8507,7 +8504,7 @@ const SpaceShooter = () => {
           ctx.fillStyle = '#ffd700';
           ctx.font = '10px monospace';
           ctx.textAlign = 'center';
-          ctx.fillText('¢Â¯Â¸Â', centerX, ey - 12);
+          ctx.fillText('⚡', centerX, ey - 12);
           
           // "ELITE" label
           ctx.fillStyle = '#ffd700';
@@ -8551,7 +8548,7 @@ const SpaceShooter = () => {
           ctx.textAlign = 'center';
           ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 8;
-          ctx.fillText('¢Â¯Â¸ÂFROZEN', centerX, ey - 15);
+          ctx.fillText('⚡FROZEN', centerX, ey - 15);
           ctx.shadowBlur = 0;
           ctx.globalAlpha = 1;
         }
@@ -11118,7 +11115,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ff8800';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`¢Å¾Â¡¯Â¸Â PIERCE`, upgradeX, upgradeY);
+        ctx.fillText(`🗡️ PIERCE`, upgradeX, upgradeY);
         ctx.fillStyle = piercingTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${piercingTime}s`, upgradeX + 90, upgradeY);
@@ -11175,7 +11172,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ff00aa';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`Â« LASER`, upgradeX, upgradeY);
+        ctx.fillText(`« LASER`, upgradeX, upgradeY);
         ctx.fillStyle = laserTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${laserTime}s`, upgradeX + 85, upgradeY);
@@ -11232,7 +11229,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`Â¥ CLONE`, upgradeX, upgradeY);
+        ctx.fillText(`👥 CLONE`, upgradeX, upgradeY);
         ctx.fillStyle = cloneTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${cloneTime}s`, upgradeX + 85, upgradeY);
@@ -11790,7 +11787,6 @@ const SpaceShooter = () => {
       if (gameStateRef.current !== 'playing') {
         // Debug: Log when not playing
         if (enemiesRef.current.length > 0) {
-          console.log('❌ NOT UPDATING - Game state:', gameStateRef.current, 'Enemies:', enemiesRef.current.length);
         }
         // Still render but don't update (for menu, paused, etc.)
         render(ctx, timestamp);
@@ -11800,9 +11796,7 @@ const SpaceShooter = () => {
       
       // Debug: Confirm we're updating
       if (enemiesRef.current.length > 0) {
-        console.log('✅ UPDATING GAME - State:', gameStateRef.current, 'Enemies:', enemiesRef.current.length);
       }
-      console.log('📍 After UPDATING GAME log, about to continue...');
 
       // Update challenge mode timers
       const mode = gameModeRef.current;
@@ -11814,7 +11808,6 @@ const SpaceShooter = () => {
           challengeStatsRef.current.timeAttackTime = elapsed;
         }
       }
-      console.log('📍 Before stars update, count:', starsRef.current.length);
 
       // Update stars (parallax background)
       starsRef.current.forEach(star => {
@@ -11824,11 +11817,8 @@ const SpaceShooter = () => {
           star.y = Math.random() * GAME_HEIGHT;
         }
       });
-      console.log('📍 After stars update');
-      console.log('📍 About to log checkpoint check...');
       
       // Update checkpoint transition
-      console.log('📍 Checkpoint check - transition active:', checkpointTransitionRef.current.active);
       const transition = checkpointTransitionRef.current;
       if (transition.active) {
         transition.timer++;
@@ -12020,7 +12010,6 @@ const SpaceShooter = () => {
       // Poll gamepad
       const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
       let gamepad = null;
-      console.log('📍 Execution at line ~12000 (gamepad check)');
       for (let i = 0; i < gamepads.length; i++) {
         if (gamepads[i] && gamepads[i].connected) {
           gamepad = gamepads[i];
@@ -12524,7 +12513,6 @@ const SpaceShooter = () => {
         triggerScreenShake(3, 5);
       }
       
-      console.log('📍 Execution at line ~12500 (player movement)');
       // Apply acceleration based on input (skip if dashing)
       if (inputX !== 0 || inputY !== 0) {
         // Normalize diagonal movement
@@ -12772,7 +12760,6 @@ const SpaceShooter = () => {
         return p.lifetime > 0 && p.size > 0.2;
       });
       
-      console.log('📍 Execution at line ~12750 (particles update)');
       // Update spark particles  
       sparkParticlesRef.current = sparkParticlesRef.current.filter(p => {
         p.prevX = p.x;
@@ -12896,7 +12883,6 @@ const SpaceShooter = () => {
         playerLaser.charge = 0;
       }
       
-      console.log('📍 Execution at line ~12875 (laser update)');
       // Update laser firing
       if (playerLaser.firing) {
         playerLaser.duration--;
@@ -12960,7 +12946,6 @@ const SpaceShooter = () => {
         }
       }
       
-      console.log('📍 Execution at line ~12937 (before shooting)');
       // Normal shooting (X button / Space - TAP TO FIRE, not hold)
       // Only fire when button is newly pressed (not held from previous frame)
       const spacePressed = keysRef.current['Space'];
@@ -12989,7 +12974,6 @@ const SpaceShooter = () => {
         const currentShip = SHIP_DESIGNS[selectedShipRef.current] || SHIP_DESIGNS[0];
         const shipAbility = currentShip.ability || null;
         
-        console.log('📍 Execution at line ~12968 (ship ability calc)');
         // Calculate damage modifier from abilities and weapon level
         let damageMultiplier = weaponData.damage;
         if (shipAbility === 'berserk') {
@@ -13036,7 +13020,6 @@ const SpaceShooter = () => {
           });
         }
         
-        console.log('📍 Execution at line ~13000 (bullet creation)');
         // Spread shot - adds additional diagonal bullets
         if (upgradesRef.current.spreadShot) {
           // Upper diagonal
@@ -13094,7 +13077,6 @@ const SpaceShooter = () => {
       // Update previous key/button states for tap detection
       prevKeysRef.current['Space'] = spacePressed;
       gamepadButtonsRef.current.shoot = gpShoot;
-      console.log('📍 Execution AFTER shooting block, line ~13168');
 
       // Update Force pod position
       if (forceRef.current) {
@@ -13856,7 +13838,6 @@ const SpaceShooter = () => {
         return true;
       });
       
-      console.log('📍 Execution at line ~13834 (after hazards update)');
       // Update gravity wells
       hazards.gravityWells = hazards.gravityWells.filter(well => {
         well.x += well.vx;
@@ -13914,7 +13895,6 @@ const SpaceShooter = () => {
         return well.x > -well.radius * 2;
       });
       
-      console.log('📍 Execution at line ~13898 (after gravity wells)');
       // Update formation bonus display texts
       formationBonusDisplayRef.current = formationBonusDisplayRef.current.filter(bonus => {
         bonus.timer--;
@@ -13922,10 +13902,8 @@ const SpaceShooter = () => {
         return bonus.timer > 0;
       });
       
-      console.log('📍 Execution at line ~13904 (after formation bonus)');
       // Update mini-boss
       if (miniBossRef.current) {
-        console.log('📍 Mini-boss exists, updating...');
         const mb = miniBossRef.current;
         const player = playerRef.current;
         
@@ -13944,7 +13922,6 @@ const SpaceShooter = () => {
           mb.regenSpawnedSnipers = 0;
           mb.regenSpawnedSentinel = false;
           mb.regenSpawnedShielder = false;
-          console.log('📍 Execution at line ~13917 (mini-boss regenerating)');
           // Show floating text
           floatingTextsRef.current.push({
             x: mb.x + mb.width / 2,
@@ -14028,11 +14005,9 @@ const SpaceShooter = () => {
             mb.regenSpawnedSentinel = true;
           }
           
-          console.log('📍 Execution at line ~14000 (mini-boss regen)');
           // Spawn shielder support at 25% timer
           if (!mb.regenSpawnedShielder && mb.regenTimer === Math.floor(mb.regenDuration * 0.25)) {
             const shielderY = 50 + Math.random() * (GAME_HEIGHT - 100);
-            console.log('📍 Execution at line ~14000 (enemy spawning)');
             enemiesRef.current.push({
               x: GAME_WIDTH + 20,
               y: shielderY,
@@ -14204,7 +14179,6 @@ const SpaceShooter = () => {
               
               // === NEW MINI-BOSS ATTACK PATTERNS ===
               case 'snipe': {
-                console.log('📍 Execution at mini-boss snipe attack');
                 // Deadeye: Lock on to player position, then fire precise shot
                 if (!mb.sniperLocked) {
                   // Start locking on
@@ -14533,7 +14507,6 @@ const SpaceShooter = () => {
                 fromCarrier: true
               });
             } else if (dropRoll < 0.45) {
-              console.log('📍 Execution at line ~14500 (enemy spawning logic)');
               // Heavy gunship (15%)
               enemiesRef.current.push({
                 x: dropX,
@@ -14614,10 +14587,8 @@ const SpaceShooter = () => {
         }
       }
 
-      console.log('📍 Execution at line ~14593 (after mini-boss, before boss)');
       
       // === MOVE ENEMY UPDATE HERE TO FIX EXECUTION ISSUE ===
-      console.log('🚀 ENEMY UPDATE (moved before boss)');
       // Update enemies and their shooting
       // currentTime already declared above
       let hitPlayer = false;
@@ -14633,7 +14604,6 @@ const SpaceShooter = () => {
             enemy.spawnInvulnerableTimer--;
             if (enemy.spawnInvulnerableTimer <= 0) {
               enemy.spawnInvulnerable = false;
-              console.log('✅ Enemy spawn invulnerability ENDED:', enemy.type);
             }
           }
           
@@ -14665,10 +14635,8 @@ const SpaceShooter = () => {
         }
       });
       
-      console.log('🔄 After FIRST filter - Enemies remaining:', enemiesRef.current.length);
       
       // SECOND FILTER: Special enemy behaviors and collision detection
-      console.log('⚡ SECOND FILTER - Special behaviors and collisions, enemy count:', enemiesRef.current.length);
       let collisionChecks = 0;
       enemiesRef.current = enemiesRef.current.filter(enemy => {
         try {
@@ -14715,7 +14683,6 @@ const SpaceShooter = () => {
         
         collisionChecks++;
         if (playerInvincibleRef.current <= 0 && distance < collisionRadius) {
-          console.log('💥 PLAYER HIT BY ENEMY:', enemy.type, 'distance:', distance, 'collisionRadius:', collisionRadius);
           createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, enemy.type === 'heavy' ? 'heavy' : 'normal', true);
           
           if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
@@ -14746,10 +14713,8 @@ const SpaceShooter = () => {
       }
     });
     
-      console.log('🔄 After SECOND filter - Collision checks:', collisionChecks, 'Enemies remaining:', enemiesRef.current.length);
       
       // Check bullet-enemy collisions
-      console.log('🎯 BULLET COLLISION CHECK - Enemies:', enemiesRef.current.length, 'Bullets:', bulletsRef.current.length);
       bulletsRef.current = bulletsRef.current.filter(bullet => {
         let bulletHit = false;
         const bulletW = bullet.isWaveCannon ? bullet.size : BULLET_WIDTH;
@@ -14771,7 +14736,6 @@ const SpaceShooter = () => {
           if (collision) {
             // Check spawn invulnerability
             if (enemy.spawnInvulnerable) {
-              console.log('🛡️ Enemy still invulnerable:', enemy.type, 'timer:', enemy.spawnInvulnerableTimer);
               floatingTextsRef.current.push({
                 x: enemy.x + ew / 2,
                 y: enemy.y,
@@ -14788,7 +14752,6 @@ const SpaceShooter = () => {
             
             // Apply damage
             enemy.health -= damage;
-            console.log('💥 DAMAGE APPLIED to', enemy.type, '- damage:', damage, 'health remaining:', enemy.health);
             
             createImpactParticles(bulletX, bulletY, '#ffaa00', 4);
             
@@ -14809,9 +14772,7 @@ const SpaceShooter = () => {
       });
       
       // Update boss
-      console.log('📍 About to check if boss exists...');
       if (bossRef.current) {
-        console.log('📍 Boss exists, updating boss...');
         const boss = bossRef.current;
         
         // Enter screen
@@ -14914,7 +14875,6 @@ const SpaceShooter = () => {
               if (Math.abs(distToPlayer - boss.empRadius) < 30 && upgradesRef.current.shield) {
                 upgradesRef.current.shield = false;
                 upgradesRef.current.shieldHits = 0;
-                console.log('📍 Execution at line ~14700 (boss EMP shield disable)');
                 floatingTextsRef.current.push({
                   x: playerCenterX,
                   y: playerCenterY - 20,
@@ -15017,7 +14977,6 @@ const SpaceShooter = () => {
                 spawnInvulnerable: true,
                 spawnInvulnerableTimer: 300
               });
-              console.log('📍 Execution at line ~14800 (boss regen shielder spawn)');
               floatingTextsRef.current.push({
                 x: boss.x + boss.width / 2,
                 y: boss.y + boss.height + 20,
@@ -15222,7 +15181,6 @@ const SpaceShooter = () => {
             });
           }
           
-          console.log('📍 Execution at line ~15000 (boss cannon shots)');
           // Super boss secondary guns - fire aimed shots from wing turrets (disabled during regen)
           if (boss.isSuperBoss && !isRegenerating && currentTime - boss.lastSecondaryShot > boss.secondaryFireRate) {
             const player = playerRef.current;
@@ -15679,14 +15637,12 @@ const SpaceShooter = () => {
       }
 
       // Update power-ups
-      console.log('🎁 POWERUP UPDATE - Count before:', powerupsRef.current.length);
       let firstPowerupLogged = false;
       powerupsRef.current = powerupsRef.current.filter(powerup => {
         powerup.x -= 1.5; // Drift left slowly
         powerup.bobOffset = (powerup.bobOffset || 0) + 0.1;
         powerup.rotation = (powerup.rotation || 0) + 0.05; // Spin effect
         if (!firstPowerupLogged && powerupsRef.current.length > 0) {
-          console.log('🎁 Powerup sample - x:', powerup.x, 'bobOffset:', powerup.bobOffset, 'rotation:', powerup.rotation);
           firstPowerupLogged = true;
         }
         
@@ -15709,7 +15665,6 @@ const SpaceShooter = () => {
           { x: powerup.x, y: bobY, width: POWERUP_SIZE, height: POWERUP_SIZE }
         );
         if (collisionCheck) {
-          console.log('🎁 POWERUP COLLISION DETECTED!', powerup.type, 'at', powerup.x, bobY);
           const config = POWERUP_TYPES[powerup.type];
           if (!config) return false; // Remove invalid power-ups
           
@@ -16246,7 +16201,6 @@ const SpaceShooter = () => {
                 return false; // Remove bullet
               }
               
-              console.log('📍 Execution at line ~16000 (wave advancement)');
               waveRef.current++;
               setWave(waveRef.current);
               waveKillsRef.current = 0;
@@ -16368,12 +16322,10 @@ const SpaceShooter = () => {
       }
 
       // Update explosions
-      console.log('💥 EXPLOSION UPDATE - Count before:', explosionsRef.current.length);
       let firstExplosionLogged = false;
       explosionsRef.current = explosionsRef.current.filter(explosion => {
         explosion.lifetime--;
         if (!firstExplosionLogged && explosionsRef.current.length > 0) {
-          console.log('💥 Explosion sample - lifetime:', explosion.lifetime, 'isSprite:', explosion.isSprite);
           firstExplosionLogged = true;
         }
         
@@ -16455,7 +16407,6 @@ const SpaceShooter = () => {
           }
         }
         
-        console.log('📍 Execution at line ~16200 (shield fx)');
         // Shield recharge (if below max and recharge timer expired)
         if (upgradesRef.current.shieldRechargeTimer > 0) {
           upgradesRef.current.shieldRechargeTimer--;
@@ -16480,7 +16431,6 @@ const SpaceShooter = () => {
         }
       }
       
-      console.log('📍 Execution at line ~16229 (after boss block, before ship abilities)');
       // === Ship Ability Updates ===
       const currentShipAbility = (SHIP_DESIGNS[selectedShipRef.current] || SHIP_DESIGNS[0]).ability;
       const ability = shipAbilityRef.current;
@@ -16549,7 +16499,6 @@ const SpaceShooter = () => {
       // Second enemy filter moved to run right after first filter (before boss update)
       // This section used to be here but was relocated to line ~14644
 
-      console.log('⚡ ABOUT TO RUN ENEMY FILTER, enemy count:', enemiesRef.current.length);
       let enemyCounter = 0;
       let collisionChecks = 0;
       enemiesRef.current = enemiesRef.current.filter(enemy => {
@@ -16561,7 +16510,6 @@ const SpaceShooter = () => {
         const isFirst = enemyCounter === 0;
         enemyCounter++;
         if (isFirst) {
-          console.log('🔥 FILTER RUNNING - Processing first enemy:', enemy.type, 'x BEFORE:', enemy.x, 'speed:', effectiveSpeed, 'fromBehind:', enemy.fromBehind);
         }
         
         // Update frozen status (from GLACIER ship ability)
@@ -17134,7 +17082,6 @@ const SpaceShooter = () => {
         
         collisionChecks++;
         if (playerInvincibleRef.current <= 0 && distance < collisionRadius) {
-          console.log('💥 PLAYER HIT BY ENEMY:', enemy.type, 'distance:', distance, 'collisionRadius:', collisionRadius);
           createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, enemy.type === 'heavy' ? 'heavy' : 'normal', true);
           
           if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
@@ -17167,7 +17114,6 @@ const SpaceShooter = () => {
       }
     });
     
-      console.log('🔄 After SECOND filter - Collision checks:', collisionChecks, 'Enemies remaining:', enemiesRef.current.length);
 
       // Update enemy bullets
       const bulletSpeedMult = (gameModeRef.current === 'practice' && practiceSettingsRef.current.slowBullets) ? 0.5 : 1;
@@ -17357,7 +17303,6 @@ const SpaceShooter = () => {
       }
 
       // Check bullet-enemy collisions
-      console.log('🎯 BEFORE bullet collision check - Enemies:', enemiesRef.current.length, 'Bullets:', bulletsRef.current.length);
       bulletsRef.current = bulletsRef.current.filter(bullet => {
         let bulletHit = false;
         const bulletW = bullet.isWaveCannon ? bullet.size : BULLET_WIDTH;
@@ -17378,7 +17323,6 @@ const SpaceShooter = () => {
           )) {
             // All enemies have spawn invulnerability - skip damage
             if (enemy.spawnInvulnerable) {
-              console.log('🛡️ Enemy still invulnerable:', enemy.type, 'timer:', enemy.spawnInvulnerableTimer);
               // Show deflect effect
               floatingTextsRef.current.push({
                 x: enemy.x + ew / 2,
@@ -17493,7 +17437,6 @@ const SpaceShooter = () => {
             
             // Apply damage to enemy
             enemy.health -= finalDamage;
-            console.log('💥 DAMAGE APPLIED to', enemy.type, '- damage:', finalDamage, 'health remaining:', enemy.health);
             
             // Create impact particles based on bullet type
             const impactColor = bullet.isLaser ? '#ff00ff' : 
@@ -17947,7 +17890,7 @@ const SpaceShooter = () => {
               </div>
               <div className="splash-hints">
                 <span>🎮 Controller Supported</span>
-                <span>¢ÅÂ¨¯Â¸Â Keyboard Ready</span>
+                <span>⌨️ Keyboard Ready</span>
               </div>
             </div>
             <div className="splash-footer">
@@ -18094,12 +18037,12 @@ const SpaceShooter = () => {
                 </button>
               </div>
               
-              <p className="start-hint">🎮 D-Pad to navigate ¢• ✓ to select ¢• ENTER to start</p>
+              <p className="start-hint">🎮 D-Pad to navigate ↩• ✓ to select ↩• ENTER to start</p>
               
               {/* Decorative bottom */}
               <div className="menu-footer">
                 <span className="version">v1.0</span>
-                <span className="divider">¢•</span>
+                <span className="divider">↩•</span>
                 <span className="credit">R-TYPE INSPIRED</span>
               </div>
             </div>
@@ -18121,11 +18064,11 @@ const SpaceShooter = () => {
                         startGame();
                       }}
                     >
-                      <div className="challenge-icon">¢ËÂ ¯Â¸Â</div>
+                      <div className="challenge-icon">💀</div>
                       <div className="challenge-info">
                         <h3>SURVIVAL MODE</h3>
                         <p>Endless waves with 1 life. How long can you survive?</p>
-                        <span className="challenge-detail">Starts at Wave 5 ¢• No continues</span>
+                        <span className="challenge-detail">Starts at Wave 5 ↩• No continues</span>
                       </div>
                     </button>
                     
@@ -18138,11 +18081,11 @@ const SpaceShooter = () => {
                         startGame();
                       }}
                     >
-                      <div className="challenge-icon">¬</div>
+                      <div className="challenge-icon">⏱️</div>
                       <div className="challenge-info">
                         <h3>BOSS RUSH</h3>
                         <p>Face all bosses back-to-back. No mercy!</p>
-                        <span className="challenge-detail">Bosses only ¢• Limited healing</span>
+                        <span className="challenge-detail">Bosses only ↩• Limited healing</span>
                       </div>
                     </button>
                     
@@ -18155,11 +18098,11 @@ const SpaceShooter = () => {
                         startGame();
                       }}
                     >
-                      <div className="challenge-icon">¢ÂÂ±¯Â¸Â</div>
+                      <div className="challenge-icon">⏱️</div>
                       <div className="challenge-info">
                         <h3>TIME ATTACK</h3>
                         <p>Complete 10 waves as fast as possible!</p>
-                        <span className="challenge-detail">Race against the clock ¢• Leaderboard ready</span>
+                        <span className="challenge-detail">Race against the clock ↩• Leaderboard ready</span>
                       </div>
                     </button>
                   </div>
@@ -18412,7 +18355,7 @@ const SpaceShooter = () => {
               {settingsTab === 'profile' && (
                 <div className="settings-profile">
                   <div className="profile-name-section">
-                    <label>?¯Â¸Â Pilot Name</label>
+                    <label>✏️ Pilot Name</label>
                     <input 
                       type="text" 
                       value={userSettings.playerName}
@@ -18503,15 +18446,15 @@ const SpaceShooter = () => {
               {settingsTab === 'controls' && (
                 <>
                   <div className="controls-section">
-                    <h3>¢ÅÂ¨¯Â¸Â Keyboard</h3>
+                    <h3>⌨️ Keyboard</h3>
                     <div className="controls-info">
-                      <p>¢ Â¢ ¢ ¢  / WASD - Move</p>
+                      <p>↩ Â↩ ↩ ↩  / WASD - Move</p>
                       <p>SPACE - Shoot</p>
                       <p>Q - Dash (while moving)</p>
                       <p>B - Bomb (screen clear)</p>
                       <p>C - Toggle Polarity</p>
                       <p>SHIFT - Wave Cannon</p>
-                      <p>L - Laser Beam (¢°Â¥3 Rapid)</p>
+                      <p>L - Laser Beam (↩°👥3 Rapid)</p>
                       <p>M - Missile</p>
                       <p>F - Force Toggle</p>
                       <p>G - Force Shield (Lv4+)</p>
@@ -18525,7 +18468,7 @@ const SpaceShooter = () => {
                       <p>Left Stick / D-Pad - Move</p>
                       <p>? / R1 / R2 - Shoot</p>
                       <p>L3 / R3 - Dash</p>
-                      <p>¢Â¯Â¸Â - Laser Beam (¢°Â¥3 Rapid)</p>
+                      <p>⚡ - Laser Beam (L3 Rapid)</p>
                       <p>L2 - Wave Cannon</p>
                       <p>? - Missile</p>
                       <p>? - Force Toggle</p>
@@ -18537,7 +18480,7 @@ const SpaceShooter = () => {
                   <div className="powerups-section">
                     <h3>Power-Ups</h3>
                     <div className="powerup-info">
-                      <p>Â« Rapid Fire - Faster shooting (¢°Â¥3 = LASER!)</p>
+                      <p>« Rapid Fire - Faster shooting (↩°👥3 = LASER!)</p>
                       <p>💥 Missiles - Homing missiles</p>
                       <p>{'\ud83d\udee1\ufe0f'} Shield - Block 3 hits (stacks to 9)</p>
                       <p>Âµ Force - Follows movement!</p>
@@ -18978,7 +18921,7 @@ const SpaceShooter = () => {
                 ✓ SELECT SHIP
               </button>
             </div>
-            <p className="start-hint">🎮 ◀ ▶ to browse ¢• ↩ to confirm</p>
+            <p className="start-hint">🎮 ◀ ▶ to browse ↩• ↩ to confirm</p>
           </div>
         )}
         
@@ -19008,7 +18951,7 @@ const SpaceShooter = () => {
                 <span className="btn-icon">🏀</span> MAIN MENU
               </button>
             </div>
-            <p className="start-hint">🎮 D-Pad to navigate ¢• ↩ to select ¢• ESC to resume</p>
+            <p className="start-hint">🎮 D-Pad to navigate ↩• ↩ to select ↩• ESC to resume</p>
           </div>
         )}
         
@@ -19017,13 +18960,13 @@ const SpaceShooter = () => {
             <h2>⚙️ CONTROLS</h2>
             <div className="settings-content">
               <div className="controls-section">
-                <h3>¢ÅÂ¨¯Â¸Â Keyboard</h3>
+                <h3>⌨️ Keyboard</h3>
                 <div className="controls-info">
-                  <p>¢ Â¢ ¢ ¢  / WASD - Move</p>
+                  <p>↩ Â↩ ↩ ↩  / WASD - Move</p>
                   <p>SPACE - Shoot</p>
                   <p>Q - Dash (while moving)</p>
                   <p>SHIFT - Wave Cannon</p>
-                  <p>L - Laser Beam (¢°Â¥3 Rapid)</p>
+                  <p>L - Laser Beam (↩°👥3 Rapid)</p>
                   <p>M - Missile</p>
                   <p>F - Force Toggle</p>
                   <p>ESC - Pause</p>
@@ -19035,7 +18978,7 @@ const SpaceShooter = () => {
                   <p>Left Stick / D-Pad - Move</p>
                   <p>? / R1 / R2 - Shoot</p>
                   <p>L3 / R3 - Dash</p>
-                  <p>{'¢Â¯Â¸Â'} - Laser Beam ({'¢°Â¥'}3 Rapid)</p>
+                  <p>{'⚡'} - Laser Beam ({'L'}3 Rapid)</p>
                   <p>L2 - Wave Cannon</p>
                   <p>? - Missile</p>
                   <p>? - Force Toggle</p>
@@ -19046,7 +18989,7 @@ const SpaceShooter = () => {
             <button onClick={() => setShowPauseControls(false)} className="back-button">
               ? BACK
             </button>
-            <p className="start-hint">🎮 Press ¢ÂÅ or ¢ to go back</p>
+            <p className="start-hint">🎮 Press ↩ÂÅ or ↩ to go back</p>
           </div>
         )}
         
@@ -19150,7 +19093,7 @@ const SpaceShooter = () => {
               
               <p className="checkpoint-hint">Select a zone or continue to random path!</p>
             </div>
-            <p className="start-hint">🎮 D-Pad to navigate ¢• ↩ to select</p>
+            <p className="start-hint">🎮 D-Pad to navigate ↩• ↩ to select</p>
           </div>
         )}
         
@@ -19257,7 +19200,7 @@ const SpaceShooter = () => {
             {showQuitConfirm && (
               <div className="quit-confirm-overlay">
                 <div className="quit-confirm-modal">
-                  <h3>¢Å¡Â ¯Â¸Â QUIT GAME?</h3>
+                  <h3>⚠️ QUIT GAME?</h3>
                   <p>Are you sure you want to quit?</p>
                   <p className="quit-warning">You will return to the main menu.</p>
                   <div className="quit-confirm-buttons">
@@ -19303,7 +19246,7 @@ const SpaceShooter = () => {
                   <div className="victory-story">
                     <div className="story-text">
                       <p className="story-paragraph">
-                        In the year 2387, humanity faced its greatest threat ¢¬ an advanced AI network 
+                        In the year 2387, humanity faced its greatest threat ↩¬ an advanced AI network 
                         known as the Nexus Collective had spread across the galaxy, consuming entire 
                         star systems and enslaving civilizations.
                       </p>
@@ -19320,7 +19263,7 @@ const SpaceShooter = () => {
                       <p className="story-paragraph">
                         In the heart of the Nexus, they destroyed the AI Core, freeing billions and 
                         ending the machine threat forever. The <span className="highlight">Nebula X</span> and 
-                        its crew became legends ¢¬ their names etched in the stars for eternity.
+                        its crew became legends ↩¬ their names etched in the stars for eternity.
                       </p>
                       <p className="story-final">
                         ? <em>They will never be forgotten.</em> ?
@@ -19336,7 +19279,7 @@ const SpaceShooter = () => {
                   </div>
                   
                   <div className="credits-section">
-                    <h3>¢Ë¦ CREDITS ¢Ë¦</h3>
+                    <h3>↩Ë¦ CREDITS ↩Ë¦</h3>
                     <div className="credits-list">
                       <p className="credit-item"><span className="credit-role">Game Design & Development</span><br/>The Nebula X Team</p>
                       <p className="credit-item"><span className="credit-role">Programming</span><br/>React & Canvas 2D</p>
