@@ -18879,22 +18879,49 @@ const SpaceShooter = () => {
                     </div>
                   </div>
                   <div className="controls-section">
-                    <h3>🎮 Controller</h3>
+                    <h3>🎮 Xbox Controller</h3>
                     <div className="controls-info">
-                      <p>Left Stick / D-Pad - Move</p>
-                      <p>? / R1 / R2 - Shoot</p>
-                      <p>L3 / R3 - Dash</p>
-                      <p>⚡ - Laser Beam (L3 Rapid)</p>
-                      <p>L2 - Wave Cannon</p>
-                      <p>? - Missile</p>
-                      <p>? - Force Toggle</p>
-                      <p>L1 / R1 - Polarity Toggle</p>
-                      <p>SHARE - Bomb</p>
-                      <p>OPTIONS - Pause</p>
+                      <p><strong>Movement:</strong></p>
+                      <p>  Left Stick / D-Pad - Move Ship</p>
+                      <p><strong>Combat:</strong></p>
+                      <p>  A / RB / RT - Shoot</p>
+                      <p>  X - Missile</p>
+                      <p>  Y - Laser Beam (Lv3+ Rapid Fire)</p>
+                      <p>  LT (Hold) - Wave Cannon Charge</p>
+                      <p>  LS / RS Click - Dash</p>
+                      <p><strong>Force Pod:</strong></p>
+                      <p>  B - Force Toggle (Front/Back/Free)</p>
+                      <p><strong>Polarity System:</strong></p>
+                      <p>  LB - Toggle Light/Dark</p>
+                      <p>  Right Stick ← → - Quick Toggle</p>
+                      <p><strong>Special:</strong></p>
+                      <p>  View Button - Bomb (Screen Clear)</p>
+                      <p>  Menu Button - Pause Game</p>
+                    </div>
+                  </div>
+                  <div className="controls-section">
+                    <h3>🎮 PlayStation Controller</h3>
+                    <div className="controls-info">
+                      <p><strong>Movement:</strong></p>
+                      <p>  Left Stick / D-Pad - Move Ship</p>
+                      <p><strong>Combat:</strong></p>
+                      <p>  ✕ / R1 / R2 - Shoot</p>
+                      <p>  □ - Missile</p>
+                      <p>  △ - Laser Beam (Lv3+ Rapid Fire)</p>
+                      <p>  L2 (Hold) - Wave Cannon Charge</p>
+                      <p>  L3 / R3 Click - Dash</p>
+                      <p><strong>Force Pod:</strong></p>
+                      <p>  ○ - Force Toggle (Front/Back/Free)</p>
+                      <p><strong>Polarity System:</strong></p>
+                      <p>  L1 - Toggle Light/Dark</p>
+                      <p>  Right Stick ← → - Quick Toggle</p>
+                      <p><strong>Special:</strong></p>
+                      <p>  Share Button - Bomb (Screen Clear)</p>
+                      <p>  Options Button - Pause Game</p>
                     </div>
                   </div>
                   <div className="powerups-section">
-                    <h3>Power-Ups</h3>
+                    <h3>💎 Power-Ups</h3>
                     <div className="powerup-info">
                       <p>« Rapid Fire - Faster shooting (↩°👥3 = LASER!)</p>
                       <p>💥 Missiles - Homing missiles</p>
@@ -19388,24 +19415,45 @@ const SpaceShooter = () => {
                   <p>↩ Â↩ ↩ ↩  / WASD - Move</p>
                   <p>SPACE - Shoot</p>
                   <p>Q - Dash (while moving)</p>
+                  <p>B - Bomb (screen clear)</p>
+                  <p>C - Toggle Polarity</p>
                   <p>SHIFT - Wave Cannon</p>
                   <p>L - Laser Beam (↩°👥3 Rapid)</p>
                   <p>M - Missile</p>
                   <p>F - Force Toggle</p>
+                  <p>G - Force Shield (Lv4+)</p>
+                  <p>[ ] - Speed Setting</p>
                   <p>ESC - Pause</p>
                 </div>
               </div>
               <div className="controls-section">
-                <h3>🎮 Controller</h3>
+                <h3>🎮 Xbox Controller</h3>
                 <div className="controls-info">
                   <p>Left Stick / D-Pad - Move</p>
-                  <p>? / R1 / R2 - Shoot</p>
-                  <p>L3 / R3 - Dash</p>
-                  <p>{'⚡'} - Laser Beam ({'L'}3 Rapid)</p>
-                  <p>L2 - Wave Cannon</p>
-                  <p>? - Missile</p>
-                  <p>? - Force Toggle</p>
-                  <p>OPTIONS - Pause</p>
+                  <p>A / RB / RT - Shoot</p>
+                  <p>LS / RS Click - Dash</p>
+                  <p>Y - Laser Beam (Lv3+)</p>
+                  <p>LT (Hold) - Wave Cannon</p>
+                  <p>X - Missile</p>
+                  <p>B - Force Toggle</p>
+                  <p>LB - Polarity Toggle</p>
+                  <p>View - Bomb</p>
+                  <p>Menu - Pause</p>
+                </div>
+              </div>
+              <div className="controls-section">
+                <h3>🎮 PlayStation</h3>
+                <div className="controls-info">
+                  <p>Left Stick / D-Pad - Move</p>
+                  <p>✕ / R1 / R2 - Shoot</p>
+                  <p>L3 / R3 Click - Dash</p>
+                  <p>△ - Laser Beam (Lv3+)</p>
+                  <p>L2 (Hold) - Wave Cannon</p>
+                  <p>□ - Missile</p>
+                  <p>○ - Force Toggle</p>
+                  <p>L1 - Polarity Toggle</p>
+                  <p>Share - Bomb</p>
+                  <p>Options - Pause</p>
                 </div>
               </div>
             </div>
