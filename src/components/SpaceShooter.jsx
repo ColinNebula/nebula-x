@@ -1497,7 +1497,7 @@ const SpaceShooter = () => {
   ];
   
   const [menuSelection, setMenuSelection] = useState(0); // 0 = Start, 1 = Continue (if save), 2 = Customize, 3 = Controls
-  const [pauseSelection, setPauseSelection] = useState(0); // 0 = Resume, 1 = Controls, 2 = Main Menu
+  const [pauseSelection, setPauseSelection] = useState(0); // 0 = Resume, 1 = Restart, 2 = Controls, 3 = Main Menu
   const [checkpointSelection, setCheckpointSelection] = useState(0); // 0 = Continue, 1 = Save, 2 = Customize, 3 = Quit
   const [checkpointStats, setCheckpointStats] = useState({ wave: 0, score: 0, lives: 0, bonusPoints: 0 });
   const [saveFeedback, setSaveFeedback] = useState(false);
@@ -3415,6 +3415,7 @@ const SpaceShooter = () => {
 
   // Spawn power-up at enemy position
   const spawnPowerup = useCallback((x, y) => {
+    console.log('[SPAWN POWERUP] Called at position:', x, y);
     // Rarity-based spawning with 4 tiers
     const roll = Math.random();
     let selectedType;
@@ -3453,6 +3454,7 @@ const SpaceShooter = () => {
       spawnTime: Date.now(),
       rotation: 0
     });
+    console.log('[SPAWN POWERUP] Created', selectedType, 'Total powerups:', powerupsRef.current.length);
   }, []);
 
   // Create pickup effect (ring burst + particles) - enhanced for rarity
@@ -3528,11 +3530,11 @@ const SpaceShooter = () => {
     }
     
     // Floating text - with rarity indicator
-    const rarityPrefix = isUltra ? '⭐ ULTRA ⭐' : isLegendary ? '⚙' : isRare ? 'Å½' : '';
+    const rarityPrefix = isUltra ? '⭐ ULTRA ⭐' : isLegendary ? '⚙' : isRare ? '✦' : '';
     floatingTextsRef.current.push({
       x,
       y,
-      text: rarityPrefix + config.name,
+      text: rarityPrefix + powerupName,
       color: isUltra ? '#ff00ff' : isLegendary ? '#ffff00' : isRare ? '#00ffff' : color,
       lifetime: isUltra ? 120 : isLegendary ? 90 : 60,
       vy: -2,
@@ -12252,7 +12254,7 @@ const SpaceShooter = () => {
           if ((gamepad.buttons[12]?.pressed && !gamepadButtonsRef.current.menuUp) ||
               (stickUp && !gamepadButtonsRef.current.stickUp)) {
             if (!showPauseControlsRef.current) {
-              setPauseSelection(prev => prev <= 0 ? 2 : prev - 1);
+              setPauseSelection(prev => prev <= 0 ? 3 : prev - 1);
             }
           }
           gamepadButtonsRef.current.menuUp = gamepad.buttons[12]?.pressed || false;
@@ -12262,7 +12264,7 @@ const SpaceShooter = () => {
           if ((gamepad.buttons[13]?.pressed && !gamepadButtonsRef.current.menuDown) ||
               (stickDown && !gamepadButtonsRef.current.stickDown)) {
             if (!showPauseControlsRef.current) {
-              setPauseSelection(prev => prev >= 2 ? 0 : prev + 1);
+              setPauseSelection(prev => prev >= 3 ? 0 : prev + 1);
             }
           }
           gamepadButtonsRef.current.menuDown = gamepad.buttons[13]?.pressed || false;
@@ -12276,8 +12278,12 @@ const SpaceShooter = () => {
               if (pauseSelectionRef.current === 0) {
                 setGameState('playing');
               } else if (pauseSelectionRef.current === 1) {
-                setShowPauseControls(true);
+                startGame();
+                setGameState('playing');
+                setPauseSelection(0);
               } else if (pauseSelectionRef.current === 2) {
+                setShowPauseControls(true);
+              } else if (pauseSelectionRef.current === 3) {
                 setGameState('menu');
                 setShowPauseControls(false);
                 setPauseSelection(0);
@@ -13572,9 +13578,11 @@ const SpaceShooter = () => {
         console.log('[BOSS] Spawning boss! Wave:', waveRef.current, 'Kills:', waveKillsRef.current);
         
         // Create boss
-        const bossTypes = ['normal', 'super', 'mega'];
         const bossType = waveRef.current >= 15 ? 'mega' : waveRef.current >= 10 ? 'super' : 'normal';
+        const isMegaBoss = bossType === 'mega';
+        const isSuperBoss = bossType === 'super' || bossType === 'mega';
         const bossHealth = 100 + (waveRef.current * 50);
+        const bossShield = isSuperBoss ? bossHealth * 0.3 : 0;
         
         bossRef.current = {
           x: GAME_WIDTH + 50,
@@ -13583,21 +13591,40 @@ const SpaceShooter = () => {
           height: BOSS_HEIGHT,
           health: bossHealth,
           maxHealth: bossHealth,
+          shield: bossShield,
+          maxShield: bossShield,
+          shieldRegenDelay: 0,
           points: 1000 + (waveRef.current * 500),
           type: bossType,
+          isSuperBoss: isSuperBoss,
+          isMegaBoss: isMegaBoss,
           entered: false,
           phase: 0,
           phaseTimer: 0,
           targetY: GAME_HEIGHT / 2 - BOSS_HEIGHT / 2,
-          shield: 0,
           invincible: false,
           regenerating: false,
           regenCount: 0,
           maxRegens: 2,
           regenThreshold: 0.3,
           regenDuration: 180,
+          regenCooldown: 0,
+          regenCooldownMax: 300,
           laserCharging: false,
-          laserFiring: false
+          laserFiring: false,
+          laserChargeDuration: 0,
+          laserDuration: 0,
+          lastShot: Date.now(),
+          lastLaser: Date.now(),
+          lastCannonShot: Date.now(),
+          lastSecondaryShot: Date.now(),
+          fireRate: isMegaBoss ? 1200 : isSuperBoss ? 1500 : 2000,
+          cannonFireRate: 2500,
+          secondaryFireRate: 1800,
+          empActive: false,
+          empRadius: 0,
+          lastEMP: Date.now(),
+          regenEMPFired: false
         };
         
         bossActiveRef.current = true;
@@ -13678,6 +13705,16 @@ const SpaceShooter = () => {
         }
         return hasEnemies;
       });
+      
+      // Spawn mini-boss periodically (starts wave 2, once per wave)
+      // Spawns when player has killed 40-60% of enemies needed for boss
+      const miniBossKillThreshold = Math.floor(waveKillsNeededRef.current * 0.5); // 50% progress
+      if (!isBossRush && gracePeriodOver && !bossActiveRef.current && !miniBossRef.current && 
+          !miniBossSpawnedRef.current && waveRef.current >= 2 && 
+          waveKillsRef.current >= miniBossKillThreshold) {
+        spawnMiniBoss();
+        console.log('[MINIBOSS] Spawned at wave', waveRef.current, 'kills:', waveKillsRef.current, '/', waveKillsNeededRef.current);
+      }
       
       // ========== ENVIRONMENTAL HAZARDS ==========
       const hazards = hazardsRef.current;
@@ -14803,9 +14840,13 @@ const SpaceShooter = () => {
             waveKillsRef.current++;
             sessionStatsRef.current.kills++;
             
+            console.log('[ENEMY KILL] Enemy destroyed. Roll for powerup...');
             // Power-up drop chance
             if (Math.random() < POWERUP_DROP_CHANCE) {
+              console.log('[ENEMY KILL] Drop chance success! Spawning powerup.');
               spawnPowerup(enemy.x + ew / 2, enemy.y + eh / 2);
+            } else {
+              console.log('[ENEMY KILL] Drop chance failed (30% chance).');
             }
             return false; // Remove enemy
           }
@@ -15179,8 +15220,11 @@ const SpaceShooter = () => {
             const spreadCount = boss.isSuperBoss ? 7 : (boss.isMegaBoss ? 5 : 3);
             for (let i = -(spreadCount - 1) / 2; i <= (spreadCount - 1) / 2; i++) {
               enemyBulletsRef.current.push({
-                x: boss.x,
+                x: boss.x + boss.width,
                 y: boss.y + boss.height / 2 + i * (boss.isSuperBoss ? 30 : (boss.isMegaBoss ? 25 : 20)),
+                vx: 6,  // Move right toward player
+                vy: 0,
+                aimed: true,
                 isBossShot: true
               });
             }
@@ -15645,8 +15689,9 @@ const SpaceShooter = () => {
               setWave(waveRef.current);
               waveKillsRef.current = 0;
               waveKillsNeededRef.current = 10 + (waveRef.current * 5);
-              waveStartTimeRef.current = performance.now(); // Reset grace period for new wave
+              waveStartTimeRef.current = timestamp; // Use consistent timestamp source
               graceWarningShownRef.current = false; // Reset warning flag
+              console.log('[WAVE COMPLETE] Starting wave', waveRef.current);
               
               // Drop force pod if player doesn't have one
               if (!forceRef.current) {
@@ -15681,7 +15726,7 @@ const SpaceShooter = () => {
       }
 
       // Update power-ups
-      console.log('[DEBUG] Reached power-up update section. Player exists:', !!player, 'Powerups:', powerupsRef.current.length);
+      console.log('[DEBUG] Reached power-up update section. Player exists:', !!player, 'Powerups:', powerupsRef.current.length, 'Boss active:', bossActiveRef.current, 'Checkpoint:', checkpointTransitionRef.current.active);
       // Note: player variable already declared at line 12014
       
       // Clean up any invalid powerups first
@@ -15706,7 +15751,8 @@ const SpaceShooter = () => {
           return false;
         }
         
-        powerup.x -= 1.5; // Drift left slowly
+        // Drift left faster so player can actually catch them
+        powerup.x -= 4; // Increased from 1.5 to 4
         powerup.bobOffset = (powerup.bobOffset || 0) + 0.1;
         powerup.rotation = (powerup.rotation || 0) + 0.05; // Spin effect
         
@@ -15719,16 +15765,17 @@ const SpaceShooter = () => {
           return true; // Keep powerup, don't remove it
         }
         
-        // Magnet attraction - pull power-ups toward player
-        if (upgradesRef.current.magnet && upgradesRef.current.magnetTimer > 0) {
-          const dx = player.x + PLAYER_WIDTH / 2 - powerup.x;
-          const dy = player.y + PLAYER_HEIGHT / 2 - powerup.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 300 && dist > 1) { // Prevent division by zero
-            const pullStrength = 8 * (1 - dist / 300);
-            powerup.x += (dx / dist) * pullStrength;
-            powerup.y += (dy / dist) * pullStrength;
-          }
+        // Always apply strong attraction toward player to make pickup easier
+        const pullDx = player.x + PLAYER_WIDTH / 2 - powerup.x;
+        const pullDy = player.y + PLAYER_HEIGHT / 2 - powerup.y;
+        const pullDist = Math.sqrt(pullDx * pullDx + pullDy * pullDy);
+        
+        if (pullDist < 600 && pullDist > 1) { // Pull from up to 600px away
+          const pullStrength = upgradesRef.current.magnet && upgradesRef.current.magnetTimer > 0 
+            ? 12 * (1 - pullDist / 400)  // Very strong magnet pull
+            : 6 * (1 - pullDist / 600);  // Strong natural pull (increased from 2)
+          powerup.x += (pullDx / pullDist) * pullStrength;
+          powerup.y += (pullDy / pullDist) * pullStrength;
         }
         
         // Circular collision detection (center to center distance)
@@ -19022,16 +19069,23 @@ const SpaceShooter = () => {
                 <span className="btn-icon">▶️</span> RESUME
               </button>
               <button 
-                onClick={() => setShowPauseControls(true)} 
-                className={`settings-button ${pauseSelection === 1 ? 'gamepad-selected' : ''}`}
+                onClick={() => { startGame(); setGameState('playing'); setPauseSelection(0); }} 
+                className={`restart-button ${pauseSelection === 1 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(1)}
+              >
+                <span className="btn-icon">🔄</span> RESTART
+              </button>
+              <button 
+                onClick={() => setShowPauseControls(true)} 
+                className={`settings-button ${pauseSelection === 2 ? 'gamepad-selected' : ''}`}
+                onMouseEnter={() => setPauseSelection(2)}
               >
                 <span className="btn-icon">🎮</span> CONTROLS
               </button>
               <button 
                 onClick={() => { soundSystem.stopMusic(); setGameState('menu'); setShowPauseControls(false); setPauseSelection(0); }} 
-                className={`menu-button ${pauseSelection === 2 ? 'gamepad-selected' : ''}`}
-                onMouseEnter={() => setPauseSelection(2)}
+                className={`menu-button ${pauseSelection === 3 ? 'gamepad-selected' : ''}`}
+                onMouseEnter={() => setPauseSelection(3)}
               >
                 <span className="btn-icon">🏀</span> MAIN MENU
               </button>
