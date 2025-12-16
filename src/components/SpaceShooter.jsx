@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import './SpaceShooter.css';
 
 // DEBUG: Verify file is loaded
@@ -911,28 +911,28 @@ const POWERUP_TYPES = {
   // Common power-ups (55% of drops)
   RAPID_FIRE: { color: '#ffff00', icon: '⚡', name: 'Rapid Fire', rarity: 'common', glowColor: '#ffaa00', description: 'Increases fire rate' },
   MISSILES: { color: '#ff6600', icon: '💥', name: 'Missiles', rarity: 'common', glowColor: '#ff3300', description: 'Homing missiles' },
-  SHIELD: { color: '#00ffff', icon: '🛡️', name: 'Shield', rarity: 'common', glowColor: '#0088ff', description: '+3 shield hits' },
+  SHIELD: { color: '#00ffff', icon: '🛡️', name: 'Shield', rarity: 'common', glowColor: '#0088ff', description: '+3 shield hits' },
   REPAIR: { color: '#00ff00', icon: '🩹', name: 'Repair', rarity: 'common', glowColor: '#00cc00', description: 'Restore 1 life' },
   SCORE_BONUS: { color: '#ffd700', icon: '⭐', name: 'Score Bonus', rarity: 'common', glowColor: '#ffaa00', description: '+500 points' },
   // Rare power-ups (25% of drops)
   FORCE: { color: '#ff00ff', icon: '🔮', name: 'Force Pod', rarity: 'rare', glowColor: '#aa00ff', description: 'Attach Force Pod' },
   OPTION: { color: '#00ff88', icon: '🛸', name: 'Option', rarity: 'rare', glowColor: '#00aa44', description: 'Add satellite drone' },
   SPEED: { color: '#00ffaa', icon: '⚡', name: 'Speed Boost', rarity: 'rare', glowColor: '#00ddff', description: '+25% speed' },
-  PIERCING: { color: '#ff8800', icon: '«', name: 'Piercing', rarity: 'rare', glowColor: '#ff6600', description: 'Bullets pierce enemies' },
+  PIERCING: { color: '#ff8800', icon: '«', name: 'Piercing', rarity: 'rare', glowColor: '#ff6600', description: 'Bullets pierce enemies' },
   DOUBLE_SCORE: { color: '#ffff88', icon: '×2', name: 'Double Score', rarity: 'rare', glowColor: '#ffee00', description: '2x score for 20s' },
   RICOCHET: { color: '#88ffff', icon: '🔄', name: 'Ricochet', rarity: 'rare', glowColor: '#44ddff', description: 'Bullets bounce' },
   // Legendary power-ups (15% of drops)
-  SPREAD: { color: '#ff0066', icon: '✳️', name: 'Spread Shot', rarity: 'legendary', glowColor: '#ff0044', description: 'Multi-directional fire' },
+  SPREAD: { color: '#ff0066', icon: '✳', name: 'Spread Shot', rarity: 'legendary', glowColor: '#ff0044', description: 'Multi-directional fire' },
   MAGNET: { color: '#ffff00', icon: '🧲', name: 'Magnet', rarity: 'legendary', glowColor: '#ffcc00', description: 'Attract power-ups' },
   MEGA_BOMB: { color: '#ff4400', icon: '💣', name: 'Mega Bomb', rarity: 'legendary', glowColor: '#ff2200', description: 'Clear all enemies' },
   INVINCIBILITY: { color: '#ffffff', icon: '✨', name: 'Invincibility', rarity: 'legendary', glowColor: '#ffffaa', description: 'Immune for 8 seconds' },
-  LASER_BEAM: { color: '#ff00aa', icon: '«', name: 'Laser Beam', rarity: 'legendary', glowColor: '#ff0088', description: 'Powerful beam attack' },
+  LASER_BEAM: { color: '#ff00aa', icon: '«', name: 'Laser Beam', rarity: 'legendary', glowColor: '#ff0088', description: 'Powerful beam attack' },
   CHAIN_LIGHTNING: { color: '#00aaff', icon: '⚡', name: 'Chain Lightning', rarity: 'legendary', glowColor: '#0088ff', description: 'Lightning chains enemies' },
   // Ultra power-ups (5% of drops - very rare!)
   BLACK_HOLE: { color: '#4400aa', icon: '⚫', name: 'Black Hole', rarity: 'ultra', glowColor: '#6600ff', description: 'Sucks in all enemies' },
   TIME_WARP: { color: '#8800ff', icon: '⏰', name: 'Time Warp', rarity: 'ultra', glowColor: '#aa00ff', description: 'Slow motion for 10s' },
-  CLONE: { color: '#00ffff', icon: '👥', name: 'Clone', rarity: 'ultra', glowColor: '#00ddff', description: 'Shadow clone mimics you' },
-  NUCLEAR: { color: '#ff0000', icon: '☢️', name: 'Nuclear', rarity: 'ultra', glowColor: '#ff4400', description: 'Devastating explosion' },
+  CLONE: { color: '#00ffff', icon: '👥', name: 'Clone', rarity: 'ultra', glowColor: '#00ddff', description: 'Shadow clone mimics you' },
+  NUCLEAR: { color: '#ff0000', icon: '☢', name: 'Nuclear', rarity: 'ultra', glowColor: '#ff4400', description: 'Devastating explosion' },
   PHOENIX: { color: '#ff8800', icon: '🔥', name: 'Phoenix', rarity: 'ultra', glowColor: '#ffaa00', description: 'Auto-revive on death' }
 };
 
@@ -1543,6 +1543,7 @@ const SpaceShooter = () => {
   const explosionSpriteLoadedRef = useRef(false);
   const pickupEffectsRef = useRef([]);
   const floatingTextsRef = useRef([]);
+  const specialEffectsRef = useRef([]); // Special visual effects
   const muzzleFlashRef = useRef({ active: false, timer: 0, x: 0, y: 0 }); // Muzzle flash effect
   const hitFlashRef = useRef({ active: false, timer: 0 }); // Screen hit flash
   const levelFadeRef = useRef({ active: false, fadeIn: true, alpha: 1, showText: 'campaign' }); // campaign, survival, bossRush, timeAttack
@@ -3527,7 +3528,7 @@ const SpaceShooter = () => {
     }
     
     // Floating text - with rarity indicator
-    const rarityPrefix = isUltra ? '⭐ ULTRA ⭐' : isLegendary ? '⚙' : isRare ? 'Å½' : '';
+    const rarityPrefix = isUltra ? '⭐ ULTRA ⭐' : isLegendary ? '⚙' : isRare ? 'Å½' : '';
     floatingTextsRef.current.push({
       x,
       y,
@@ -4588,11 +4589,13 @@ const SpaceShooter = () => {
             ctx.globalAlpha = 1;
           }
           
+          // Center explosion sprite at explosion position
+          const drawX = explosion.x - destSize / 2;
+          const drawY = explosion.y - destSize / 2;
           ctx.drawImage(
             sprite,
             srcX, srcY, frameWidth, frameHeight,
-            explosion.x - destSize / 2,
-            explosion.y - destSize / 2,
+            drawX, drawY,
             destSize, destSize
           );
           ctx.restore();
@@ -4874,6 +4877,9 @@ const SpaceShooter = () => {
 
       // Draw power-ups with enhanced visuals based on rarity
       powerupsRef.current.forEach(powerup => {
+        // Skip invalid powerups
+        if (!isFinite(powerup.x) || !isFinite(powerup.y)) return;
+        
         // Use elapsed time for smooth animation independent of update loop
         const elapsedTime = (Date.now() - (powerup.spawnTime || Date.now())) / 1000;
         const bobY = powerup.y + Math.sin((powerup.bobOffset || 0) + elapsedTime * 2) * 5;
@@ -11051,7 +11057,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = shieldColor;
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`🛡️ SHIELD`, upgradeX, upgradeY);
+        ctx.fillText(`🛡️ SHIELD`, upgradeX, upgradeY);
         // Shield pips
         for (let i = 0; i < 9; i++) {
           ctx.fillStyle = i < shieldHits ? shieldColor : '#222222';
@@ -11115,7 +11121,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ff8800';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`🗡️ PIERCE`, upgradeX, upgradeY);
+        ctx.fillText(`🗡️ PIERCE`, upgradeX, upgradeY);
         ctx.fillStyle = piercingTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${piercingTime}s`, upgradeX + 90, upgradeY);
@@ -11129,7 +11135,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ffff00';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`ÅÅ¸ 2X SCORE`, upgradeX, upgradeY);
+        ctx.fillText(`ÅÅ¸ 2X SCORE`, upgradeX, upgradeY);
         ctx.fillStyle = scoreTime <= 5 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${scoreTime}s`, upgradeX + 98, upgradeY);
@@ -11143,7 +11149,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(` BOUNCE`, upgradeX, upgradeY);
+        ctx.fillText(` BOUNCE`, upgradeX, upgradeY);
         ctx.fillStyle = ricochetTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${ricochetTime}s`, upgradeX + 90, upgradeY);
@@ -11172,7 +11178,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ff00aa';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`« LASER`, upgradeX, upgradeY);
+        ctx.fillText(`« LASER`, upgradeX, upgradeY);
         ctx.fillStyle = laserTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${laserTime}s`, upgradeX + 85, upgradeY);
@@ -11229,7 +11235,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`👥 CLONE`, upgradeX, upgradeY);
+        ctx.fillText(`👥 CLONE`, upgradeX, upgradeY);
         ctx.fillStyle = cloneTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${cloneTime}s`, upgradeX + 85, upgradeY);
@@ -12911,7 +12917,6 @@ const SpaceShooter = () => {
               setScore(scoreRef.current);
               waveKillsRef.current++;
               sessionStatsRef.current.kills++;
-              checkFormationBonus(enemy);
             }
           }
         });
@@ -13347,15 +13352,10 @@ const SpaceShooter = () => {
                 scoreRef.current = newScore;
                 waveKillsRef.current++;
                 sessionStatsRef.current.kills++;
-                checkFormationBonus(enemy);
                 
                 // Gain power from kills
                 if (forceRef.current) {
                   forceRef.current.power = Math.min(FORCE_MAX_POWER, forceRef.current.power + 5);
-                }
-                
-                if (!bossActiveRef.current && waveKillsRef.current >= waveKillsNeededRef.current) {
-                  spawnBoss();
                 }
                 
                 if (Math.random() < POWERUP_DROP_CHANCE) {
@@ -13567,10 +13567,46 @@ const SpaceShooter = () => {
       const gracePeriodOver = timestamp - waveStartTimeRef.current > WAVE_GRACE_PERIOD;
       const isBossRush = gameModeRef.current === 'bossRush';
       
-      // In Boss Rush mode, spawn boss immediately
-      if (isBossRush && gracePeriodOver && !bossActiveRef.current && !bossRef.current) {
-        spawnBoss(waveRef.current);
+      // Check if we should spawn a boss (enough kills accumulated)
+      if (!bossActiveRef.current && !bossRef.current && waveKillsRef.current >= waveKillsNeededRef.current) {
+        console.log('[BOSS] Spawning boss! Wave:', waveRef.current, 'Kills:', waveKillsRef.current);
+        
+        // Create boss
+        const bossTypes = ['normal', 'super', 'mega'];
+        const bossType = waveRef.current >= 15 ? 'mega' : waveRef.current >= 10 ? 'super' : 'normal';
+        const bossHealth = 100 + (waveRef.current * 50);
+        
+        bossRef.current = {
+          x: GAME_WIDTH + 50,
+          y: GAME_HEIGHT / 2 - BOSS_HEIGHT / 2,
+          width: BOSS_WIDTH,
+          height: BOSS_HEIGHT,
+          health: bossHealth,
+          maxHealth: bossHealth,
+          points: 1000 + (waveRef.current * 500),
+          type: bossType,
+          entered: false,
+          phase: 0,
+          phaseTimer: 0,
+          targetY: GAME_HEIGHT / 2 - BOSS_HEIGHT / 2,
+          shield: 0,
+          invincible: false,
+          regenerating: false,
+          regenCount: 0,
+          maxRegens: 2,
+          regenThreshold: 0.3,
+          regenDuration: 180,
+          laserCharging: false,
+          laserFiring: false
+        };
+        
+        bossActiveRef.current = true;
+        setBossActive(true);
+        soundSystem.playBossWarning();
       }
+      
+      // In Boss Rush mode, spawn boss immediately
+      // Boss spawning handled by game loop based on kill count
       
       // Show "DANGER INCOMING" warning when grace period ends
       if (gracePeriodOver && !graceWarningShownRef.current && !bossActiveRef.current && !isBossRush) {
@@ -14591,6 +14627,7 @@ const SpaceShooter = () => {
       // === MOVE ENEMY UPDATE HERE TO FIX EXECUTION ISSUE ===
       // Update enemies and their shooting
       // currentTime already declared above
+      // Note: player variable already declared above at line 12014
       let hitPlayer = false;
       const timeWarpModifier = upgradesRef.current.timeWarp ? 0.3 : 1.0;
       
@@ -14763,6 +14800,13 @@ const SpaceShooter = () => {
             createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, 'normal', true);
             scoreRef.current += enemy.points || 10;
             setScore(scoreRef.current);
+            waveKillsRef.current++;
+            sessionStatsRef.current.kills++;
+            
+            // Power-up drop chance
+            if (Math.random() < POWERUP_DROP_CHANCE) {
+              spawnPowerup(enemy.x + ew / 2, enemy.y + eh / 2);
+            }
             return false; // Remove enemy
           }
           return true; // No hit
@@ -15637,13 +15681,42 @@ const SpaceShooter = () => {
       }
 
       // Update power-ups
-      let firstPowerupLogged = false;
+      console.log('[DEBUG] Reached power-up update section. Player exists:', !!player, 'Powerups:', powerupsRef.current.length);
+      // Note: player variable already declared at line 12014
+      
+      // Clean up any invalid powerups first
+      const beforeCount = powerupsRef.current.length;
+      powerupsRef.current = powerupsRef.current.filter(p => isFinite(p.x) && isFinite(p.y) && p.type);
+      const afterCount = powerupsRef.current.length;
+      if (beforeCount !== afterCount) {
+        console.log('[POWERUP CLEANUP] Removed', beforeCount - afterCount, 'invalid powerups');
+      }
+      
+      // Debug: Check player and powerup state
+      if (powerupsRef.current.length > 0) {
+        console.log('[POWERUP UPDATE] Player:', {x: player?.x, y: player?.y, valid: !!(player && player.x)}, 'Powerups:', powerupsRef.current.length);
+      }
+      
+      let powerupProcessCount = 0;
       powerupsRef.current = powerupsRef.current.filter(powerup => {
+        powerupProcessCount++;
+        // Remove invalid power-ups
+        if (!isFinite(powerup.x) || !isFinite(powerup.y)) {
+          console.log('[POWERUP] Removing invalid powerup:', powerup);
+          return false;
+        }
+        
         powerup.x -= 1.5; // Drift left slowly
         powerup.bobOffset = (powerup.bobOffset || 0) + 0.1;
         powerup.rotation = (powerup.rotation || 0) + 0.05; // Spin effect
-        if (!firstPowerupLogged && powerupsRef.current.length > 0) {
-          firstPowerupLogged = true;
+        
+        // Check collision with player using circular distance (more reliable)
+        const bobY = powerup.y + Math.sin(powerup.bobOffset || 0) * 5;
+        
+        // Guard against undefined player
+        if (!player || !isFinite(player.x) || !isFinite(player.y)) {
+          console.warn('[POWERUP] Player position invalid:', player);
+          return true; // Keep powerup, don't remove it
         }
         
         // Magnet attraction - pull power-ups toward player
@@ -15658,30 +15731,56 @@ const SpaceShooter = () => {
           }
         }
         
-        // Check collision with player
-        const bobY = powerup.y + Math.sin(powerup.bobOffset || 0) * 5;
-        const collisionCheck = checkCollision(
-          { x: player.x, y: player.y, width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
-          { x: powerup.x, y: bobY, width: POWERUP_SIZE, height: POWERUP_SIZE }
-        );
+        // Circular collision detection (center to center distance)
+        const playerCenterX = player.x + PLAYER_WIDTH / 2;
+        const playerCenterY = player.y + PLAYER_HEIGHT / 2;
+        const powerupCenterX = powerup.x + POWERUP_SIZE / 2;
+        const powerupCenterY = bobY + POWERUP_SIZE / 2;
+        
+        const dx = playerCenterX - powerupCenterX;
+        const dy = playerCenterY - powerupCenterY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const pickupRadius = (PLAYER_WIDTH / 2) + (POWERUP_SIZE / 2) + 20; // Extra 20px for easier pickup
+        
+        const collisionCheck = distance < pickupRadius;
+        
+        // Debug logging for collision detection
+        if (powerupsRef.current.length > 0 && powerupsRef.current.indexOf(powerup) === 0) {
+          console.log('[COLLISION] Distance:', distance.toFixed(1), 'Required:', pickupRadius, 'Hit:', collisionCheck);
+        }
+        
         if (collisionCheck) {
+          console.log('[POWERUP PICKED UP]', powerup.type);
           const config = POWERUP_TYPES[powerup.type];
-          if (!config) return false; // Remove invalid power-ups
+          if (!config) {
+            console.warn('[POWERUP] Invalid config for type:', powerup.type);
+            return false; // Remove invalid power-ups
+          }
           
           // Play power-up sound based on rarity
-          soundSystem.playPowerup(config.rarity);
+          try {
+            soundSystem.playPowerup(config.rarity);
+          } catch (e) {
+            console.warn('[POWERUP] Sound error:', e);
+          }
           
           // Create enhanced pickup effect based on rarity
-          createPickupEffect(
-            powerup.x + POWERUP_SIZE / 2,
-            bobY + POWERUP_SIZE / 2,
-            config.color,
-            config.name,
-            config.rarity
-          );
+          try {
+            createPickupEffect(
+              powerup.x + POWERUP_SIZE / 2,
+              bobY + POWERUP_SIZE / 2,
+              config.color,
+              config.name,
+              config.rarity
+            );
+          } catch (e) {
+            console.warn('[POWERUP] Effect error:', e);
+          }
           
           // Track powerup collection for achievements
           sessionStatsRef.current.powerups++;
+          
+          console.log('[POWERUP] Applying effect for', powerup.type);
           
           // Apply power-up
           switch (powerup.type) {
@@ -16003,6 +16102,10 @@ const SpaceShooter = () => {
         
         return powerup.x > -POWERUP_SIZE;
       });
+      
+      if (powerupProcessCount > 0) {
+        console.log('[POWERUP FILTER] Processed', powerupProcessCount, 'powerups, remaining:', powerupsRef.current.length);
+      }
 
       // Force pod collision with enemies (damages them!)
       if (forceRef.current) {
@@ -16020,12 +16123,6 @@ const SpaceShooter = () => {
             scoreRef.current = newScore;
             waveKillsRef.current++;
             sessionStatsRef.current.kills++;
-            checkFormationBonus(enemy);
-            
-            // Check for boss spawn
-            if (!bossActiveRef.current && waveKillsRef.current >= waveKillsNeededRef.current) {
-              spawnBoss();
-            }
             
             if (Math.random() < POWERUP_DROP_CHANCE) {
               spawnPowerup(enemy.x, enemy.y);
@@ -16071,11 +16168,6 @@ const SpaceShooter = () => {
               scoreRef.current = newScore;
               waveKillsRef.current++;
               sessionStatsRef.current.kills++;
-              checkFormationBonus(enemy);
-              
-              if (!bossActiveRef.current && waveKillsRef.current >= waveKillsNeededRef.current) {
-                spawnBoss();
-              }
               
               if (Math.random() < POWERUP_DROP_CHANCE) {
                 spawnPowerup(enemy.x, enemy.y);
@@ -17685,13 +17777,6 @@ const SpaceShooter = () => {
               });
             }
             
-            checkFormationBonus(enemy);
-            
-            // Check for boss spawn
-            if (!bossActiveRef.current && waveKillsRef.current >= waveKillsNeededRef.current) {
-              spawnBoss();
-            }
-            
             // Create big fiery missile explosion - keep particle effect for missiles
             createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, 'missile', false);
             
@@ -17894,7 +17979,7 @@ const SpaceShooter = () => {
               </div>
             </div>
             <div className="splash-footer">
-              <span>Â© 2024 NEBULA X</span>
+              <span>Â© 2024 NEBULA X</span>
               <span>R-TYPE INSPIRED</span>
             </div>
           </div>
@@ -18037,12 +18122,12 @@ const SpaceShooter = () => {
                 </button>
               </div>
               
-              <p className="start-hint">🎮 D-Pad to navigate ↩• ✓ to select ↩• ENTER to start</p>
+              <p className="start-hint">🎮 D-Pad to navigate ↩• ✓ to select ↩• ENTER to start</p>
               
               {/* Decorative bottom */}
               <div className="menu-footer">
                 <span className="version">v1.0</span>
-                <span className="divider">↩•</span>
+                <span className="divider">↩•</span>
                 <span className="credit">R-TYPE INSPIRED</span>
               </div>
             </div>
@@ -18068,7 +18153,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>SURVIVAL MODE</h3>
                         <p>Endless waves with 1 life. How long can you survive?</p>
-                        <span className="challenge-detail">Starts at Wave 5 ↩• No continues</span>
+                        <span className="challenge-detail">Starts at Wave 5 ↩• No continues</span>
                       </div>
                     </button>
                     
@@ -18085,7 +18170,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>BOSS RUSH</h3>
                         <p>Face all bosses back-to-back. No mercy!</p>
-                        <span className="challenge-detail">Bosses only ↩• Limited healing</span>
+                        <span className="challenge-detail">Bosses only ↩• Limited healing</span>
                       </div>
                     </button>
                     
@@ -18102,7 +18187,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>TIME ATTACK</h3>
                         <p>Complete 10 waves as fast as possible!</p>
-                        <span className="challenge-detail">Race against the clock ↩• Leaderboard ready</span>
+                        <span className="challenge-detail">Race against the clock ↩• Leaderboard ready</span>
                       </div>
                     </button>
                   </div>
@@ -18246,13 +18331,13 @@ const SpaceShooter = () => {
                 className={`settings-tab ${settingsTab === 'audio' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('audio')}
               >
-                Å  Audio
+                Å  Audio
               </button>
               <button 
                 className={`settings-tab ${settingsTab === 'profile' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('profile')}
               >
-                Â¤ Profile
+                Â¤ Profile
               </button>
               <button 
                 className={`settings-tab ${settingsTab === 'controls' ? 'active' : ''}`}
@@ -18273,7 +18358,7 @@ const SpaceShooter = () => {
               {settingsTab === 'audio' && (
                 <div className="settings-audio">
                   <div className="volume-control">
-                    <label>Å  Master Volume</label>
+                    <label>Å  Master Volume</label>
                     <div className="slider-row">
                       <input 
                         type="range" 
@@ -18301,7 +18386,7 @@ const SpaceShooter = () => {
                     </div>
                   </div>
                   <div className="volume-control">
-                    <label>Å  SFX Volume</label>
+                    <label>Å  SFX Volume</label>
                     <div className="slider-row">
                       <input 
                         type="range" 
@@ -18318,7 +18403,7 @@ const SpaceShooter = () => {
                     className="test-sound-button"
                     onClick={() => soundSystem.playShoot()}
                   >
-                    Å  Test Sound
+                    Å  Test Sound
                   </button>
                   
                   <div className="performance-section">
@@ -18337,7 +18422,7 @@ const SpaceShooter = () => {
                     </div>
                     <div className="toggle-option">
                       <label className="toggle-label">
-                        <span>Å  Show FPS</span>
+                        <span>Å  Show FPS</span>
                         <span className="toggle-desc">Display frames per second counter</span>
                       </label>
                       <button 
@@ -18448,13 +18533,13 @@ const SpaceShooter = () => {
                   <div className="controls-section">
                     <h3>⌨️ Keyboard</h3>
                     <div className="controls-info">
-                      <p>↩ Â↩ ↩ ↩  / WASD - Move</p>
+                      <p>↩ Â↩ ↩ ↩  / WASD - Move</p>
                       <p>SPACE - Shoot</p>
                       <p>Q - Dash (while moving)</p>
                       <p>B - Bomb (screen clear)</p>
                       <p>C - Toggle Polarity</p>
                       <p>SHIFT - Wave Cannon</p>
-                      <p>L - Laser Beam (↩°👥3 Rapid)</p>
+                      <p>L - Laser Beam (↩°👥3 Rapid)</p>
                       <p>M - Missile</p>
                       <p>F - Force Toggle</p>
                       <p>G - Force Shield (Lv4+)</p>
@@ -18480,10 +18565,10 @@ const SpaceShooter = () => {
                   <div className="powerups-section">
                     <h3>Power-Ups</h3>
                     <div className="powerup-info">
-                      <p>« Rapid Fire - Faster shooting (↩°👥3 = LASER!)</p>
+                      <p>« Rapid Fire - Faster shooting (↩°👥3 = LASER!)</p>
                       <p>💥 Missiles - Homing missiles</p>
                       <p>{'\ud83d\udee1\ufe0f'} Shield - Block 3 hits (stacks to 9)</p>
-                      <p>Âµ Force - Follows movement!</p>
+                      <p>Âµ Force - Follows movement!</p>
                     </div>
                   </div>
                 </>
@@ -18504,11 +18589,11 @@ const SpaceShooter = () => {
                           className={`achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`}
                         >
                           <div className="achievement-card-icon">
-                            {isUnlocked ? '🏆' : ''}
+                            {isUnlocked ? '🏆' : ''}
                           </div>
                           <div className="achievement-card-info">
                             <div className="achievement-card-name">
-                              {isUnlocked ? achievement.name : ''}
+                              {isUnlocked ? achievement.name : ''}
                             </div>
                             <div className="achievement-card-desc">
                               {isUnlocked ? achievement.description : 'Keep playing to unlock!'}
@@ -18807,7 +18892,7 @@ const SpaceShooter = () => {
                     </div>
                   </div>
                   <div className="stat-row">
-                    <span className="stat-label">{'🛡️'} ARMOR</span>
+                    <span className="stat-label">{'🛡️'} ARMOR</span>
                     <div className="stat-bar-container">
                       <div className="stat-bar" style={{ width: `${SHIP_DESIGNS[selectedShip].stats.defense * 20}%`, backgroundColor: '#44ff44' }}></div>
                     </div>
@@ -18844,7 +18929,7 @@ const SpaceShooter = () => {
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">✈️ WINGS</span>
+                <span className="part-label">✈️ WINGS</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
@@ -18861,7 +18946,7 @@ const SpaceShooter = () => {
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">{'🛡️'} SHIELD</span>
+                <span className="part-label">{'🛡️'} SHIELD</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
@@ -18921,7 +19006,7 @@ const SpaceShooter = () => {
                 ✓ SELECT SHIP
               </button>
             </div>
-            <p className="start-hint">🎮 ◀ ▶ to browse ↩• ↩ to confirm</p>
+            <p className="start-hint">🎮 ◀ ▶ to browse ↩• ↩ to confirm</p>
           </div>
         )}
         
@@ -18951,7 +19036,7 @@ const SpaceShooter = () => {
                 <span className="btn-icon">🏀</span> MAIN MENU
               </button>
             </div>
-            <p className="start-hint">🎮 D-Pad to navigate ↩• ↩ to select ↩• ESC to resume</p>
+            <p className="start-hint">🎮 D-Pad to navigate ↩• ↩ to select ↩• ESC to resume</p>
           </div>
         )}
         
@@ -18962,11 +19047,11 @@ const SpaceShooter = () => {
               <div className="controls-section">
                 <h3>⌨️ Keyboard</h3>
                 <div className="controls-info">
-                  <p>↩ Â↩ ↩ ↩  / WASD - Move</p>
+                  <p>↩ Â↩ ↩ ↩  / WASD - Move</p>
                   <p>SPACE - Shoot</p>
                   <p>Q - Dash (while moving)</p>
                   <p>SHIFT - Wave Cannon</p>
-                  <p>L - Laser Beam (↩°👥3 Rapid)</p>
+                  <p>L - Laser Beam (↩°👥3 Rapid)</p>
                   <p>M - Missile</p>
                   <p>F - Force Toggle</p>
                   <p>ESC - Pause</p>
@@ -18989,13 +19074,13 @@ const SpaceShooter = () => {
             <button onClick={() => setShowPauseControls(false)} className="back-button">
               ? BACK
             </button>
-            <p className="start-hint">🎮 Press ↩ÂÅ or ↩ to go back</p>
+            <p className="start-hint">🎮 Press ↩ÂÅ or ↩ to go back</p>
           </div>
         )}
         
         {gameState === 'checkpoint' && !showCustomize && (
           <div className="overlay checkpoint-overlay">
-            <h2>ÂÂ CHECKPOINT REACHED</h2>
+            <h2>ÂÂ CHECKPOINT REACHED</h2>
             <div className="checkpoint-content">
               <div className="checkpoint-wave">
                 <span className="checkpoint-label">MISSION</span>
@@ -19009,11 +19094,11 @@ const SpaceShooter = () => {
                   <span>{(checkpointStats.score - checkpointStats.bonusPoints).toLocaleString()}</span>
                 </div>
                 <div className="tally-row bonus">
-                  <span>Lives Bonus ({checkpointStats.lives}  500):</span>
+                  <span>Lives Bonus ({checkpointStats.lives}  500):</span>
                   <span>+{(checkpointStats.lives * 500).toLocaleString()}</span>
                 </div>
                 <div className="tally-row bonus">
-                  <span>Wave Bonus ({checkpointStats.wave}  200):</span>
+                  <span>Wave Bonus ({checkpointStats.wave}  200):</span>
                   <span>+{(checkpointStats.wave * 200).toLocaleString()}</span>
                 </div>
                 <div className="tally-divider"></div>
@@ -19073,7 +19158,7 @@ const SpaceShooter = () => {
                   className={`save-button ${checkpointSelection === 1 ? 'gamepad-selected' : ''} ${saveFeedback ? 'save-success' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(1)}
                 >
-                  <span className="btn-icon">{saveFeedback ? '✓' : 'Â¾'}</span> {saveFeedback ? 'SAVED!' : 'SAVE PROGRESS'}
+                  <span className="btn-icon">{saveFeedback ? '✓' : 'Â¾'}</span> {saveFeedback ? 'SAVED!' : 'SAVE PROGRESS'}
                 </button>
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowCustomize(true); }}
@@ -19093,7 +19178,7 @@ const SpaceShooter = () => {
               
               <p className="checkpoint-hint">Select a zone or continue to random path!</p>
             </div>
-            <p className="start-hint">🎮 D-Pad to navigate ↩• ↩ to select</p>
+            <p className="start-hint">🎮 D-Pad to navigate ↩• ↩ to select</p>
           </div>
         )}
         
@@ -19145,7 +19230,7 @@ const SpaceShooter = () => {
               {/* Audio Quick Controls */}
               <div className="audio-quick-controls">
                 <div className="volume-row">
-                  <span className="volume-label">Å  Master</span>
+                  <span className="volume-label">Å  Master</span>
                   <input 
                     type="range" 
                     min="0" 
@@ -19169,7 +19254,7 @@ const SpaceShooter = () => {
                   <span className="volume-val">{userSettings.musicVolume}%</span>
                 </div>
                 <div className="volume-row">
-                  <span className="volume-label">Å  SFX</span>
+                  <span className="volume-label">Å  SFX</span>
                   <input 
                     type="range" 
                     min="0" 
@@ -19246,7 +19331,7 @@ const SpaceShooter = () => {
                   <div className="victory-story">
                     <div className="story-text">
                       <p className="story-paragraph">
-                        In the year 2387, humanity faced its greatest threat ↩¬ an advanced AI network 
+                        In the year 2387, humanity faced its greatest threat ↩¬ an advanced AI network 
                         known as the Nexus Collective had spread across the galaxy, consuming entire 
                         star systems and enslaving civilizations.
                       </p>
@@ -19263,7 +19348,7 @@ const SpaceShooter = () => {
                       <p className="story-paragraph">
                         In the heart of the Nexus, they destroyed the AI Core, freeing billions and 
                         ending the machine threat forever. The <span className="highlight">Nebula X</span> and 
-                        its crew became legends ↩¬ their names etched in the stars for eternity.
+                        its crew became legends ↩¬ their names etched in the stars for eternity.
                       </p>
                       <p className="story-final">
                         ? <em>They will never be forgotten.</em> ?
@@ -19279,7 +19364,7 @@ const SpaceShooter = () => {
                   </div>
                   
                   <div className="credits-section">
-                    <h3>↩Ë¦ CREDITS ↩Ë¦</h3>
+                    <h3>↩Ë¦ CREDITS ↩Ë¦</h3>
                     <div className="credits-list">
                       <p className="credit-item"><span className="credit-role">Game Design & Development</span><br/>The Nebula X Team</p>
                       <p className="credit-item"><span className="credit-role">Programming</span><br/>React & Canvas 2D</p>
@@ -19316,7 +19401,7 @@ const SpaceShooter = () => {
               ) : gameMode === 'bossRush' ? (
                 <>
                   <div className="victory-title boss-rush-title">
-                    <h1>¬ BOSS SLAYER ¬</h1>
+                    <h1>¬ BOSS SLAYER ¬</h1>
                     <h2>ALL BOSSES DEFEATED!</h2>
                   </div>
                   
