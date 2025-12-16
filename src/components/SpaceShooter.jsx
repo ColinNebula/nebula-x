@@ -2045,6 +2045,7 @@ const SpaceShooter = () => {
   
   // Player invincibility timer (frames)
   const playerInvincibleRef = useRef(0);
+  const playerSpawnGlowRef = useRef(0); // Spawn animation glow timer
   
   // Shooting cooldown
   const lastShotRef = useRef(0);
@@ -2664,6 +2665,7 @@ const SpaceShooter = () => {
     soundSystem.startMusic();
     
     playerRef.current = { x: 50, y: GAME_HEIGHT / 2 - PLAYER_HEIGHT / 2, vx: 0, vy: 0, tilt: 0 };
+    playerSpawnGlowRef.current = 90; // 1.5 second spawn glow animation
     
     // Play ship spawn sound
     try {
@@ -5524,6 +5526,68 @@ const SpaceShooter = () => {
         const py = player.y;
         const pw = PLAYER_WIDTH;
         const ph = PLAYER_HEIGHT;
+        
+        // Spawn glow animation - expanding cyan/white glow with particles
+        if (playerSpawnGlowRef.current > 0) {
+          const spawnTimer = playerSpawnGlowRef.current;
+          const spawnProgress = 1 - (spawnTimer / 90); // 0 to 1
+          const centerX = px + pw / 2;
+          const centerY = py + ph / 2;
+          
+          // Expanding circular waves
+          for (let i = 0; i < 3; i++) {
+            const waveDelay = i * 15;
+            if (spawnTimer < 90 - waveDelay) {
+              const waveProgress = Math.min(1, (90 - spawnTimer - waveDelay) / 60);
+              const radius = waveProgress * 80;
+              const alpha = (1 - waveProgress) * 0.5;
+              
+              ctx.globalAlpha = alpha;
+              ctx.strokeStyle = `rgba(0, 255, 255, ${alpha})`;
+              ctx.lineWidth = 3;
+              ctx.shadowColor = '#00ffff';
+              ctx.shadowBlur = 20;
+              ctx.beginPath();
+              ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.shadowBlur = 0;
+            }
+          }
+          
+          // Bright core glow
+          const coreAlpha = spawnTimer > 60 ? (90 - spawnTimer) / 30 : Math.max(0, spawnTimer / 60);
+          const coreSize = 40 + Math.sin(spawnTimer / 10) * 10;
+          const coreGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, coreSize);
+          coreGrad.addColorStop(0, `rgba(255, 255, 255, ${coreAlpha * 0.8})`);
+          coreGrad.addColorStop(0.5, `rgba(0, 255, 255, ${coreAlpha * 0.4})`);
+          coreGrad.addColorStop(1, 'rgba(0, 255, 255, 0)');
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = coreGrad;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, coreSize, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Radiating particles
+          const particleCount = 12;
+          for (let i = 0; i < particleCount; i++) {
+            const angle = (i / particleCount) * Math.PI * 2 + spawnProgress * Math.PI;
+            const distance = spawnProgress * 50;
+            const particleX = centerX + Math.cos(angle) * distance;
+            const particleY = centerY + Math.sin(angle) * distance;
+            const particleAlpha = (1 - spawnProgress) * 0.8;
+            
+            ctx.globalAlpha = particleAlpha;
+            ctx.fillStyle = i % 2 === 0 ? '#00ffff' : '#ffffff';
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(particleX, particleY, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          
+          ctx.globalAlpha = 1;
+          ctx.shadowBlur = 0;
+        }
         
         // Apply tilt transform for dynamic movement feel
         ctx.save();
@@ -15220,15 +15284,16 @@ const SpaceShooter = () => {
             const spreadCount = boss.isSuperBoss ? 7 : (boss.isMegaBoss ? 5 : 3);
             for (let i = -(spreadCount - 1) / 2; i <= (spreadCount - 1) / 2; i++) {
               enemyBulletsRef.current.push({
-                x: boss.x + boss.width,
+                x: boss.x,
                 y: boss.y + boss.height / 2 + i * (boss.isSuperBoss ? 30 : (boss.isMegaBoss ? 25 : 20)),
-                vx: 6,  // Move right toward player
+                vx: -6,  // Move left toward player
                 vy: 0,
                 aimed: true,
                 isBossShot: true
               });
             }
             boss.lastShot = currentTime;
+            console.log('[BOSS SHOOT] Fired', spreadCount, 'bullets. Boss:', boss.type, 'FireRate:', boss.fireRate);
           }
           
           // Mega boss cannons - fire large aimed shots from wing weapons (reduced during regen)
@@ -16508,6 +16573,11 @@ const SpaceShooter = () => {
       if (playerInvincibleRef.current > 0) {
         playerInvincibleRef.current--;
       }
+      
+      // Update spawn glow animation
+      if (playerSpawnGlowRef.current > 0) {
+        playerSpawnGlowRef.current--;
+      }
 
       // Update shield effects and recharge
       if (upgradesRef.current.shield) {
@@ -17299,19 +17369,67 @@ const SpaceShooter = () => {
         const bulletW = bullet.width || ENEMY_BULLET_WIDTH;
         const bulletH = bullet.height || ENEMY_BULLET_HEIGHT;
         
-        // === GRAZE SYSTEM: Check for near-misses ===
+        // Calculate positions once for both collision and graze checks
         const playerCenterX = player.x + PLAYER_WIDTH / 2;
         const playerCenterY = player.y + PLAYER_HEIGHT / 2;
         const bulletCenterX = bullet.x + bulletW / 2;
         const bulletCenterY = bullet.y + bulletH / 2;
-        const distToBullet = Math.hypot(bulletCenterX - playerCenterX, bulletCenterY - playerCenterY);
+        const dx = playerCenterX - bulletCenterX;
+        const dy = playerCenterY - bulletCenterY;
+        const distToBullet = Math.sqrt(dx * dx + dy * dy);
         
-        // Graze zone: close but not hitting (within GRAZE_RADIUS of player edge)
-        const playerRadius = Math.max(PLAYER_WIDTH, PLAYER_HEIGHT) / 2;
-        const grazeDistance = playerRadius + GRAZE_RADIUS;
+        // Check collision with player FIRST using precise circular hitbox
+        // Bullet hell games use small precise hitbox for fair dodging
+        const collisionRadius = PLAYER_HITBOX_RADIUS + Math.min(bulletW, bulletH) / 2;
+        
+        // Debug boss bullets
+        if (bullet.isBossShot && distToBullet < 100) {
+          console.log('[BOSS BULLET] Distance:', distToBullet.toFixed(1), 'CollisionRadius:', collisionRadius.toFixed(1), 'BulletPos:', bullet.x.toFixed(0), bullet.y.toFixed(0), 'PlayerPos:', player.x.toFixed(0), player.y.toFixed(0));
+        }
+        
+        if (playerInvincibleRef.current <= 0 && distToBullet < collisionRadius) {
+          const bulletPolarity = bullet.polarity || 'light';
+          const playerPolarity = polarityRef.current;
+          
+          // Polarity system: absorb same-polarity bullets!
+          if (bulletPolarity === playerPolarity) {
+            // Absorb the bullet, charge special attack
+            polarityAbsorbedRef.current = Math.min(POLARITY_MAX_ABSORB, polarityAbsorbedRef.current + 5);
+            // Small absorb effect
+            floatingTextsRef.current.push({
+              x: bullet.x,
+              y: bullet.y,
+              text: '',
+              color: playerPolarity === 'light' ? '#FFFFFF' : '#8B00FF',
+              timer: 30
+            });
+            return false; // Remove bullet (absorbed)
+          }
+          
+          // Opposite polarity - take damage
+          if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
+            upgradesRef.current.shieldHits--;
+            upgradesRef.current.shieldRechargeTimer = 180;
+            if (upgradesRef.current.shieldHits <= 0) {
+              upgradesRef.current.shield = false;
+            }
+            // Shield impact effect
+            createShieldImpact(bullet.x, bullet.y);
+            createExplosion(bullet.x, bullet.y, 'small');
+          } else {
+            hitPlayer = true;
+            // Create player explosion
+            createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
+          }
+          return false; // Remove bullet after hit
+        }
+        
+        // === GRAZE SYSTEM: Check for near-misses (only if bullet didn't hit) ===
+        // Graze zone: outside hitbox but within graze radius
+        const grazeDistance = collisionRadius + GRAZE_RADIUS;
         const currentTime = Date.now();
         
-        if (distToBullet < grazeDistance && distToBullet > playerRadius - 5 && 
+        if (distToBullet >= collisionRadius && distToBullet < grazeDistance && 
             playerInvincibleRef.current <= 0 && !bullet.grazed) {
           // Mark bullet as grazed to prevent double-counting
           bullet.grazed = true;
@@ -17346,55 +17464,7 @@ const SpaceShooter = () => {
           });
         }
         
-        // Check collision with player using precise circular hitbox
-        // Bullet hell games use small precise hitbox for fair dodging
-        if (playerInvincibleRef.current <= 0) {
-          const playerCenterX = player.x + PLAYER_WIDTH / 2;
-          const playerCenterY = player.y + PLAYER_HEIGHT / 2;
-          const bulletCenterX = bullet.x + bulletW / 2;
-          const bulletCenterY = bullet.y + bulletH / 2;
-          const dx = playerCenterX - bulletCenterX;
-          const dy = playerCenterY - bulletCenterY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const collisionRadius = PLAYER_HITBOX_RADIUS + Math.min(bulletW, bulletH) / 2;
-          
-          if (distance < collisionRadius) {
-            const bulletPolarity = bullet.polarity || 'light';
-            const playerPolarity = polarityRef.current;
-            
-            // Polarity system: absorb same-polarity bullets!
-            if (bulletPolarity === playerPolarity) {
-              // Absorb the bullet, charge special attack
-              polarityAbsorbedRef.current = Math.min(POLARITY_MAX_ABSORB, polarityAbsorbedRef.current + 5);
-              // Small absorb effect
-              floatingTextsRef.current.push({
-                x: bullet.x,
-                y: bullet.y,
-                text: '',
-                color: playerPolarity === 'light' ? '#FFFFFF' : '#8B00FF',
-                timer: 30
-              });
-              return false; // Remove bullet (absorbed)
-            }
-            
-            // Opposite polarity - take damage
-            if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
-              upgradesRef.current.shieldHits--;
-              upgradesRef.current.shieldRechargeTimer = 180;
-              if (upgradesRef.current.shieldHits <= 0) {
-                upgradesRef.current.shield = false;
-              }
-              // Shield impact effect
-              createShieldImpact(bullet.x, bullet.y);
-              createExplosion(bullet.x, bullet.y, 'small');
-            } else {
-              hitPlayer = true;
-              // Create player explosion
-              createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
-            }
-            return false;
-          }
-        }
+        // Continue with regular bullet logic if not hit
         
         // Remove if off screen
         if (bullet.aimed || bullet.type === 'spiral' || bullet.type === 'wave' || bullet.type === 'sniper') {
