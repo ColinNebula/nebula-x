@@ -4495,8 +4495,21 @@ const SpaceShooter = () => {
         ctx.translate(asteroid.x, asteroid.y);
         ctx.rotate(asteroid.rotation);
         
+        // Giant asteroid warning glow
+        if (asteroid.isGiant) {
+          ctx.globalAlpha = 0.3;
+          const glowGradient = ctx.createRadialGradient(0, 0, asteroid.size * 0.8, 0, 0, asteroid.size * 1.3);
+          glowGradient.addColorStop(0, 'rgba(255, 100, 0, 0.3)');
+          glowGradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+          ctx.fillStyle = glowGradient;
+          ctx.beginPath();
+          ctx.arc(0, 0, asteroid.size * 1.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+        
         // Asteroid body - irregular polygon
-        const numPoints = 8;
+        const numPoints = asteroid.isGiant ? 12 : 8;
         const points = [];
         for (let i = 0; i < numPoints; i++) {
           const angle = (i / numPoints) * Math.PI * 2;
@@ -4520,9 +4533,16 @@ const SpaceShooter = () => {
         // Main body gradient
         ctx.globalAlpha = 1;
         const gradient = ctx.createRadialGradient(-asteroid.size * 0.3, -asteroid.size * 0.3, 0, 0, 0, asteroid.size);
-        gradient.addColorStop(0, '#888888');
-        gradient.addColorStop(0.5, '#555555');
-        gradient.addColorStop(1, '#333333');
+        if (asteroid.isGiant) {
+          // Darker, more menacing colors for giant asteroids
+          gradient.addColorStop(0, '#997755');
+          gradient.addColorStop(0.5, '#664433');
+          gradient.addColorStop(1, '#442211');
+        } else {
+          gradient.addColorStop(0, '#888888');
+          gradient.addColorStop(0.5, '#555555');
+          gradient.addColorStop(1, '#333333');
+        }
         ctx.fillStyle = gradient;
         
         ctx.beginPath();
@@ -4534,26 +4554,35 @@ const SpaceShooter = () => {
         ctx.fill();
         
         // Edge highlight
-        ctx.strokeStyle = '#666666';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = asteroid.isGiant ? '#886644' : '#666666';
+        ctx.lineWidth = asteroid.isGiant ? 3 : 2;
         ctx.stroke();
         
-        // Craters
-        ctx.fillStyle = '#2a2a2a';
+        // Craters (more for giant asteroids)
+        ctx.fillStyle = asteroid.isGiant ? '#1a1108' : '#2a2a2a';
         ctx.beginPath();
         ctx.arc(-asteroid.size * 0.2, asteroid.size * 0.1, asteroid.size * 0.2, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
         ctx.arc(asteroid.size * 0.3, -asteroid.size * 0.2, asteroid.size * 0.15, 0, Math.PI * 2);
         ctx.fill();
+        if (asteroid.isGiant) {
+          ctx.beginPath();
+          ctx.arc(-asteroid.size * 0.15, -asteroid.size * 0.25, asteroid.size * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(asteroid.size * 0.1, asteroid.size * 0.25, asteroid.size * 0.12, 0, Math.PI * 2);
+          ctx.fill();
+        }
         
         // Health indicator for damaged asteroids
-        if (asteroid.health < Math.floor(asteroid.size / 10) + 1) {
+        const maxHealth = asteroid.isGiant ? Math.floor(asteroid.size / 5) + 10 : Math.floor(asteroid.size / 10) + 1;
+        if (asteroid.health < maxHealth) {
           ctx.fillStyle = '#ff6600';
-          const crackCount = (Math.floor(asteroid.size / 10) + 1) - asteroid.health;
+          const crackCount = maxHealth - asteroid.health;
           for (let i = 0; i < crackCount; i++) {
-            ctx.strokeStyle = '#ff4400';
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = asteroid.isGiant ? '#ff8800' : '#ff4400';
+            ctx.lineWidth = asteroid.isGiant ? 2 : 1;
             ctx.beginPath();
             const startAngle = (i / crackCount) * Math.PI * 2;
             ctx.moveTo(0, 0);
@@ -5595,44 +5624,70 @@ const SpaceShooter = () => {
         if (playerSpawnGlowRef.current > 0) {
           const spawnTimer = playerSpawnGlowRef.current;
           const spawnProgress = 1 - (spawnTimer / 90); // 0 to 1
+          const fadeOut = spawnTimer / 90; // 1 to 0 (for fade out)
           const centerX = px + pw / 2;
           const centerY = py + ph / 2;
           
           // Save context state
           ctx.save();
           
-          // Expanding circular waves - brighter and more visible
-          for (let i = 0; i < 4; i++) {
-            const waveDelay = i * 12;
+          // Initial flash at the very start
+          if (spawnTimer > 85) {
+            const flashAlpha = (90 - spawnTimer) / 5 * fadeOut;
+            const flashSize = 100 - (90 - spawnTimer) * 15;
+            const flashGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, flashSize);
+            flashGrad.addColorStop(0, `rgba(255, 255, 255, ${flashAlpha})`);
+            flashGrad.addColorStop(0.3, `rgba(0, 255, 255, ${flashAlpha * 0.9})`);
+            flashGrad.addColorStop(0.6, `rgba(0, 200, 255, ${flashAlpha * 0.5})`);
+            flashGrad.addColorStop(1, 'rgba(0, 100, 255, 0)');
+            ctx.fillStyle = flashGrad;
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 40;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, flashSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+          
+          // Expanding circular waves
+          for (let i = 0; i < 3; i++) {
+            const waveDelay = i * 10;
             if (spawnTimer < 90 - waveDelay) {
-              const waveProgress = Math.min(1, (90 - spawnTimer - waveDelay) / 60);
-              const radius = waveProgress * 100;
-              const alpha = (1 - waveProgress) * 0.8;
+              const waveProgress = Math.min(1, (90 - spawnTimer - waveDelay) / 40);
+              const radius = waveProgress * 80;
+              const alpha = (1 - waveProgress) * 0.8 * fadeOut;
               
               ctx.globalAlpha = alpha;
-              ctx.strokeStyle = `rgba(0, 255, 255, ${alpha})`;
-              ctx.lineWidth = 4;
+              ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+              ctx.lineWidth = 3;
               ctx.shadowColor = '#00ffff';
-              ctx.shadowBlur = 30;
+              ctx.shadowBlur = 20;
               ctx.beginPath();
               ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
               ctx.stroke();
+              
+              ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * 0.7})`;
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(centerX, centerY, radius + 3, 0, Math.PI * 2);
+              ctx.stroke();
+              
               ctx.shadowBlur = 0;
             }
           }
           
-          // Bright core glow - much more intense
-          const coreAlpha = spawnTimer > 60 ? (90 - spawnTimer) / 30 : Math.max(0.3, spawnTimer / 60);
-          const coreSize = 60 + Math.sin(spawnTimer / 8) * 15;
+          // Bright core glow with fade out
+          const coreAlpha = (spawnTimer > 70 ? 1.0 : spawnTimer / 70) * fadeOut;
+          const coreSize = 50 + Math.sin(spawnTimer / 6) * 10;
           const coreGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, coreSize);
           coreGrad.addColorStop(0, `rgba(255, 255, 255, ${coreAlpha})`);
-          coreGrad.addColorStop(0.3, `rgba(0, 255, 255, ${coreAlpha * 0.8})`);
-          coreGrad.addColorStop(0.7, `rgba(0, 200, 255, ${coreAlpha * 0.4})`);
+          coreGrad.addColorStop(0.2, `rgba(255, 255, 255, ${coreAlpha * 0.9})`);
+          coreGrad.addColorStop(0.4, `rgba(0, 255, 255, ${coreAlpha * 0.8})`);
+          coreGrad.addColorStop(0.7, `rgba(0, 200, 255, ${coreAlpha * 0.5})`);
           coreGrad.addColorStop(1, 'rgba(0, 255, 255, 0)');
-          ctx.globalAlpha = 1;
           ctx.fillStyle = coreGrad;
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 40;
+          ctx.shadowColor = '#ffffff';
+          ctx.shadowBlur = 30;
           ctx.beginPath();
           ctx.arc(centerX, centerY, coreSize, 0, Math.PI * 2);
           ctx.fill();
@@ -5640,33 +5695,41 @@ const SpaceShooter = () => {
           
           // Energy burst effect at start
           if (spawnTimer > 75) {
-            const burstAlpha = (90 - spawnTimer) / 15;
-            ctx.globalAlpha = burstAlpha * 0.6;
+            const burstAlpha = (90 - spawnTimer) / 15 * fadeOut;
+            ctx.globalAlpha = burstAlpha;
             ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = '#00ffff';
-            ctx.shadowBlur = 50;
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 40;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, 80 - (90 - spawnTimer) * 3, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, 70 - (90 - spawnTimer) * 3, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
           }
           
-          // Radiating particles - more and larger
+          // Radiating particles with fade out
           const particleCount = 16;
           for (let i = 0; i < particleCount; i++) {
             const angle = (i / particleCount) * Math.PI * 2 + spawnProgress * Math.PI;
-            const distance = spawnProgress * 70;
+            const distance = spawnProgress * 60;
             const particleX = centerX + Math.cos(angle) * distance;
             const particleY = centerY + Math.sin(angle) * distance;
-            const particleAlpha = (1 - spawnProgress) * 0.9;
+            const particleAlpha = (1 - spawnProgress) * 0.9 * fadeOut;
             
             ctx.globalAlpha = particleAlpha;
-            ctx.fillStyle = i % 2 === 0 ? '#00ffff' : '#ffffff';
+            ctx.fillStyle = i % 3 === 0 ? '#ffffff' : (i % 3 === 1 ? '#00ffff' : '#88ffff');
             ctx.shadowColor = '#00ffff';
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = 12;
             ctx.beginPath();
             ctx.arc(particleX, particleY, 4, 0, Math.PI * 2);
             ctx.fill();
+          }
+          
+          // Screen flash effect (brighten entire area around spawn)
+          if (spawnTimer > 80) {
+            const screenFlashAlpha = (90 - spawnTimer) / 10 * 0.2 * fadeOut;
+            ctx.globalAlpha = screenFlashAlpha;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
           }
           
           // Reset context
@@ -13897,8 +13960,8 @@ const SpaceShooter = () => {
       const hazards = hazardsRef.current;
       const waveNum = waveRef.current;
       
-      // Spawn hazards periodically (starts wave 3)
-      if (waveNum >= 3 && timestamp - lastHazardSpawnRef.current > 3000) {
+      // Spawn hazards periodically (starts wave 3, but not during boss battles)
+      if (waveNum >= 3 && !bossActiveRef.current && timestamp - lastHazardSpawnRef.current > 3000) {
         lastHazardSpawnRef.current = timestamp;
         
         // Random hazard type based on wave
@@ -13906,16 +13969,21 @@ const SpaceShooter = () => {
         
         // Asteroids - most common (starts wave 3)
         if (roll < 0.5) {
-          const size = 20 + Math.random() * 40;
+          // 20% chance for HUGE asteroid (5x normal size)
+          const isGiant = Math.random() < 0.2;
+          const baseSize = 20 + Math.random() * 40;
+          const size = isGiant ? baseSize * 5 : baseSize;
+          
           hazards.asteroids.push({
             x: GAME_WIDTH + size,
             y: Math.random() * (GAME_HEIGHT - size * 2) + size,
             size: size,
             rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.05,
+            rotationSpeed: (Math.random() - 0.5) * (isGiant ? 0.02 : 0.05), // Giant asteroids rotate slower
             vx: -2 - Math.random() * 2 - waveNum * 0.1,
             vy: (Math.random() - 0.5) * 2,
-            health: Math.floor(size / 10) + 1
+            health: isGiant ? Math.floor(size / 5) + 10 : Math.floor(size / 10) + 1, // Giant asteroids have more health
+            isGiant: isGiant
           });
         }
         // Laser barriers - less common (starts wave 4)
@@ -18710,7 +18778,7 @@ const SpaceShooter = () => {
                 className={`settings-tab ${settingsTab === 'profile' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('profile')}
               >
-                Â¤ Profile
+                👤 Profile
               </button>
               <button 
                 className={`settings-tab ${settingsTab === 'controls' ? 'active' : ''}`}
