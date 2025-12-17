@@ -2642,7 +2642,7 @@ const SpaceShooter = () => {
           floatingTextsRef.current.push({
             x: force.x,
             y: force.y - 30,
-            text: '',
+            text: '🔮 FORCE MAXED!',
             color: '#00ffff',
             lifetime: 60,
             vy: -1
@@ -3310,6 +3310,8 @@ const SpaceShooter = () => {
             frameDelay: 3,
             spriteSize: 100 + Math.random() * 40,
             lifetime: 24,
+            maxLifetime: 24,
+            startTime: Date.now(),
             particles: []
           });
           // Add more debris for each secondary explosion
@@ -4621,8 +4623,11 @@ const SpaceShooter = () => {
         // Guard against non-finite coordinates
         if (!isFinite(explosion.x) || !isFinite(explosion.y)) return;
         
+        // Skip rendering if lifetime expired (shouldn't happen but safety check)
+        if (explosion.lifetime !== undefined && explosion.lifetime <= 0) return;
+        
         // Calculate lifetime progress for animations
-        const age = (Date.now() - (explosion.startTime || Date.now())) / 16.67; // frames at 60fps
+        const age = explosion.startTime ? (Date.now() - explosion.startTime) / 16.67 : explosion.lifetime || 0; // frames at 60fps
         const maxLifetime = explosion.maxLifetime || 30;
         const remainingLifetime = Math.max(0, maxLifetime - age);
         const alpha = remainingLifetime / maxLifetime;
@@ -12303,7 +12308,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: GAME_WIDTH / 2,
               y: GAME_HEIGHT / 2 - 50,
-              text: '',
+              text: '🌟 LEVEL ' + transition.level + ' 🌟',
               color: '#00ffff',
               lifetime: 120,
               vy: 0,
@@ -12863,7 +12868,7 @@ const SpaceShooter = () => {
             
             floatingTextsRef.current.push({
               x: bomb.x, y: bomb.y - 50,
-              text: '', color: '#ff4400', timer: 60, vy: -1
+              text: '💣 BOMB!', color: '#ff4400', timer: 60, vy: -1
             });
           }
         }
@@ -14539,7 +14544,7 @@ const SpaceShooter = () => {
           floatingTextsRef.current.push({
             x: mb.x + mb.width / 2,
             y: mb.y - 20,
-            text: '',
+            text: '🔄 REGENERATING',
             color: '#00ff00',
             lifetime: 120,
             vy: -0.5
@@ -14645,7 +14650,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: mb.x + mb.width / 2,
               y: mb.y + mb.height + 20,
-              text: '',
+              text: '🔄 REGENERATING...',
               color: '#00ffff',
               lifetime: 60,
               vy: 1
@@ -14661,7 +14666,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: mb.x + mb.width / 2,
               y: mb.y - 20,
-              text: '',
+              text: '✅ REGEN COMPLETE',
               color: '#ff4400',
               lifetime: 90,
               vy: -1
@@ -14803,7 +14808,7 @@ const SpaceShooter = () => {
                   floatingTextsRef.current.push({
                     x: mb.x - 50,
                     y: mb.y + mb.height / 2,
-                    text: '',
+                    text: '⚡ LASER CHARGING',
                     color: '#ff0088',
                     lifetime: 45,
                     vy: 0
@@ -14919,7 +14924,7 @@ const SpaceShooter = () => {
                   floatingTextsRef.current.push({
                     x: mb.x + mb.width / 2,
                     y: mb.y - 10,
-                    text: '',
+                    text: '🚀 MISSILES!',
                     color: '#ff0000',
                     lifetime: 30,
                     vy: -2
@@ -14986,7 +14991,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: mb.x + mb.width / 2,
                 y: mb.y - 10,
-                text: '',
+                text: '🛡️ SHIELDS UP',
                 color: '#cc88ff',
                 lifetime: 60,
                 vy: -1
@@ -15048,7 +15053,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: GAME_WIDTH / 2,
               y: 80,
-              text: '',
+              text: '🛡️ CARRIER INCOMING!',
               color: '#ff6600',
               lifetime: 180,
               vy: 0
@@ -15234,7 +15239,20 @@ const SpaceShooter = () => {
           return true;
         }
         
-        // Special type behaviors (movement already handled in basic filter above)
+        // Types that handle their own movement in special behaviors below
+        const specialMovementTypes = ['turret', 'bomber', 'cloaked', 'shielded', 'spiral', 'wave', 'sniper', 
+                                       'shielder', 'healer', 'teleporter', 'splitter', 'mine', 'flyby'];
+        
+        // Apply basic movement to non-special types BEFORE collision detection
+        if (!specialMovementTypes.includes(enemy.type)) {
+          if (enemy.fromBehind) {
+            enemy.x += effectiveSpeed;
+          } else {
+            enemy.x -= effectiveSpeed;
+          }
+        }
+        
+        // Special type behaviors
         if (enemy.type === 'turret') {
           // Turret rotates to aim at player (no movement since it's stationary)
           const dx = player.x + PLAYER_WIDTH / 2 - (enemy.x + ENEMY_WIDTH / 2);
@@ -15448,7 +15466,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: boss.x + boss.width / 2,
               y: boss.y - 20,
-              text: '',
+              text: '🔄 REGENERATING',
               color: '#00ff00',
               lifetime: 120,
               vy: -0.5
@@ -15482,7 +15500,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: boss.x + boss.width / 2,
                 y: boss.y - 50,
-                text: '',
+                text: '⚡ EMP PULSE!',
                 color: '#ff00ff',
                 lifetime: 90,
                 vy: -1
@@ -15507,7 +15525,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: playerCenterX,
                   y: playerCenterY - 20,
-                  text: '',
+                  text: '⚠️ DISABLED!',
                   color: '#ff6600',
                   lifetime: 90,
                   vy: -1
@@ -15609,7 +15627,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: boss.x + boss.width / 2,
                 y: boss.y + boss.height + 20,
-                text: '',
+                text: '🛡️ SHIELDS UP',
                 color: '#00ffff',
                 lifetime: 60,
                 vy: 1
@@ -15895,7 +15913,7 @@ const SpaceShooter = () => {
                   floatingTextsRef.current.push({
                     x: force.x,
                     y: force.y,
-                    text: '',
+                    text: '⚠️ DISABLED',
                     color: '#ff0000',
                     life: 90
                   });
@@ -15917,7 +15935,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: px,
                   y: py - 20,
-                  text: '',
+                  text: '⚡ SHIELDS DOWN',
                   color: '#ff6600',
                   life: 90
                 });
@@ -15986,7 +16004,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: bullet.x,
                   y: bullet.y,
-                  text: '',
+                  text: '🛡️',
                   color: '#00ffff',
                   lifetime: 20,
                   vy: -1
@@ -15999,7 +16017,7 @@ const SpaceShooter = () => {
                   floatingTextsRef.current.push({
                     x: mb.x + mb.width / 2,
                     y: mb.y - 20,
-                    text: '',
+                    text: '💥 SHIELD BROKEN',
                     color: '#ff0000',
                     lifetime: 60,
                     vy: -1
@@ -16014,7 +16032,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: bullet.x,
                   y: bullet.y,
-                  text: '',
+                  text: 'PHASE',
                   color: '#cc88ff',
                   lifetime: 15,
                   vy: -1
@@ -16029,7 +16047,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: bullet.x,
                   y: bullet.y,
-                  text: '',
+                  text: '🛡️',
                   color: '#00aaff',
                   lifetime: 15,
                   vy: -1
@@ -16039,7 +16057,7 @@ const SpaceShooter = () => {
                   floatingTextsRef.current.push({
                     x: mb.x + mb.width / 2,
                     y: mb.y - 15,
-                    text: '',
+                    text: '⚠️ SHIELD DOWN',
                     color: '#ff6600',
                     lifetime: 45,
                     vy: -1
@@ -16058,7 +16076,7 @@ const SpaceShooter = () => {
                   floatingTextsRef.current.push({
                     x: bullet.x,
                     y: bullet.y,
-                    text: '',
+                    text: 'ARMOR',
                     color: '#aaaaaa',
                     lifetime: 20,
                     vy: -1
@@ -16142,7 +16160,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: bullet.x + (Math.random() - 0.5) * 20,
                   y: bullet.y + (Math.random() - 0.5) * 20,
-                  text: '',
+                  text: '🛡️',
                   color: '#00ffff',
                   lifetime: 20,
                   vy: -1 - Math.random()
@@ -16290,13 +16308,19 @@ const SpaceShooter = () => {
         // Guard against undefined player first
         if (!player || !isFinite(player.x) || !isFinite(player.y)) {
           console.warn('[POWERUP] Player invalid - x:', player?.x, 'y:', player?.y);
-          // No movement applied here - will be handled below
+          // Apply default drift when player is invalid
+          powerup.x += (powerup.vx || -1.5);
+          powerup.y += (powerup.vy || 0);
           powerup.bobOffset = (powerup.bobOffset || 0) + 0.1;
           powerup.rotation = (powerup.rotation || 0) + 0.05;
           return true; // Keep powerup
         }
         
-        // Always apply strong attraction toward player to make pickup easier
+        // Always apply base drift movement (classic shooter behavior)
+        powerup.x += (powerup.vx || -1.5);
+        powerup.y += (powerup.vy || 0);
+        
+        // ALSO apply attraction toward player (adds to drift, doesn't replace it)
         const pullDx = player.x + PLAYER_WIDTH / 2 - powerup.x;
         const pullDy = player.y + PLAYER_HEIGHT / 2 - powerup.y;
         const pullDist = Math.sqrt(pullDx * pullDx + pullDy * pullDy);
@@ -16304,13 +16328,9 @@ const SpaceShooter = () => {
         if (pullDist < 600 && pullDist > 1) { // Pull from up to 600px away
           const pullStrength = upgradesRef.current.magnet && upgradesRef.current.magnetTimer > 0 
             ? 12 * (1 - pullDist / 400)  // Very strong magnet pull
-            : 6 * (1 - pullDist / 600);  // Strong natural pull
+            : 4 * (1 - pullDist / 600);  // Gentle pull (reduced from 6)
           powerup.x += (pullDx / pullDist) * pullStrength;
           powerup.y += (pullDy / pullDist) * pullStrength;
-        } else {
-          // Apply natural drift velocity when not being pulled
-          powerup.x += (powerup.vx || -1.5);
-          powerup.y += (powerup.vy || 0);
         }
         
         powerup.bobOffset = (powerup.bobOffset || 0) + 0.1;
@@ -16495,7 +16515,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: player.x + PLAYER_WIDTH / 2,
                 y: player.y - 20,
-                text: '',
+                text: '🩹 +1 LIFE',
                 color: '#00ff00',
                 lifetime: 90,
                 vy: -2,
@@ -16509,7 +16529,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: player.x + PLAYER_WIDTH / 2,
                 y: player.y - 20,
-                text: '',
+                text: '⭐ +500 POINTS',
                 color: '#ffd700',
                 lifetime: 60,
                 vy: -2,
@@ -16530,7 +16550,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: player.x + PLAYER_WIDTH / 2,
                 y: player.y - 30,
-                text: '',
+                text: '×2 SCORE BOOST',
                 color: '#ffff00',
                 lifetime: 120,
                 vy: -1,
@@ -16551,7 +16571,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: player.x + PLAYER_WIDTH / 2,
                 y: player.y - 30,
-                text: '',
+                text: '✨ INVINCIBLE',
                 color: '#ffffff',
                 lifetime: 120,
                 vy: -1,
@@ -16583,7 +16603,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: GAME_WIDTH / 2,
                 y: GAME_HEIGHT / 3,
-                text: '',
+                text: '⚫ BLACK HOLE',
                 color: '#6600ff',
                 lifetime: 150,
                 vy: -0.5,
@@ -16625,7 +16645,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: player.x + PLAYER_WIDTH / 2,
                 y: player.y - 30,
-                text: '',
+                text: '👥 CLONE ACTIVE',
                 color: '#00ffff',
                 lifetime: 150,
                 vy: -1,
@@ -16661,7 +16681,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: GAME_WIDTH / 2,
                 y: GAME_HEIGHT / 3,
-                text: '',
+                text: '☢ NUCLEAR STRIKE',
                 color: '#ff0000',
                 lifetime: 150,
                 vy: -0.5,
@@ -16674,7 +16694,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: player.x + PLAYER_WIDTH / 2,
                 y: player.y - 30,
-                text: '',
+                text: '🔥 PHOENIX REBIRTH',
                 color: '#ff8800',
                 lifetime: 150,
                 vy: -1,
@@ -16685,10 +16705,15 @@ const SpaceShooter = () => {
             default:
               break;
           }
+          return false; // Remove powerup after pickup
+        }
+        
+        // Remove powerups that have drifted off screen
+        if (powerup.x < -POWERUP_SIZE || powerup.x > GAME_WIDTH + POWERUP_SIZE) {
           return false;
         }
         
-        return powerup.x > -POWERUP_SIZE;
+        return true; // Keep powerup
       });
 
       // Force pod collision with enemies (damages them!)
@@ -16779,7 +16804,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: bullet.x,
                 y: bullet.y,
-                text: '',
+                text: 'INVULNERABLE',
                 color: '#ffff00',
                 lifetime: 15,
                 vy: -2
@@ -17014,7 +17039,8 @@ const SpaceShooter = () => {
             explosion.frameTimer = 0;
             explosion.frame++;
           }
-          return explosion.frame < explosion.totalFrames;
+          // Remove if frames complete OR lifetime expired
+          return explosion.frame < explosion.totalFrames && explosion.lifetime > 0;
         }
         
         // Handle particle-based explosions
@@ -17139,7 +17165,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: enemy.x + ew / 2,
                 y: enemy.y,
-                text: '',
+                text: '🔥 BURN',
                 color: '#ffaa00',
                 lifetime: 30,
                 vy: -1
@@ -17206,7 +17232,20 @@ const SpaceShooter = () => {
           return true;
         }
         
-        // Special type behaviors (movement already handled in basic filter above)
+        // Types that handle their own movement in special behaviors below
+        const specialMovementTypes = ['turret', 'bomber', 'cloaked', 'shielded', 'spiral', 'wave', 'sniper', 
+                                       'shielder', 'healer', 'teleporter', 'splitter', 'mine', 'flyby'];
+        
+        // Apply basic movement to non-special types
+        if (!specialMovementTypes.includes(enemy.type)) {
+          if (enemy.fromBehind) {
+            enemy.x += effectiveSpeed;
+          } else {
+            enemy.x -= effectiveSpeed;
+          }
+        }
+        
+        // Special type behaviors
         if (enemy.type === 'turret') {
           // Turret rotates to aim at player (no movement since it's stationary)
           const dx = player.x + PLAYER_WIDTH / 2 - (enemy.x + ENEMY_WIDTH / 2);
@@ -17356,7 +17395,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: target.x + (target.width || ENEMY_WIDTH) / 2,
                   y: target.y,
-                  text: '',
+                  text: '🛡️',
                   color: '#00ffff',
                   lifetime: 30,
                   vy: -1
@@ -17376,7 +17415,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: mb.x + mb.width / 2,
                   y: mb.y,
-                  text: '',
+                  text: '🛡️ SHIELDED',
                   color: '#00ffff',
                   lifetime: 40,
                   vy: -1
@@ -17395,7 +17434,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: boss.x + boss.width / 2,
                   y: boss.y,
-                  text: '',
+                  text: '🛡️ SHIELDED',
                   color: '#00ffff',
                   lifetime: 50,
                   vy: -1
@@ -17433,7 +17472,7 @@ const SpaceShooter = () => {
               enemy.healBeam = { target: healedTarget, timer: 20 };
               floatingTextsRef.current.push({
                 x: healedTarget.x + (healedTarget.width || ENEMY_WIDTH) / 2, y: healedTarget.y,
-                text: '', color: '#00ff88', lifetime: 25, vy: -1.5
+                text: '+HP', color: '#00ff88', lifetime: 25, vy: -1.5
               });
             }
           }
@@ -17560,7 +17599,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: enemy.x,
                   y: enemy.y - 30,
-                  text: '',
+                  text: '✨ TELEPORT',
                   color: enemy.glowColor || '#ff4444',
                   lifetime: 45,
                   vy: -2
@@ -17890,7 +17929,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: bullet.x,
               y: bullet.y,
-              text: '',
+              text: 'ABSORB',
               color: playerPolarity === 'light' ? '#FFFFFF' : '#8B00FF',
               timer: 30
             });
@@ -18030,7 +18069,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: enemy.x + ew / 2,
                 y: enemy.y,
-                text: '',
+                text: '🛡️',
                 color: '#00ffff',
                 lifetime: 20,
                 vy: -1
@@ -18061,7 +18100,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: enemy.x + ew / 2,
                 y: enemy.y - 10,
-                text: '',
+                text: '🔄 RICOCHET',
                 color: '#88ffff',
                 lifetime: 40,
                 vy: -1
@@ -18099,7 +18138,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: closestEnemy.x + (closestEnemy.width || ENEMY_WIDTH) / 2,
                   y: closestEnemy.y,
-                  text: '',
+                  text: '⚡ CHAIN',
                   color: '#ffff00',
                   lifetime: 25,
                   vy: -1
@@ -18118,7 +18157,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: enemy.x + ew / 2,
                 y: enemy.y,
-                text: '',
+                text: '🛡️',
                 color: '#00aaff',
                 lifetime: 20,
                 vy: -1
@@ -18128,7 +18167,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: enemy.x + ew / 2,
                   y: enemy.y - 10,
-                  text: '',
+                  text: '💥 SHIELD BROKEN',
                   color: '#ff4444',
                   lifetime: 40,
                   vy: -1.5
@@ -18206,7 +18245,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: enemy.x + ew / 2,
                 y: enemy.y,
-                text: '',
+                text: '👀 SPLIT!',
                 color: '#ff8800',
                 lifetime: 40,
                 vy: -2
@@ -18228,7 +18267,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: explosionX,
                 y: explosionY - 20,
-                text: '',
+                text: '💣 BOOM!',
                 color: '#ff4400',
                 lifetime: 30,
                 vy: -2
