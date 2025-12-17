@@ -1692,6 +1692,7 @@ const SpaceShooter = () => {
   const menuMusicRef = useRef(null); // Menu background music
   const gameMusicRef = useRef(null); // Gameplay background music
   const bossSpawnSoundRef = useRef(null); // Boss spawn ambient sound
+  const offScreenEnemiesRef = useRef([]); // Track off-screen enemies for indicators
   const currentTrackIndexRef = useRef(0); // Current track in the playlist
   
   // Performance tracking refs
@@ -1733,13 +1734,15 @@ const SpaceShooter = () => {
   };
   
   // Formation group tracking
-  const formationsRef = useRef({}); // { groupId: { pattern, enemies: [], bonus, name } }
+  const formationsRef = useRef({}); // { groupId: { pattern, enemies: [], bonus, name, killCount: 0, totalEnemies: 0 } }
+  const formationComboRef = useRef(1.0); // Multiplier for destroying formations quickly
   const nextFormationIdRef = useRef(1);
   const lastFormationSpawnRef = useRef(0);
   const formationBonusDisplayRef = useRef([]); // { x, y, text, timer }
   
   // Flyby formation system - enemies that animate in before attacking
   const flybyFormationsRef = useRef([]); // Array of flyby groups
+  const offScreenIndicatorsRef = useRef([]); // Track off-screen enemies for edge warnings
   const lastFlybySpawnRef = useRef(0);
   
   // Flyby path patterns - bezier curves and animation paths
@@ -3966,6 +3969,9 @@ const SpaceShooter = () => {
     
     flybyFormationsRef.current.push(flybyGroup);
     
+    // Track start time for bonus calculation
+    flybyGroup.startTime = Date.now();
+    
     // Announce the formation
     floatingTextsRef.current.push({
       x: GAME_WIDTH / 2,
@@ -4900,16 +4906,17 @@ const SpaceShooter = () => {
       // Draw formation bonus texts
       formationBonusDisplayRef.current.forEach(bonus => {
         const alpha = Math.min(1, bonus.timer / 30);
-        const scale = 1 + (90 - bonus.timer) * 0.005; // Grow slightly as it fades
+        const scale = (bonus.scale || 1) + (90 - bonus.timer) * 0.005; // Grow slightly as it fades
         
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.translate(bonus.x, bonus.y);
         ctx.scale(scale, scale);
         
-        // Glowing background effect
+        // Glowing background effect - enhanced for high bonuses
+        const glowSize = bonus.color === '#ff00ff' ? 25 : bonus.color === '#ffaa00' ? 20 : 15;
         ctx.shadowColor = bonus.color;
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = glowSize;
         
         // Main text
         ctx.font = "bold 12px \"Press Start 2P\", monospace";
@@ -4923,8 +4930,65 @@ const SpaceShooter = () => {
         ctx.lineWidth = 1;
         ctx.strokeText(bonus.text, 0, 0);
         
+        // Add sparkles for high multipliers
+        if (bonus.color === '#ff00ff' || bonus.color === '#ffaa00') {
+          for (let i = 0; i < 4; i++) {
+            const angle = (Math.PI / 2) * i + (Date.now() / 100);
+            const dist = 40 + Math.sin(Date.now() / 200 + i) * 10;
+            const sx = Math.cos(angle) * dist;
+            const sy = Math.sin(angle) * dist;
+            ctx.globalAlpha = alpha * 0.8;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(sx, sy, 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        
         ctx.restore();
       });
+      
+      // === Draw Bullet Time / Time Warp Effects ===
+      if (upgradesRef.current.timeWarp && upgradesRef.current.timeWarpTimer > 0) {
+        const intensity = upgradesRef.current.timeWarpIntensity || 1;
+        const pulseSpeed = 0.05 * intensity;
+        const pulse = Math.sin(Date.now() * pulseSpeed) * 0.5 + 0.5;
+        
+        // Purple tint overlay
+        ctx.save();
+        ctx.globalAlpha = 0.12 + pulse * 0.08;
+        ctx.fillStyle = '#8800ff';
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        ctx.restore();
+        
+        // Pulsing vignette effect
+        ctx.save();
+        const vignetteGrad = ctx.createRadialGradient(
+          GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH * 0.3,
+          GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH * 0.7
+        );
+        vignetteGrad.addColorStop(0, 'rgba(136, 0, 255, 0)');
+        vignetteGrad.addColorStop(1, `rgba(136, 0, 255, ${0.25 + pulse * 0.15})`);
+        ctx.fillStyle = vignetteGrad;
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        ctx.restore();
+        
+        // Scan lines effect
+        if (!perfMode) {
+          ctx.save();
+          ctx.globalAlpha = 0.08;
+          ctx.strokeStyle = '#aa00ff';
+          ctx.lineWidth = 1;
+          for (let i = 0; i < GAME_HEIGHT; i += 4) {
+            const offset = (Date.now() / 20) % 4;
+            ctx.beginPath();
+            ctx.moveTo(0, i + offset);
+            ctx.lineTo(GAME_WIDTH, i + offset);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
       
       // Draw mini-boss warning
       if (miniBossRef.current && miniBossRef.current.warningTimer > 0) {
@@ -5127,15 +5191,33 @@ const SpaceShooter = () => {
         engineTrailRef.current.forEach(p => {
           const alpha = p.lifetime / p.maxLifetime;
           const fadeAlpha = alpha > 0.7 ? 1 : alpha / 0.7; // Quick fade at end
+          const opacity = p.opacity !== undefined ? p.opacity : 1;
+          const glowIntensity = p.glow || 1;
+          
+          // Draw sub-particle trail first (behind main particle)
+          if (p.trail && p.trail.length > 0) {
+            p.trail.forEach((t, idx) => {
+              const trailAlpha = (idx / p.trail.length) * t.alpha * fadeAlpha;
+              ctx.globalAlpha = trailAlpha * opacity;
+              const grad = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.size * 2);
+              grad.addColorStop(0, p.color);
+              grad.addColorStop(0.5, p.secondColor);
+              grad.addColorStop(1, 'transparent');
+              ctx.fillStyle = grad;
+              ctx.beginPath();
+              ctx.arc(t.x, t.y, t.size * 2, 0, Math.PI * 2);
+              ctx.fill();
+            });
+          }
           
           if (p.style === 'electric') {
             // Electric - jagged lightning particles with branching
             ctx.strokeStyle = p.color;
-            ctx.lineWidth = 1 + alpha;
-            ctx.globalAlpha = fadeAlpha * 0.9;
+            ctx.lineWidth = 1 + alpha * glowIntensity;
+            ctx.globalAlpha = fadeAlpha * 0.9 * opacity;
             if (!perfMode) {
               ctx.shadowColor = p.color;
-              ctx.shadowBlur = 10;
+              ctx.shadowBlur = 10 * glowIntensity;
             }
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
@@ -5192,11 +5274,11 @@ const SpaceShooter = () => {
             }
           } else if (p.style === 'stardust') {
             // Stardust - twinkling sparkles
-            const twinkle = Math.sin(Date.now() / 100 + p.x + p.y) * 0.3 + 0.7;
-            ctx.globalAlpha = fadeAlpha * twinkle;
+            const twinkle = glowIntensity;
+            ctx.globalAlpha = fadeAlpha * twinkle * opacity;
             if (!perfMode) {
               ctx.shadowColor = '#ffffff';
-              ctx.shadowBlur = 12;
+              ctx.shadowBlur = 12 * twinkle;
             }
             ctx.fillStyle = p.color;
             ctx.beginPath();
@@ -5204,7 +5286,7 @@ const SpaceShooter = () => {
             ctx.fill();
             // Add star points
             if (p.size > 2) {
-              ctx.globalAlpha = fadeAlpha * twinkle * 0.8;
+              ctx.globalAlpha = fadeAlpha * twinkle * 0.8 * opacity;
               ctx.fillStyle = p.secondColor;
               for (let i = 0; i < 4; i++) {
                 const angle = i * Math.PI / 2;
@@ -5213,12 +5295,44 @@ const SpaceShooter = () => {
                 ctx.fillRect(px - 0.5, py - 0.5, 1, 1);
               }
             }
+          } else if (p.style === 'quantum') {
+            // Quantum - flickering reality distortion
+            ctx.globalAlpha = fadeAlpha * opacity;
+            const distortionGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
+            distortionGrad.addColorStop(0, p.color);
+            distortionGrad.addColorStop(0.5, p.secondColor);
+            distortionGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = distortionGrad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            // Add glitch lines
+            if (Math.random() > 0.7) {
+              ctx.strokeStyle = p.color;
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(p.x - p.size * 2, p.y);
+              ctx.lineTo(p.x + p.size * 2, p.y);
+              ctx.stroke();
+            }
+          } else if (p.style === 'nebula') {
+            // Nebula - slow expanding gas clouds
+            ctx.globalAlpha = fadeAlpha * opacity * 0.6;
+            const nebulaGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
+            nebulaGrad.addColorStop(0, p.color);
+            nebulaGrad.addColorStop(0.3, p.secondColor);
+            nebulaGrad.addColorStop(0.7, p.color);
+            nebulaGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = nebulaGrad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+            ctx.fill();
           } else {
             // Default (plasma, fire, rainbow, etc) - enhanced glowing orbs
-            ctx.globalAlpha = fadeAlpha * 0.85;
+            ctx.globalAlpha = fadeAlpha * 0.85 * opacity;
             if (!perfMode) {
               ctx.shadowColor = p.color;
-              ctx.shadowBlur = 12;
+              ctx.shadowBlur = 12 * glowIntensity;
             }
             const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 1.2);
             grad.addColorStop(0, p.secondColor || '#ffffff');
@@ -11366,6 +11480,22 @@ const SpaceShooter = () => {
         upgradeY += 16;
       }
       
+      // Formation Combo Multiplier Display
+      if (formationComboRef.current > 1.0) {
+        const comboGlow = Math.sin(Date.now() / 150) * 0.3 + 0.7;
+        const comboColor = formationComboRef.current >= 2.5 ? '#ff00ff' : formationComboRef.current >= 1.8 ? '#ffaa00' : '#ffff00';
+        ctx.fillStyle = comboColor;
+        ctx.shadowColor = comboColor;
+        ctx.shadowBlur = 8 * comboGlow;
+        ctx.font = "9px \"Press Start 2P\", monospace";
+        ctx.fillText(`🎯 FORMATION`, upgradeX, upgradeY);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = "9px \"Press Start 2P\", monospace";
+        ctx.fillText(`x${formationComboRef.current.toFixed(1)}`, upgradeX + 110, upgradeY);
+        ctx.shadowBlur = 0;
+        upgradeY += 16;
+      }
+      
       if (upgradesRef.current.laserBeam && upgradesRef.current.laserBeamTimer > 0) {
         const laserTime = Math.ceil(upgradesRef.current.laserBeamTimer / 60);
         ctx.fillStyle = '#ff00aa';
@@ -11696,28 +11826,92 @@ const SpaceShooter = () => {
         ctx.shadowBlur = 20;
         ctx.fillText(`${kc.count} CHAIN`, 0, 0);
         
-        // Multiplier
-        ctx.font = "14px \"Press Start 2P\", monospace";
+        // Multiplier with enhanced visual
+        ctx.font = "16px \"Press Start 2P\", monospace";
+        const multGlow = Math.sin(Date.now() / 100) * 0.3 + 0.7;
         ctx.fillStyle = '#ffff00';
         ctx.shadowColor = '#ffaa00';
-        ctx.shadowBlur = 15;
-        ctx.fillText(`x${kc.multiplier.toFixed(1)}`, 0, 20);
+        ctx.shadowBlur = 15 * multGlow;
+        ctx.fillText(`x${kc.multiplier.toFixed(1)} SCORE`, 0, 22);
         
         // Timer bar
         const barWidth = 120;
         const barHeight = 4;
         const timerPercent = kc.timer / KILL_CHAIN_TIMEOUT;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(-barWidth / 2, 28, barWidth, barHeight);
+        ctx.fillRect(-barWidth / 2, 32, barWidth, barHeight);
         
         const barColor = timerPercent > 0.5 ? '#00ff00' : timerPercent > 0.25 ? '#ffff00' : '#ff0000';
         ctx.fillStyle = barColor;
         ctx.shadowColor = barColor;
         ctx.shadowBlur = 8;
-        ctx.fillRect(-barWidth / 2, 28, barWidth * timerPercent, barHeight);
+        ctx.fillRect(-barWidth / 2, 32, barWidth * timerPercent, barHeight);
         
         ctx.shadowBlur = 0;
         ctx.restore();
+      }
+      
+      // === Draw Off-Screen Enemy Indicators ===
+      if (!perfMode) {
+        enemiesRef.current.forEach(enemy => {
+          if (!isFinite(enemy.x) || !isFinite(enemy.y)) return;
+          
+          let indicatorX, indicatorY, angle;
+          let showIndicator = false;
+          
+          // Check if enemy is off-screen
+          if (enemy.x < -50) {
+            // Off left edge
+            indicatorX = 10;
+            indicatorY = Math.max(20, Math.min(GAME_HEIGHT - 20, enemy.y));
+            angle = Math.PI;
+            showIndicator = true;
+          } else if (enemy.x > GAME_WIDTH + 50) {
+            // Off right edge
+            indicatorX = GAME_WIDTH - 10;
+            indicatorY = Math.max(20, Math.min(GAME_HEIGHT - 20, enemy.y));
+            angle = 0;
+            showIndicator = true;
+          }
+          
+          if (enemy.y < -50) {
+            // Off top edge
+            indicatorX = Math.max(20, Math.min(GAME_WIDTH - 20, enemy.x));
+            indicatorY = 10;
+            angle = -Math.PI / 2;
+            showIndicator = true;
+          } else if (enemy.y > GAME_HEIGHT + 50) {
+            // Off bottom edge
+            indicatorX = Math.max(20, Math.min(GAME_WIDTH - 20, enemy.x));
+            indicatorY = GAME_HEIGHT - 10;
+            angle = Math.PI / 2;
+            showIndicator = true;
+          }
+          
+          if (showIndicator) {
+            ctx.save();
+            ctx.translate(indicatorX, indicatorY);
+            ctx.rotate(angle);
+            
+            // Pulsing warning triangle
+            const pulse = Math.sin(Date.now() / 150) * 0.3 + 0.7;
+            const color = enemy.isBoss ? '#ff0000' : enemy.isMiniBoss ? '#ff8800' : '#ffff00';
+            
+            ctx.globalAlpha = pulse * 0.8;
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 10;
+            
+            ctx.beginPath();
+            ctx.moveTo(8, 0);
+            ctx.lineTo(-4, -4);
+            ctx.lineTo(-4, 4);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+          }
+        });
       }
       
       // === Draw Chain Combo Display (Polarity) ===
@@ -12914,32 +13108,62 @@ const SpaceShooter = () => {
             rotationSpeed: (Math.random() - 0.5) * 0.2,
             color: particleColor,
             secondColor: secondColor,
-            style: trailOpt.style
+            style: trailOpt.style,
+            opacity: 1,
+            glow: trailOpt.style === 'stardust' || trailOpt.style === 'electric' ? 1.5 : 1,
+            trail: [] // Sub-particles for enhanced trail effect
           });
         }
       }
       
       // Update engine trail particles
       engineTrailRef.current = engineTrailRef.current.filter(p => {
+        // Store previous position for trail
+        const prevX = p.x;
+        const prevY = p.y;
+        
         p.x += p.vx;
         p.y += p.vy;
         p.lifetime--;
+        
+        // Create sub-particle trail for certain styles
+        if ((p.style === 'plasma' || p.style === 'fire' || p.style === 'nebula') && p.lifetime % 2 === 0 && p.size > 1) {
+          if (!p.trail) p.trail = [];
+          p.trail.push({ x: prevX, y: prevY, size: p.size * 0.5, alpha: 0.6 });
+          if (p.trail.length > 5) p.trail.shift();
+        }
         
         // Style-specific updates
         if (p.style === 'ice') {
           p.rotation = (p.rotation || 0) + (p.rotationSpeed || 0);
           p.size *= 0.97; // Slower shrink for ice crystals
+          p.opacity = p.lifetime / p.maxLifetime;
         } else if (p.style === 'electric') {
           p.vx *= 0.98; // Electric particles slow down
           p.size *= 0.94;
+          p.glow = 1 + Math.sin(p.lifetime * 0.5) * 0.5; // Pulsing glow
         } else if (p.style === 'stardust') {
           p.size *= 0.96; // Maintain size longer
           p.vy += (Math.random() - 0.5) * 0.1; // Drift
+          p.glow = 1 + Math.sin(Date.now() / 100 + p.x) * 0.3; // Twinkling
         } else if (p.style === 'shadow') {
           p.rotation = (p.rotation || 0) + 0.05;
           p.size *= 0.93;
+          p.opacity = (p.lifetime / p.maxLifetime) * 0.8;
+        } else if (p.style === 'quantum') {
+          // Quantum flickering effect
+          p.opacity = Math.random() > 0.3 ? 0.9 : 0.3;
+          p.vx += (Math.random() - 0.5) * 0.5; // Erratic movement
+          p.size *= 0.95;
+        } else if (p.style === 'nebula') {
+          // Slow, drifting, expanding nebula particles
+          p.size *= 1.01; // Expand slightly
+          p.vx *= 0.92; // Slow down more
+          p.vy += (Math.random() - 0.5) * 0.15; // More drift
+          p.opacity = (p.lifetime / p.maxLifetime) * 0.7;
         } else {
           p.size *= 0.95;
+          p.opacity = p.lifetime / p.maxLifetime;
         }
         
         // Add slight gravity for some styles
@@ -13907,22 +14131,45 @@ const SpaceShooter = () => {
         // Check if all enemies from this group are gone
         const hasEnemies = enemiesRef.current.some(e => e.flybyGroupId === group.id);
         if (!hasEnemies && group.aliveCount > 0) {
-          // All enemies destroyed - award bonus
-          const bonus = group.bonus;
-          scoreRef.current += bonus;
+          // All enemies destroyed - award bonus with multiplier!
+          // Faster completion = higher multiplier (within 5 seconds of first kill = max bonus)
+          const timeElapsed = (Date.now() - group.startTime) / 1000;
+          const timeBonus = timeElapsed < 5 ? 2.0 : timeElapsed < 8 ? 1.5 : timeElapsed < 12 ? 1.2 : 1.0;
+          
+          // Apply and increase formation combo
+          const totalBonus = Math.floor(group.bonus * timeBonus * formationComboRef.current);
+          formationComboRef.current = Math.min(3.0, formationComboRef.current + 0.2); // Max 3x combo
+          
+          scoreRef.current += totalBonus;
           setScore(scoreRef.current);
           
+          // Enhanced visual feedback
           floatingTextsRef.current.push({
             x: GAME_WIDTH / 2,
             y: GAME_HEIGHT / 2 - 50,
-            text: `${group.name} BONUS +${bonus}`,
-            color: group.color || '#ffff00',
-            lifetime: 90,
+            text: formationComboRef.current > 1 ? `${group.name} PERFECT! +${totalBonus} (x${formationComboRef.current.toFixed(1)})` : `${group.name} BONUS +${totalBonus}`,
+            color: formationComboRef.current >= 2 ? '#ff00ff' : formationComboRef.current > 1 ? '#ffaa00' : group.color || '#ffff00',
+            lifetime: 120,
             vy: -1,
-            scale: 1.2
+            scale: 1.2 + (formationComboRef.current - 1) * 0.3
           });
           
+          // Screen flash for perfect formations
+          if (timeBonus >= 1.5) {
+            pickupEffectsRef.current.push({
+              x: GAME_WIDTH / 2,
+              y: GAME_HEIGHT / 2,
+              color: 'rgba(255, 215, 0, 0.2)',
+              lifetime: 20,
+              type: 'flash'
+            });
+          }
+          
           return false; // Remove completed group
+        }
+        // Reset combo if formation not completed
+        if (!hasEnemies && group.aliveCount === 0) {
+          formationComboRef.current = 1.0;
         }
         return hasEnemies;
       });
@@ -15810,14 +16057,18 @@ const SpaceShooter = () => {
                 setScore(newScore);
                 scoreRef.current = newScore;
                 
-                // Show victory text
+                // Show victory text with enhanced visual
+                const bonusMultiplier = formationComboRef.current;
+                const totalBonus = Math.floor(totalScore * bonusMultiplier);
+                
                 formationBonusDisplayRef.current.push({
                   x: mb.x + mb.width / 2,
                   y: mb.y,
-                  text: `${mb.name} DESTROYED +${totalScore}`,
-                  color: '#ffff00',
-                  lifetime: 90,
-                  vy: -2
+                  text: bonusMultiplier > 1 ? `${mb.name} DESTROYED +${totalBonus} (x${bonusMultiplier.toFixed(1)})` : `${mb.name} DESTROYED +${totalBonus}`,
+                  color: bonusMultiplier >= 2 ? '#ff00ff' : bonusMultiplier > 1 ? '#ffaa00' : '#ffff00',
+                  lifetime: 120,
+                  vy: -2,
+                  scale: 1.2 + (bonusMultiplier - 1) * 0.3
                 });
                 
                 // Drop power-up
@@ -16323,17 +16574,26 @@ const SpaceShooter = () => {
               triggerScreenShake(15, 30);
               break;
             case 'TIME_WARP':
-              // Slow motion for 10 seconds
+              // Slow motion for 10 seconds with enhanced visuals
               upgradesRef.current.timeWarp = true;
               upgradesRef.current.timeWarpTimer = 600; // 10 seconds
+              upgradesRef.current.timeWarpIntensity = 1.0; // For visual effects
               floatingTextsRef.current.push({
                 x: player.x + PLAYER_WIDTH / 2,
                 y: player.y - 30,
-                text: '',
+                text: '⏰ TIME WARP',
                 color: '#aa00ff',
                 lifetime: 150,
                 vy: -1,
                 scale: 1.8
+              });
+              // Screen flash
+              pickupEffectsRef.current.push({
+                x: GAME_WIDTH / 2,
+                y: GAME_HEIGHT / 2,
+                color: 'rgba(136, 0, 255, 0.3)',
+                lifetime: 30,
+                type: 'flash'
               });
               break;
             case 'CLONE':
