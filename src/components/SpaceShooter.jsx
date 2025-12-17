@@ -3295,43 +3295,40 @@ const SpaceShooter = () => {
       };
       explosionsRef.current.push(explosion);
       
-      // For boss explosions, add multiple sprite explosions for massive effect
+      // For boss explosions, add multiple sprite explosions for massive effect (immediate, no setTimeout)
       if (size === 'boss') {
-        for (let i = 0; i < 6; i++) {
-          const angle = (Math.PI * 2 * i) / 6;
+        for (let i = 0; i < 4; i++) { // Reduced from 6 to 4
+          const angle = (Math.PI * 2 * i) / 4;
           const dist = 40 + Math.random() * 30;
-          const delay = i * 3;
-          setTimeout(() => {
-            explosionsRef.current.push({
+          explosionsRef.current.push({
+            x: x + Math.cos(angle) * dist,
+            y: y + Math.sin(angle) * dist,
+            isSprite: true,
+            frame: 0,
+            totalFrames: 8,
+            frameTimer: 0,
+            frameDelay: 3,
+            spriteSize: 100 + Math.random() * 40,
+            lifetime: 24,
+            particles: []
+          });
+          // Add more debris for each secondary explosion
+          for (let j = 0; j < 3; j++) { // Reduced from 5 to 3
+            const debrisAngle = Math.random() * Math.PI * 2;
+            const debrisSpeed = 3 + Math.random() * 4;
+            pickupEffectsRef.current.push({
               x: x + Math.cos(angle) * dist,
               y: y + Math.sin(angle) * dist,
-              isSprite: true,
-              frame: 0,
-              totalFrames: 8,
-              frameTimer: 0,
-              frameDelay: 3,
-              spriteSize: 100 + Math.random() * 40,
-              lifetime: 24,
-              particles: []
+              vx: Math.cos(debrisAngle) * debrisSpeed,
+              vy: Math.sin(debrisAngle) * debrisSpeed,
+              color: debrisColors[Math.floor(Math.random() * debrisColors.length)],
+              size: 2 + Math.random() * 2,
+              lifetime: 15 + Math.floor(Math.random() * 15),
+              type: 'debris',
+              gravity: 0.1,
+              spin: (Math.random() - 0.5) * 0.3
             });
-            // Add more debris for each secondary explosion
-            for (let j = 0; j < 5; j++) {
-              const debrisAngle = Math.random() * Math.PI * 2;
-              const debrisSpeed = 3 + Math.random() * 4;
-              pickupEffectsRef.current.push({
-                x: x + Math.cos(angle) * dist,
-                y: y + Math.sin(angle) * dist,
-                vx: Math.cos(debrisAngle) * debrisSpeed,
-                vy: Math.sin(debrisAngle) * debrisSpeed,
-                color: debrisColors[Math.floor(Math.random() * debrisColors.length)],
-                size: 2 + Math.random() * 2,
-                lifetime: 15 + Math.floor(Math.random() * 15),
-                type: 'debris',
-                gravity: 0.1,
-                spin: (Math.random() - 0.5) * 0.3
-              });
-            }
-          }, delay * 16);
+          }
         }
       }
       return;
@@ -3345,6 +3342,8 @@ const SpaceShooter = () => {
       y,
       particles: [],
       lifetime: isBoss ? 60 : isMissile ? 45 : size === 'small' ? 15 : 30,
+      maxLifetime: isBoss ? 60 : isMissile ? 45 : size === 'small' ? 15 : 30,
+      startTime: Date.now(),
       isPlayerExplosion: size === 'large',
       isMissileExplosion: isMissile,
       isBossExplosion: isBoss,
@@ -4631,12 +4630,35 @@ const SpaceShooter = () => {
         // Handle sprite-based explosions
         if (explosion.isSprite && explosionSpriteRef.current) {
           const sprite = explosionSpriteRef.current;
+          
+          // Verify sprite is properly loaded
+          if (!sprite.complete || sprite.width === 0 || sprite.height === 0) {
+            return; // Skip if sprite not ready
+          }
+          
           const frameWidth = sprite.width / explosion.totalFrames;
           const frameHeight = sprite.height;
           const currentFrame = Math.min(Math.floor(age / (explosion.frameDelay || 3)), explosion.totalFrames - 1);
           const srcX = currentFrame * frameWidth;
           const srcY = 0;
-          const destSize = explosion.spriteSize;
+          
+          // Guard against invalid sprite dimensions
+          if (!isFinite(frameWidth) || !isFinite(frameHeight) || frameWidth <= 0 || frameHeight <= 0) {
+            return;
+          }
+          
+          // Calculate destination size preserving aspect ratio
+          const frameAspect = frameWidth / frameHeight;
+          let destWidth, destHeight;
+          if (frameAspect >= 1) {
+            // Frame is wider than tall
+            destWidth = explosion.spriteSize;
+            destHeight = explosion.spriteSize / frameAspect;
+          } else {
+            // Frame is taller than wide
+            destWidth = explosion.spriteSize * frameAspect;
+            destHeight = explosion.spriteSize;
+          }
           
           ctx.save();
           
@@ -4650,7 +4672,8 @@ const SpaceShooter = () => {
           // Add expanding shockwave ring for large explosions
           if (explosion.spriteSize > 80 && currentFrame < 5 && !perfMode) {
             const shockwaveProgress = currentFrame / 5;
-            const shockwaveRadius = destSize * 0.3 + (destSize * 0.8 * shockwaveProgress);
+            const maxDimension = Math.max(destWidth, destHeight);
+            const shockwaveRadius = maxDimension * 0.3 + (maxDimension * 0.8 * shockwaveProgress);
             ctx.save();
             ctx.globalAlpha = (1 - shockwaveProgress) * 0.6;
             ctx.strokeStyle = explosion.spriteSize > 150 ? '#ffaa00' : '#ff6600';
@@ -4665,7 +4688,8 @@ const SpaceShooter = () => {
           
           // Add glow/heat distortion effect behind sprite
           if (!perfMode && currentFrame < 6) {
-            const glowSize = destSize * (1 + currentFrame * 0.15);
+            const maxDimension = Math.max(destWidth, destHeight);
+            const glowSize = maxDimension * (1 + currentFrame * 0.15);
             const glowAlpha = (6 - currentFrame) / 6 * 0.4;
             ctx.save();
             const gradient = ctx.createRadialGradient(
@@ -4688,12 +4712,36 @@ const SpaceShooter = () => {
           ctx.globalAlpha = 1;
           
           // Draw sprite centered at explosion position
+          // Debug sprite rendering (only log first few times)
+          if (currentFrame === 0 && Math.random() < 0.01) {
+            console.log('[SPRITE] Drawing explosion:', {
+              spriteSize: `${sprite.width}x${sprite.height}`,
+              frameWidth,
+              frameHeight,
+              frameAspect: (frameWidth / frameHeight).toFixed(2),
+              currentFrame,
+              srcX,
+              destWidth,
+              destHeight,
+              position: `${explosion.x},${explosion.y}`,
+              drawPos: `${explosion.x - destWidth / 2},${explosion.y - destHeight / 2}`
+            });
+          }
+          
           ctx.drawImage(
             sprite,
             srcX, srcY, frameWidth, frameHeight,
-            explosion.x - destSize / 2, explosion.y - destSize / 2,
-            destSize, destSize
+            explosion.x - destWidth / 2, explosion.y - destHeight / 2,
+            destWidth, destHeight
           );
+          
+          // Debug: Draw red dot at explosion center (remove after debugging)
+          if (false) { // Set to true to debug
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(explosion.x, explosion.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
           
           ctx.restore(); // Restore main context
           return; // Skip particle rendering for sprite explosions
@@ -13585,7 +13633,7 @@ const SpaceShooter = () => {
             force.attached = force.targetAttachment;
             force.returning = false;
             force.targetAttachment = null;
-            soundSystem.playPowerupPickup(); // Play attachment sound
+            soundSystem.playPowerup(); // Play attachment sound
           }
         } else {
           // Float freely - slowly drift towards mouse or just hover
@@ -13910,6 +13958,10 @@ const SpaceShooter = () => {
               waveKillsRef.current = 0;
               waveKillsNeededRef.current = 10 + (waveRef.current * 5);
               waveStartTimeRef.current = performance.now(); // Reset grace period for new wave
+              
+              // Clear boss bullets and spawned enemies to avoid clutter
+              enemyBulletsRef.current = [];
+              enemiesRef.current = enemiesRef.current.filter(e => !e.spawnedByBoss);
               
               if (isCheckpointWave) {
                 // Start smooth checkpoint transition with boss explosion sequence
@@ -15156,54 +15208,20 @@ const SpaceShooter = () => {
       let hitPlayer = false;
       const timeWarpModifier = upgradesRef.current.timeWarp ? 0.3 : 1.0;
       
-      // Basic enemy movement - move all enemies except special types that handle their own movement
-      enemiesRef.current = enemiesRef.current.filter(enemy => {
-        try {
-          const effectiveSpeed = (enemy.speed || ENEMY_SPEED) * timeWarpModifier;
-          
-          // Update spawn invulnerability timer for ALL enemies
-          if (enemy.spawnInvulnerable && enemy.spawnInvulnerableTimer > 0) {
-            enemy.spawnInvulnerableTimer--;
-            if (enemy.spawnInvulnerableTimer <= 0) {
-              enemy.spawnInvulnerable = false;
-            }
-          }
-          
-          // Types that handle their own movement in the main filter below
-          const specialMovementTypes = ['turret', 'bomber', 'cloaked', 'shielded', 'spiral', 'wave', 'sniper', 
-                                         'shielder', 'healer', 'teleporter', 'splitter', 'mine', 'flyby'];
-          
-          // Only apply basic movement to non-special types
-          if (!specialMovementTypes.includes(enemy.type)) {
-            if (enemy.fromBehind) {
-              enemy.x += effectiveSpeed;
-            } else {
-              enemy.x -= effectiveSpeed;
-            }
-          }
-          
-          // Remove if off screen (only for types that were moved in this filter)
-          const ew = enemy.width || ENEMY_WIDTH;
-          if (!specialMovementTypes.includes(enemy.type)) {
-            if (enemy.x > GAME_WIDTH + ew || enemy.x < -ew) {
-              return false;
-            }
-          }
-          
-          return true;
-        } catch (err) {
-          console.error('Enemy update error:', err);
-          return false;
-        }
-      });
-      
-      
-      // SECOND FILTER: Special enemy behaviors and collision detection
+      // Enemy movement, behaviors and collision detection (consolidated into single filter)
       let collisionChecks = 0;
       enemiesRef.current = enemiesRef.current.filter(enemy => {
         try {
         // Apply time warp slowdown
         const effectiveSpeed = (enemy.speed || ENEMY_SPEED) * timeWarpModifier;
+        
+        // Update spawn invulnerability timer for ALL enemies
+        if (enemy.spawnInvulnerable && enemy.spawnInvulnerableTimer > 0) {
+          enemy.spawnInvulnerableTimer--;
+          if (enemy.spawnInvulnerableTimer <= 0) {
+            enemy.spawnInvulnerable = false;
+          }
+        }
         
         // Update frozen status (from GLACIER ship ability)
         if (enemy.frozen && enemy.frozenTimer > 0) {
@@ -15261,14 +15279,16 @@ const SpaceShooter = () => {
           return false;
         }
         
-        // Remove if off screen
+        // Remove if off screen (reuse ew already declared above)
         if (enemy.type === 'turret') {
-          return true;
+          return true; // Turrets don't move off screen
         } else if (enemy.fromBehind) {
-          return enemy.x < GAME_WIDTH + ENEMY_WIDTH;
+          if (enemy.x > GAME_WIDTH + ew) return false;
         } else {
-          return enemy.x > -ENEMY_WIDTH;
+          if (enemy.x < -ew) return false;
         }
+        
+        return true;
       } catch (error) {
         console.error('❌ ERROR in enemy collision update:', error);
         return true;
@@ -16137,11 +16157,9 @@ const SpaceShooter = () => {
               // Boss defeated! MASSIVE explosion
               sessionStatsRef.current.bosses++;
               createExplosion(boss.x + boss.width / 2, boss.y + boss.height / 2, 'boss', true);
-              // Additional explosions for epic effect
+              // Additional explosions for epic effect (reduced to prevent freeze)
               createExplosion(boss.x + boss.width / 4, boss.y + boss.height / 4, 'large');
               createExplosion(boss.x + boss.width * 3/4, boss.y + boss.height * 3/4, 'large');
-              createExplosion(boss.x + boss.width / 2, boss.y, 'large');
-              createExplosion(boss.x + boss.width / 2, boss.y + boss.height, 'large');
               
               // Destroy all boss-spawned enemies
               enemiesRef.current.forEach(enemy => {
@@ -16222,6 +16240,9 @@ const SpaceShooter = () => {
               graceWarningShownRef.current = false; // Reset warning flag
               console.log('[WAVE COMPLETE] Starting wave', waveRef.current);
               
+              // Clear boss bullets to avoid clutter
+              enemyBulletsRef.current = [];
+              
               // Drop force pod if player doesn't have one
               if (!forceRef.current) {
                 spawnPowerup(defeatedBoss.x + defeatedBoss.width / 2, defeatedBoss.y + defeatedBoss.height / 2);
@@ -16255,7 +16276,6 @@ const SpaceShooter = () => {
       }
 
       // Update power-ups
-      console.log('[DEBUG] Reached power-up update section. Player exists:', !!player, 'Powerups:', powerupsRef.current.length, 'Boss active:', bossActiveRef.current, 'Checkpoint:', checkpointTransitionRef.current.active);
       // Note: player variable already declared at line 12014
       
       // Clean up any invalid powerups first
@@ -16269,7 +16289,11 @@ const SpaceShooter = () => {
         
         // Guard against undefined player first
         if (!player || !isFinite(player.x) || !isFinite(player.y)) {
-          return true; // Keep powerup, don't remove it
+          console.warn('[POWERUP] Player invalid - x:', player?.x, 'y:', player?.y);
+          // No movement applied here - will be handled below
+          powerup.bobOffset = (powerup.bobOffset || 0) + 0.1;
+          powerup.rotation = (powerup.rotation || 0) + 0.05;
+          return true; // Keep powerup
         }
         
         // Always apply strong attraction toward player to make pickup easier
@@ -16778,10 +16802,9 @@ const SpaceShooter = () => {
               // Boss defeated! MASSIVE explosion
               sessionStatsRef.current.bosses++;
               createExplosion(boss.x + BOSS_WIDTH / 2, boss.y + BOSS_HEIGHT / 2, 'boss', true);
+              // Additional explosions for epic effect (reduced to prevent freeze)
               createExplosion(boss.x + 30, boss.y + 20, 'large');
               createExplosion(boss.x + BOSS_WIDTH - 30, boss.y + BOSS_HEIGHT - 20, 'large');
-              createExplosion(boss.x + BOSS_WIDTH / 2, boss.y, 'large');
-              createExplosion(boss.x + BOSS_WIDTH / 2, boss.y + BOSS_HEIGHT, 'large');
               
               // Destroy all boss-spawned enemies
               enemiesRef.current.forEach(enemy => {
@@ -16859,6 +16882,9 @@ const SpaceShooter = () => {
               waveKillsNeededRef.current = 10 + (waveRef.current * 5);
               waveStartTimeRef.current = performance.now(); // Reset grace period for new wave
               graceWarningShownRef.current = false; // Reset warning flag
+              
+              // Clear boss bullets to avoid clutter
+              enemyBulletsRef.current = [];
               
               if (isCheckpointWave) {
                 // Start smooth checkpoint transition with boss explosion sequence

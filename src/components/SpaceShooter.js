@@ -2901,12 +2901,13 @@ const SpaceShooter = () => {
       setWave(waveRef.current);
       setBossActive(false);
       
-      // Trigger fade from black for level intro
+     // Trigger fade from black for level intro
       levelFadeRef.current = { 
         active: true, 
         fadeIn: true, 
         alpha: 1, 
-        showText: 'playing');
+        showText: 'playing'
+      };
       
       return true;
     } catch (e) {
@@ -3125,10 +3126,10 @@ const SpaceShooter = () => {
       // Sprite-based explosion with 8 frames - BIGGER sizes!
       let spriteSize;
       switch (size) {
-        case small': spriteSize = 56; break;
-        case normal': spriteSize = 80; break;
-        case heavy': spriteSize = 110; break;
-        case boss': spriteSize = 180; break;
+        case 'small': spriteSize = 56; break;
+        case 'normal': spriteSize = 80; break;
+        case 'heavy': spriteSize = 110; break;
+        case 'boss': spriteSize = 180; break;
         default: spriteSize = 80;
       }
       const explosion = {
@@ -3401,12 +3402,13 @@ const SpaceShooter = () => {
       });
     }
     
-    // Floating text - with rarity indicator
-    const rarityPrefix = isUltra ? ? ULTRA ?  : isLegendary ? ?  : isRare ? ?  : ';
+     // Floating text - with rarity indicator
+    const rarityPrefix = isUltra ? '💎 ULTRA 💎 ' : isLegendary ? '⭐ ' : isRare ? '✨ ' : '';
     floatingTextsRef.current.push({
       x,
       y,
-      text: '#ff00ff' : isLegendary ? '#ffff00' : isRare ? '#00ffff' : color,
+      text: `${rarityPrefix}${powerupName}`,
+      color: isUltra ? '#ff00ff' : isLegendary ? '#ffff00' : isRare ? '#00ffff' : color,
       lifetime: isUltra ? 120 : isLegendary ? 90 : 60,
       vy: -2,
       scale: isUltra ? 1.5 : isLegendary ? 1.3 : isRare ? 1.15 : 1
@@ -3825,270 +3827,286 @@ const SpaceShooter = () => {
     }
     
     flybyFormationsRef.current.push(flybyGroup);
-    
-    // Announce the formation
-    floatingTextsRef.current.push({
-      x: GAME_WIDTH / 2,
-      y: 80,
-      text: 'GUNSHIP',
-      color: '#ff4400',
-      health: 15,
-      points: 200,
-      width: 80,
-      height: 50,
-      speed: 1.5,
-      attackPattern: 'spread', // Fires spread shots
-      description: 'Fires wide spread shots'
-    },
-    bomber: {
-      name: 'BOMBER',
-      color: '#ffaa00',
-      health: 20,
-      points: 250,
-      width: 90,
-      height: 60,
-      speed: 1.0,
-      attackPattern: 'bombs', // Drops bombs that explode
-      description: 'Drops explosive bombs'
-    },
-    hunter: {
-      name: 'HUNTER',
-      color: '#ff00ff',
-      health: 12,
-      points: 180,
-      width: 60,
-      height: 45,
-      speed: 2.5,
-      attackPattern: 'chase', // Fast, homes in on player
-      description: 'Aggressively pursues player'
-    },
-    sentinel: {
-      name: 'SENTINEL',
-      color: '#00ffff',
-      health: 25,
-      points: 300,
-      width: 70,
-      height: 70,
-      speed: 0.8,
-      attackPattern: 'laser', // Fires laser beams
-      description: 'Fires piercing laser beams'
-    },
-    swarm: {
-      name: 'SWARM LORD',
-      color: '#88ff00',
-      health: 18,
-      points: 350,
-      width: 85,
-      height: 55,
-      speed: 1.2,
-      attackPattern: 'spawn', // Spawns small drones
-      description: 'Spawns drone swarms'
-    },
-    // New mini-boss types for variety
-    sniper: {
-      name: 'DEADEYE',
-      color: '#ff0088',
-      health: 14,
-      points: 220,
-      width: 75,
-      height: 40,
-      speed: 1.8,
-      attackPattern: 'snipe', // Locks on then fires precise shots
-      description: 'Locks onto player, fires precise shots'
-    },
-    juggernaut: {
-      name: 'JUGGERNAUT',
-      color: '#888888',
-      health: 35,
-      points: 400,
-      width: 100,
-      height: 80,
-      speed: 0.5,
-      attackPattern: 'barrage', // Slow but fires massive volleys
-      description: 'Slow tank, massive bullet volleys'
-    },
-    phantom: {
-      name: 'PHANTOM',
-      color: '#9966ff',
-      health: 10,
-      points: 280,
-      width: 65,
-      height: 50,
-      speed: 2.0,
-      attackPattern: 'teleport', // Teleports around, fires from multiple positions
-      description: 'Teleports and ambushes'
-    },
-    pulsar: {
-      name: 'PULSAR',
-      color: '#ffff00',
-      health: 16,
-      points: 260,
-      width: 70,
-      height: 70,
-      speed: 1.0,
-      attackPattern: 'pulse', // Fires expanding ring shots
-      description: 'Fires expanding pulse rings'
-    },
-    berserker: {
-      name: 'BERSERKER',
-      color: '#ff2200',
-      health: 22,
-      points: 320,
-      width: 85,
-      height: 55,
-      speed: 1.3,
-      attackPattern: 'berserk', // Gets faster and more aggressive as health drops
-      description: 'Enrages when damaged'
-    }
-  };
-
-  // Mini-boss modifiers that add variety to each encounter
-  const MINI_BOSS_MODIFIERS = {
-    armored: {
-      name: 'ARMORED',
-      color: '#aaaaaa',
-      healthMult: 1.5,
-      speedMult: 0.8,
-      pointsMult: 1.3,
-      effect: 'armor' // Takes reduced damage
-    },
-    swift: {
-      name: 'SWIFT',
-      color: '#00ff88',
-      healthMult: 0.8,
-      speedMult: 1.6,
-      pointsMult: 1.2,
-      effect: 'speed' // Faster attacks
-    },
-    shielded: {
-      name: 'SHIELDED',
-      color: '#00aaff',
-      healthMult: 1.0,
-      speedMult: 1.0,
-      pointsMult: 1.4,
-      effect: 'shield' // Has regenerating shield
-    },
-    enraged: {
-      name: 'ENRAGED',
-      color: '#ff0000',
-      healthMult: 0.9,
-      speedMult: 1.2,
-      pointsMult: 1.25,
-      effect: 'rage' // Attacks faster, more bullets
-    },
-    phasing: {
-      name: 'PHASING',
-      color: '#cc88ff',
-      healthMult: 0.85,
-      speedMult: 1.0,
-      pointsMult: 1.35,
-      effect: 'phase' // Periodically becomes invulnerable
-    },
-    vampiric: {
-      name: 'VAMPIRIC',
-      color: '#880000',
-      healthMult: 1.1,
-      speedMult: 1.0,
-      pointsMult: 1.4,
-      effect: 'vampire' // Heals when hitting player
-    }
-  };
-
-  // Spawn a mini-boss (elite enemy mid-wave)
-  const spawnMiniBoss = useCallback(() => {
-    const waveNum = waveRef.current;
-    const typeKeys = Object.keys(MINI_BOSS_TYPES);
-    const typeKey = typeKeys[Math.floor(Math.random() * typeKeys.length)];
-    const mbType = MINI_BOSS_TYPES[typeKey];
-    
-    // Chance for modifier increases with wave (30% at wave 3, up to 80% at wave 10+)
-    const modifierChance = Math.min(0.8, 0.3 + (waveNum - 2) * 0.06);
-    const hasModifier = waveNum >= 4 && Math.random() < modifierChance;
-    const modifierKeys = Object.keys(MINI_BOSS_MODIFIERS);
-    const modifierKey = hasModifier ? modifierKeys[Math.floor(Math.random() * modifierKeys.length)] : null;
-    const modifier = modifierKey ? MINI_BOSS_MODIFIERS[modifierKey] : null;
-    
-    // Scale with wave
-    const healthScale = 1 + (waveNum - 2) * 0.15; // Starts at wave 2
-    const pointsScale = 1 + (waveNum - 2) * 0.1;
-    
-    // Apply modifier multipliers
-    const modHealthMult = modifier ? modifier.healthMult : 1;
-    const modSpeedMult = modifier ? modifier.speedMult : 1;
-    const modPointsMult = modifier ? modifier.pointsMult : 1;
-    
-    const finalHealth = Math.floor(mbType.health * healthScale * modHealthMult);
-    const finalSpeed = mbType.speed * modSpeedMult;
-    const finalPoints = Math.floor(mbType.points * pointsScale * modPointsMult);
-    
-    // Determine display name and color
-    const displayName = modifier ? `${modifier.name} ${mbType.name}` : mbType.name;
-    const displayColor = modifier ? modifier.color : mbType.color;
-    
-    const miniBoss = {
-      x: GAME_WIDTH + 20,
-      y: GAME_HEIGHT / 2 - mbType.height / 2,
-      targetY: GAME_HEIGHT / 2 - mbType.height / 2,
-      width: mbType.width,
-      height: mbType.height,
-      health: finalHealth,
-      maxHealth: finalHealth,
-      points: finalPoints,
-      type: typeKey,
-      name: displayName,
-      baseColor: mbType.color,
-      color: displayColor,
-      speed: finalSpeed,
-      attackPattern: mbType.attackPattern,
-      polarity: Math.random() > 0.5 ? 'light' : 'dark',
-      entered: false,
-      phaseTimer: 0,
-      lastShot: Date.now(),
-      attackCooldown: modifier?.effect === 'rage' ? 500 : 800, // Enraged attacks faster
-      spawnedDrones: [], // For swarm type
-      warningTimer: 60, // Flash warning before appearing
-      // Modifier properties
-      modifier: modifierKey,
-      modifierEffect: modifier?.effect || null,
-      armorReduction: modifier?.effect === 'armor' ? 0.5 : 0, // 50% damage reduction
-      modShield: modifier?.effect === 'shield' ? 30 : 0,
-      modShieldMax: modifier?.effect === 'shield' ? 30 : 0,
-      modShieldRegenDelay: 0,
-      phaseInvulnTimer: 0, // For phasing modifier
-      phaseInvulnCooldown: 0,
-      vampireHealAmount: modifier?.effect === 'vampire' ? 2 : 0,
-      // Type-specific properties
-      sniperLockTimer: 0, // For snipe attack
-      sniperLocked: false,
-      sniperTargetX: 0,
-      sniperTargetY: 0,
-      teleportCooldown: 0, // For phantom
-      teleportFlashTimer: 0,
-      pulsePhase: 0, // For pulsar
-      berserkMultiplier: 1, // For berserker - increases as health drops
-      barragePhase: 0, // For juggernaut
-      // Regeneration properties
-      regenerating: false,
-      regenTimer: 0,
-      regenDuration: 600, // 10 seconds at 60fps
-      regenShield: 0,
-      regenShieldMax: 50,
-      hasRegenerated: false,
-      regenThreshold: 0.35, // Trigger regen at 35% health
-      regenSpawnedSnipers: 0,
-      regenSpawnedSentinel: false,
-      regenSpawnedShielder: false
+      
+      // Announce the formation
+      floatingTextsRef.current.push({
+        x: GAME_WIDTH / 2,
+        y: 80,
+        text: pattern.name || 'FORMATION INCOMING',
+        color: pattern.color || '#ff4400',
+        lifetime: 90,
+        vy: -1,
+        scale: 1.5
+      });
+    }, []);
+  
+    // Mini-boss type definitions
+    const MINI_BOSS_TYPES = {
+      gunship: {
+        name: 'GUNSHIP',
+        color: '#ff4400',
+        health: 15,
+        points: 200,
+        width: 80,
+        height: 50,
+        speed: 1.5,
+        attackPattern: 'spread',
+        description: 'Fires wide spread shots'
+      },
+      bomber: {
+        name: 'BOMBER',
+        color: '#ffaa00',
+        health: 20,
+        points: 250,
+        width: 90,
+        height: 60,
+        speed: 1.0,
+        attackPattern: 'bombs',
+        description: 'Drops explosive bombs'
+      },
+      hunter: {
+        name: 'HUNTER',
+        color: '#ff00ff',
+        health: 12,
+        points: 180,
+        width: 60,
+        height: 45,
+        speed: 2.5,
+        attackPattern: 'chase',
+        description: 'Aggressively pursues player'
+      },
+      sentinel: {
+        name: 'SENTINEL',
+        color: '#00ffff',
+        health: 25,
+        points: 300,
+        width: 70,
+        height: 70,
+        speed: 0.8,
+        attackPattern: 'laser',
+        description: 'Fires piercing laser beams'
+      },
+      swarm: {
+        name: 'SWARM LORD',
+        color: '#88ff00',
+        health: 18,
+        points: 350,
+        width: 85,
+        height: 55,
+        speed: 1.2,
+        attackPattern: 'spawn',
+        description: 'Spawns drone swarms'
+      },
+      sniper: {
+        name: 'DEADEYE',
+        color: '#ff0088',
+        health: 14,
+        points: 220,
+        width: 75,
+        height: 40,
+        speed: 1.8,
+        attackPattern: 'snipe',
+        description: 'Locks onto player, fires precise shots'
+      },
+      juggernaut: {
+        name: 'JUGGERNAUT',
+        color: '#888888',
+        health: 35,
+        points: 400,
+        width: 100,
+        height: 80,
+        speed: 0.5,
+        attackPattern: 'barrage',
+        description: 'Slow tank, massive bullet volleys'
+      },
+      phantom: {
+        name: 'PHANTOM',
+        color: '#9966ff',
+        health: 10,
+        points: 280,
+        width: 65,
+        height: 50,
+        speed: 2.0,
+        attackPattern: 'teleport',
+        description: 'Teleports and ambushes'
+      },
+      pulsar: {
+        name: 'PULSAR',
+        color: '#ffff00',
+        health: 16,
+        points: 260,
+        width: 70,
+        height: 70,
+        speed: 1.0,
+        attackPattern: 'pulse',
+        description: 'Fires expanding pulse rings'
+      },
+      berserker: {
+        name: 'BERSERKER',
+        color: '#ff2200',
+        health: 22,
+        points: 320,
+        width: 85,
+        height: 55,
+        speed: 1.3,
+        attackPattern: 'berserk',
+        description: 'Enrages when damaged'
+      }
     };
-    
-    miniBossRef.current = miniBoss;
-    miniBossSpawnedRef.current = true;
-    
-    // Show mini-boss name with modifier
-    floatingTextsRef.current.push({
-      x: GAME_WIDTH - 120,
-      y: 60,
-      text: '2d');
-
+  
+    // Mini-boss modifiers that add variety to each encounter
+    const MINI_BOSS_MODIFIERS = {
+      armored: {
+        name: 'ARMORED',
+        color: '#aaaaaa',
+        healthMult: 1.5,
+        speedMult: 0.8,
+        pointsMult: 1.3,
+        effect: 'armor'
+      },
+      swift: {
+        name: 'SWIFT',
+        color: '#00ff88',
+        healthMult: 0.8,
+        speedMult: 1.6,
+        pointsMult: 1.2,
+        effect: 'speed'
+      },
+      shielded: {
+        name: 'SHIELDED',
+        color: '#00aaff',
+        healthMult: 1.0,
+        speedMult: 1.0,
+        pointsMult: 1.4,
+        effect: 'shield'
+      },
+      enraged: {
+        name: 'ENRAGED',
+        color: '#ff0000',
+        healthMult: 0.9,
+        speedMult: 1.2,
+        pointsMult: 1.25,
+        effect: 'rage'
+      },
+      phasing: {
+        name: 'PHASING',
+        color: '#cc88ff',
+        healthMult: 0.85,
+        speedMult: 1.0,
+        pointsMult: 1.35,
+        effect: 'phase'
+      },
+      vampiric: {
+        name: 'VAMPIRIC',
+        color: '#880000',
+        healthMult: 1.1,
+        speedMult: 1.0,
+        pointsMult: 1.4,
+        effect: 'vampire'
+      }
+    };
+  
+    // Spawn a mini-boss (elite enemy mid-wave)
+    const spawnMiniBoss = useCallback(() => {
+      const waveNum = waveRef.current;
+      const typeKeys = Object.keys(MINI_BOSS_TYPES);
+      const typeKey = typeKeys[Math.floor(Math.random() * typeKeys.length)];
+      const mbType = MINI_BOSS_TYPES[typeKey];
+      
+      // Chance for modifier increases with wave (30% at wave 3, up to 80% at wave 10+)
+      const modifierChance = Math.min(0.8, 0.3 + (waveNum - 2) * 0.06);
+      const hasModifier = waveNum >= 4 && Math.random() < modifierChance;
+      const modifierKeys = Object.keys(MINI_BOSS_MODIFIERS);
+      const modifierKey = hasModifier ? modifierKeys[Math.floor(Math.random() * modifierKeys.length)] : null;
+      const modifier = modifierKey ? MINI_BOSS_MODIFIERS[modifierKey] : null;
+      
+      // Scale with wave
+      const healthScale = 1 + (waveNum - 2) * 0.15;
+      const pointsScale = 1 + (waveNum - 2) * 0.1;
+      
+      // Apply modifier multipliers
+      const modHealthMult = modifier ? modifier.healthMult : 1;
+      const modSpeedMult = modifier ? modifier.speedMult : 1;
+      const modPointsMult = modifier ? modifier.pointsMult : 1;
+      
+      const finalHealth = Math.floor(mbType.health * healthScale * modHealthMult);
+      const finalSpeed = mbType.speed * modSpeedMult;
+      const finalPoints = Math.floor(mbType.points * pointsScale * modPointsMult);
+      
+      // Determine display name and color
+      const displayName = modifier ? `${modifier.name} ${mbType.name}` : mbType.name;
+      const displayColor = modifier ? modifier.color : mbType.color;
+      
+      const miniBoss = {
+        x: GAME_WIDTH + 20,
+        y: GAME_HEIGHT / 2 - mbType.height / 2,
+        targetY: GAME_HEIGHT / 2 - mbType.height / 2,
+        width: mbType.width,
+        height: mbType.height,
+        health: finalHealth,
+        maxHealth: finalHealth,
+        points: finalPoints,
+        type: typeKey,
+        name: displayName,
+        baseColor: mbType.color,
+        color: displayColor,
+        speed: finalSpeed,
+        attackPattern: mbType.attackPattern,
+        polarity: Math.random() > 0.5 ? 'light' : 'dark',
+        entered: false,
+        phaseTimer: 0,
+        lastShot: Date.now(),
+        attackCooldown: modifier?.effect === 'rage' ? 500 : 800,
+        spawnedDrones: [],
+        warningTimer: 60,
+        // Modifier properties
+        modifier: modifierKey,
+        modifierEffect: modifier?.effect || null,
+        armorReduction: modifier?.effect === 'armor' ? 0.5 : 0,
+        modShield: modifier?.effect === 'shield' ? 30 : 0,
+        modShieldMax: modifier?.effect === 'shield' ? 30 : 0,
+        modShieldRegenDelay: 0,
+        phaseInvulnTimer: 0,
+        phaseInvulnCooldown: 0,
+        vampireHealAmount: modifier?.effect === 'vampire' ? 2 : 0,
+        // Type-specific properties
+        sniperLockTimer: 0,
+        sniperLocked: false,
+        sniperTargetX: 0,
+        sniperTargetY: 0,
+        teleportCooldown: 0,
+        teleportFlashTimer: 0,
+        pulsePhase: 0,
+        berserkMultiplier: 1,
+        barragePhase: 0,
+        // Regeneration properties
+        regenerating: false,
+        regenTimer: 0,
+        regenDuration: 600,
+        regenShield: 0,
+        regenShieldMax: 50,
+        hasRegenerated: false,
+        regenThreshold: 0.35,
+        regenSpawnedSnipers: 0,
+        regenSpawnedSentinel: false,
+        regenSpawnedShielder: false
+      };
+      
+      miniBossRef.current = miniBoss;
+      miniBossSpawnedRef.current = true;
+      
+      // Show mini-boss name with modifier
+      floatingTextsRef.current.push({
+        x: GAME_WIDTH / 2,
+        y: 60,
+        text: displayName,
+        color: displayColor,
+        lifetime: 120,
+        vy: -0.5,
+        scale: 1.8
+      });
+    }, []);
+  
     const gameLoop = (timestamp) => {
       // Update FPS counter
       const fpsData = fpsRef.current;
@@ -4127,9 +4145,9 @@ const SpaceShooter = () => {
       });
       
       // Update checkpoint transition
-      const transition = checkpointTransitionRef.current;
-      if (transition.active) {
-        transition.timer++;
+      const checkpointTransition = checkpointTransitionRef.current;
+      if (checkpointTransition.active) {
+        checkpointTransition.timer++;
         
         if (transition.phase === 'explosions') {
           // Create staggered explosions at boss location
@@ -4199,8 +4217,8 @@ const SpaceShooter = () => {
       }
       
       // Update victory sequence
-      const victory = victoryRef.current;
-      if (victory.active) {
+      const victoryState = victoryRef.current;
+      if (victoryState.active) {
         victory.timer++;
         
         if (victory.phase === 'explosion') {
@@ -5137,8 +5155,8 @@ const SpaceShooter = () => {
       const isNewShot = (spacePressed && !spacePrevPressed) || (gpShoot && !gpShootPrevPressed);
       
       // Get weapon level data
-      const weaponData = WEAPON_LEVELS[weaponLevelRef.current.level] || WEAPON_LEVELS[1];
-      const weaponFireRateBonus = weaponData.fireRateBonus || 0;
+      const currentWeaponData = WEAPON_LEVELS[weaponLevelRef.current.level] || WEAPON_LEVELS[1];
+      const weaponFireRateBonus = currentWeaponData.fireRateBonus || 0;
       const adjustedFireRate = fireRate * (1 - weaponFireRateBonus);
       
       if (isNewShot && !isChargingRef.current && timestamp - lastShotRef.current > adjustedFireRate) {
@@ -5158,7 +5176,7 @@ const SpaceShooter = () => {
         const shipAbility = currentShip.ability || null;
         
         // Calculate damage modifier from abilities and weapon level
-        let damageMultiplier = weaponData.damage;
+        let damageMultiplier = currentWeaponData.damage;
         if (shipAbility === 'berserk') {
           // BERSERKER: More damage at low health
           const healthPercent = livesRef.current / 3;
@@ -5167,10 +5185,10 @@ const SpaceShooter = () => {
         }
         
         // Fire bullets based on weapon level
-        const bulletCount = weaponData.bulletCount;
-        const bulletSize = weaponData.bulletSize;
-        const weaponColor = weaponData.color;
-        const isPiercing = weaponData.special === 'piercing';
+        const bulletCount = currentWeaponData.bulletCount;
+        const bulletSize = currentWeaponData.bulletSize;
+        const weaponColor = currentWeaponData.color;
+        const isPiercing = currentWeaponData.special === 'piercing';
         
         // Calculate bullet spread based on level
         const spreadAngles = {
@@ -5614,13 +5632,12 @@ const SpaceShooter = () => {
                 enemiesRef.current = [];
                 enemyBulletsRef.current = [];
                 playerInvincibleRef.current = 9999;
-                return elec.lifetime > 0;
               }
               
               waveRef.current++;
               setWave(waveRef.current);
               // Track highest wave reached for Practice Mode
-              const currentHighestWave = parseInt(localStorage.getItem('nebulaXHighestWave') || 1', 10);
+              const currentHighestWave = parseInt(localStorage.getItem('nebulaXHighestWave') || '1', 10);
               if (waveRef.current > currentHighestWave) {
                 localStorage.setItem('nebulaXHighestWave', waveRef.current.toString());
               }
@@ -5640,13 +5657,28 @@ const SpaceShooter = () => {
                 } catch (e) {}
                 // Resume normal gameplay music
                 resumeGameplayMusic();
-                // Trigger wave intro fade effect
-                levelFadeRef.current = { 
-                  active: true, 
-                  fadeIn: true, 
-                  alpha: 0.8, 
-                  showText: 'light';
-          bulletTrailsRef.current.push({
+                    // Trigger wave intro fade effect
+                    levelFadeRef.current = { 
+                      active: true, 
+                      fadeIn: true, 
+                      alpha: 0.8, 
+                      showText: gameModeRef.current
+                    };
+                  }
+                }
+              }
+            }
+            
+            return elec.lifetime > 0;
+          });
+    
+          // Update bullets with trails
+          bulletsRef.current = bulletsRef.current.filter(bullet => {
+            const bulletPolarity = bullet.polarity || 'light';
+            
+            // Create glowing bullet trail
+            if (Math.random() < 0.6) {
+              bulletTrailsRef.current.push({
             x: bullet.x - 2,
             y: bullet.y + BULLET_HEIGHT / 2,
             size: 3 + Math.random() * 2,
@@ -5797,10 +5829,14 @@ const SpaceShooter = () => {
           scoreRef.current += bonus;
           setScore(scoreRef.current);
           
-          floatingTextsRef.current.push({
-            x: GAME_WIDTH / 2,
-            y: GAME_HEIGHT / 2 - 50,
-            text: 'entering';
+      floatingTextsRef.current.push({
+        x: GAME_WIDTH / 2,
+        y: GAME_HEIGHT / 2 - 50,
+        text: group.name + ' - BONUS: +' + group.bonus,
+        color: group.color,
+        lifetime: 90,
+        vy: -1,
+        scale: 1.3
       });
       
       // ========== ENVIRONMENTAL HAZARDS ==========
@@ -6255,7 +6291,7 @@ const SpaceShooter = () => {
               mb.lastShot = currentTime;
             
               switch (mb.attackPattern) {
-                case spread': {
+                case 'spread': {
                   // Fire 5-way spread
                   for (let angle = -30; angle <= 30; angle += 15) {
                     const rad = angle * Math.PI / 180;
@@ -6271,7 +6307,7 @@ const SpaceShooter = () => {
                   soundSystem.playEnemyShoot();
                   break;
                 }
-                case bombs': {
+                case 'bombs': {
                   // Drop bombs that fall down
                   enemyBulletsRef.current.push({
                     x: mb.x,
@@ -6285,7 +6321,7 @@ const SpaceShooter = () => {
                   soundSystem.playEnemyShoot();
                   break;
                 }
-                case chase': {
+                case 'chase': {
                   // Fire aimed shot at player
                   const dx = player.x - mb.x;
                 const dy = player.y - mb.y;
@@ -6301,7 +6337,7 @@ const SpaceShooter = () => {
                 soundSystem.playEnemyShoot();
                 break;
               }
-              case laser': {
+              case 'laser': {
                 // Fire a horizontal laser beam
                 enemyBulletsRef.current.push({
                   x: mb.x - 200,
@@ -6317,7 +6353,7 @@ const SpaceShooter = () => {
                 soundSystem.playEnemyShoot();
                 break;
               }
-              case spawn': {
+              case 'spawn': {
                 // Spawn small drones
                 for (let i = 0; i < 2; i++) {
                   enemiesRef.current.push({
@@ -6338,7 +6374,7 @@ const SpaceShooter = () => {
               }
               
               // === NEW MINI-BOSS ATTACK PATTERNS ===
-              case snipe': {
+              case 'snipe': {
                 // Deadeye: Lock on to player position, then fire precise shot
                 if (!mb.sniperLocked) {
                   // Start locking on
@@ -6359,7 +6395,7 @@ const SpaceShooter = () => {
                 break;
               }
               
-              case barrage': {
+              case 'barrage': {
                 // Juggernaut: Fire massive bullet wall
                 mb.barragePhase = (mb.barragePhase + 1) % 3;
                 const bulletCount = 8 + mb.barragePhase * 4; // 8, 12, or 16 bullets
@@ -6385,7 +6421,7 @@ const SpaceShooter = () => {
                 break;
               }
               
-              case teleport': {
+              case 'teleport': {
                 // Phantom: Teleport to new position and fire
                 if (mb.teleportCooldown <= 0) {
                   // Fire from current position
@@ -6416,7 +6452,7 @@ const SpaceShooter = () => {
                 break;
               }
               
-              case pulse': {
+              case 'pulse': {
                 // Pulsar: Fire expanding ring of bullets
                 mb.pulsePhase = (mb.pulsePhase + 1) % 3;
                 const ringCount = 12 + mb.pulsePhase * 4;
@@ -6438,7 +6474,7 @@ const SpaceShooter = () => {
                 break;
               }
               
-              case berserk': {
+              case 'berserk': {
                 // Berserker: Gets more aggressive as health drops
                 const healthPercent = mb.health / mb.maxHealth;
                 mb.berserkMultiplier = 1 + (1 - healthPercent) * 2; // Up to 3x at low health
@@ -7319,7 +7355,7 @@ const SpaceShooter = () => {
               { x: bulletX, y: bulletY, width: bulletW, height: bulletH },
               { x: mb.x, y: mb.y, width: mb.width, height: mb.height }
             )) {
-              const damage = bullet.damage || 1;
+              const mbDamage = bullet.damage || 1;
               
               // During regeneration, shield absorbs damage first
               if (mb.regenerating && mb.regenShield > 0) {
@@ -7367,7 +7403,7 @@ const SpaceShooter = () => {
               
               // Shield modifier - absorb damage with shield first
               if (mb.modifierEffect === 'shield' && mb.modShield > 0) {
-                mb.modShield -= damage;
+                mb.modShield -= mbDamage;
                 mb.modShieldRegenDelay = 180; // 3 second regen delay
                 floatingTextsRef.current.push({
                   x: bullet.x,
@@ -7393,7 +7429,7 @@ const SpaceShooter = () => {
               }
               
               // Armor modifier - reduce damage taken
-              let finalDamage = damage;
+              let finalDamage = mbDamage;
               if (mb.modifierEffect === 'armor' && mb.armorReduction > 0) {
                 finalDamage = damage * (1 - mb.armorReduction);
                 // Show armor reduction occasionally
@@ -7580,7 +7616,8 @@ const SpaceShooter = () => {
                   active: true, 
                   fadeIn: true, 
                   alpha: 0.8, 
-                  showText: 'large');
+                  showText: true
+                };
           const newLives = livesRef.current - 1;
           setLives(newLives);
           livesRef.current = newLives;
@@ -7636,7 +7673,7 @@ const SpaceShooter = () => {
           
           // Apply power-up
           switch (powerup.type) {
-            case RAPID_FIRE': {
+            case 'RAPID_FIRE': {
               // Add to weapon level XP
               upgradesRef.current.rapidFire = Math.min(3, upgradesRef.current.rapidFire + 1);
               const weapon = weaponLevelRef.current;
@@ -7663,10 +7700,10 @@ const SpaceShooter = () => {
               }
               break;
             }
-            case MISSILES':
+            case 'MISSILES':
               upgradesRef.current.missiles = true;
               break;
-            case SHIELD':
+            case 'SHIELD':
               upgradesRef.current.shield = true;
               // Stack shields up to max
               upgradesRef.current.shieldHits = Math.min(upgradesRef.current.shieldMaxHits, upgradesRef.current.shieldHits + 3);
@@ -7678,7 +7715,7 @@ const SpaceShooter = () => {
               shieldSound.volume = 0.5;
               shieldSound.play().catch(() => {});
               break;
-            case FORCE':
+            case 'FORCE':
               if (!forceRef.current || !forceRef.current.active) {
                 forceRef.current = {
                   x: player.x + PLAYER_WIDTH + FORCE_SIZE / 2 + 5,
@@ -7711,29 +7748,38 @@ const SpaceShooter = () => {
                   floatingTextsRef.current.push({
                     x: force.x,
                     y: force.y - 20,
-                    text: '?':
+                    text: 'FORCE LEVEL UP!',
+                    color: '#ffaa00',
+                    lifetime: 60,
+                    vy: -1,
+                    scale: 1.2
+                  });
+                }
+              }
+              break;
+            case 'OPTION':
               // Add an option satellite (max 4)
-              if (optionsRef.current.length < MAX_OPTIONS) {
-                optionsRef.current.push({
+            if (optionsRef.current.length < MAX_OPTIONS) {
+              optionsRef.current.push({
                   x: player.x,
                   y: player.y + PLAYER_HEIGHT / 2
                 });
               }
               break;
-            case SPEED':
+            case 'SPEED':
               // Speed boost - stacks up to 3
               upgradesRef.current.speedBoost = Math.min(3, upgradesRef.current.speedBoost + 1);
               break;
-            case SPREAD':
+            case 'SPREAD':
               // Spread shot - fires in multiple directions
               upgradesRef.current.spreadShot = true;
               break;
-            case MAGNET':
+            case 'MAGNET':
               // Magnet attracts nearby power-ups for 15 seconds
               upgradesRef.current.magnet = true;
               upgradesRef.current.magnetTimer = 900; // 15 seconds at 60fps
               break;
-            case MEGA_BOMB':
+            case 'MEGA_BOMB':
               // Clear all enemies on screen!
               enemiesRef.current.forEach(enemy => {
                 const ew = enemy.width || ENEMY_WIDTH;
@@ -7749,11 +7795,11 @@ const SpaceShooter = () => {
               });
               enemyBulletsRef.current = [];
               // Screen flash effect
-              createPickupEffect(GAME_WIDTH / 2, GAME_HEIGHT / 2, '#ffffff', MEGA BOMB!', 'legendary');
+              createPickupEffect(GAME_WIDTH / 2, GAME_HEIGHT / 2, '#ffffff', 'MEGA BOMB!', 'legendary');
               break;
             
             // New common power-ups
-            case REPAIR':
+            case 'REPAIR':
               // Restore 1 life
               setLives(prev => Math.min(prev + 1, 9));
               floatingTextsRef.current.push({
@@ -7766,7 +7812,7 @@ const SpaceShooter = () => {
                 scale: 1.2
               });
               break;
-            case SCORE_BONUS':
+            case 'SCORE_BONUS':
               // Add bonus score
               scoreRef.current += 500;
               setScore(scoreRef.current);
@@ -7782,12 +7828,12 @@ const SpaceShooter = () => {
               break;
             
             // New rare power-ups
-            case PIERCING':
+            case 'PIERCING':
               // Bullets pierce through enemies
               upgradesRef.current.piercing = true;
               upgradesRef.current.piercingTimer = 900; // 15 seconds
               break;
-            case DOUBLE_SCORE':
+            case 'DOUBLE_SCORE':
               // Double score for limited time
               upgradesRef.current.doubleScore = true;
               upgradesRef.current.doubleScoreTimer = 1200; // 20 seconds
@@ -7801,14 +7847,14 @@ const SpaceShooter = () => {
                 scale: 1.4
               });
               break;
-            case RICOCHET':
+            case 'RICOCHET':
               // Bullets bounce off walls
               upgradesRef.current.ricochet = true;
               upgradesRef.current.ricochetTimer = 900; // 15 seconds
               break;
             
             // New legendary power-ups
-            case INVINCIBILITY':
+            case 'INVINCIBILITY':
               // Immune to damage for 8 seconds
               upgradesRef.current.invincible = true;
               upgradesRef.current.invincibleTimer = 480; // 8 seconds
@@ -7823,19 +7869,19 @@ const SpaceShooter = () => {
               });
               triggerScreenShake(8, 15);
               break;
-            case LASER_BEAM':
+            case 'LASER_BEAM':
               // Powerful laser beam for limited time
               upgradesRef.current.laserBeam = true;
               upgradesRef.current.laserBeamTimer = 600; // 10 seconds
               break;
-            case CHAIN_LIGHTNING':
+            case 'CHAIN_LIGHTNING':
               // Lightning chains between enemies
               upgradesRef.current.chainLightning = true;
               upgradesRef.current.chainLightningTimer = 600; // 10 seconds
               break;
             
             // Ultra rare power-ups
-            case BLACK_HOLE':
+            case 'BLACK_HOLE':
               // Create black hole that sucks in enemies
               blackHoleRef.current = {
                 x: GAME_WIDTH / 2,
@@ -7855,7 +7901,7 @@ const SpaceShooter = () => {
               });
               triggerScreenShake(15, 30);
               break;
-            case TIME_WARP':
+            case 'TIME_WARP':
               // Slow motion for 10 seconds
               upgradesRef.current.timeWarp = true;
               upgradesRef.current.timeWarpTimer = 600; // 10 seconds
@@ -7869,7 +7915,7 @@ const SpaceShooter = () => {
                 scale: 1.8
               });
               break;
-            case CLONE':
+            case 'CLONE':
               // Create shadow clone that mimics player
               cloneRef.current = {
                 x: player.x - 80,
@@ -7887,7 +7933,7 @@ const SpaceShooter = () => {
                 scale: 1.8
               });
               break;
-            case NUCLEAR':
+            case 'NUCLEAR':
               // Devastating explosion that clears everything
               // Kill all enemies with massive explosion
               enemiesRef.current.forEach(enemy => {
@@ -7923,7 +7969,7 @@ const SpaceShooter = () => {
                 scale: 2.5
               });
               break;
-            case PHOENIX':
+            case 'PHOENIX':
               // Auto-revive on death
               upgradesRef.current.phoenix = true;
               floatingTextsRef.current.push({
@@ -8167,7 +8213,9 @@ const SpaceShooter = () => {
                   active: true, 
                   fadeIn: true, 
                   alpha: 0.8, 
-                  showText: 'ring') {
+                  showText: true
+                );
+              }
           effect.radius += (effect.maxRadius - effect.radius) * 0.2;
         } else if (effect.type === 'sparkle') {
           effect.x += effect.vx;
@@ -9559,7 +9607,7 @@ const SpaceShooter = () => {
       }
       
       // Clear canvas
-      ctx.fillStyle = #0a0a20';
+      ctx.fillStyle = '#0a0a20';
       ctx.fillRect(-10, -10, GAME_WIDTH + 20, GAME_HEIGHT + 20);
 
       // Draw parallax stars (layered) - optimized
@@ -9570,13 +9618,13 @@ const SpaceShooter = () => {
           ctx.globalAlpha = star.brightness;
           if (perfMode) {
             // Performance mode: simple rectangle, no gradient
-            ctx.fillStyle = #ffffff';
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(star.x, star.y, star.length, star.size * 0.6);
           } else {
             // Quality mode: use gradient (creates new one each frame due to x position change)
             const gradient = ctx.createLinearGradient(star.x, star.y, star.x + star.length, star.y);
             gradient.addColorStop(0, '#ffffff');
-            gradient.addColorStop(1, rgba(255,255,255,0)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
             ctx.fillStyle = gradient;
             ctx.fillRect(star.x, star.y, star.length, star.size * 0.6);
           }
@@ -9589,12 +9637,12 @@ const SpaceShooter = () => {
             const twinkle = 0.9 + Math.sin(timestamp * 0.005 + star.x) * 0.1;
             ctx.globalAlpha = star.brightness * twinkle;
           }
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.fillRect(star.x, star.y, star.size, star.size);
         } else {
           // Far layer - dim, small dots
           ctx.globalAlpha = star.brightness;
-          ctx.fillStyle = #8888aa';
+          ctx.fillStyle = '#8888aa';
           ctx.fillRect(star.x, star.y, star.size, star.size);
         }
       });
@@ -9616,7 +9664,7 @@ const SpaceShooter = () => {
           // Performance mode: simplified gravity well rendering
           // Single ring instead of 3
           ctx.globalAlpha = 0.3 * pulse;
-          ctx.strokeStyle = #aa00ff';
+          ctx.strokeStyle = '#aa00ff';
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(well.x, well.y, well.radius * 0.8, 0, Math.PI * 2);
@@ -9624,14 +9672,14 @@ const SpaceShooter = () => {
           
           // Simple core
           ctx.globalAlpha = 0.6 * pulse;
-          ctx.fillStyle = #220044';
+          ctx.fillStyle = '#220044';
           ctx.beginPath();
           ctx.arc(well.x, well.y, well.radius * 0.5, 0, Math.PI * 2);
           ctx.fill();
           
           // Center
           ctx.globalAlpha = 1;
-          ctx.fillStyle = #000000';
+          ctx.fillStyle = '#000000';
           ctx.beginPath();
           ctx.arc(well.x, well.y, well.radius * 0.15, 0, Math.PI * 2);
           ctx.fill();
@@ -9656,7 +9704,7 @@ const SpaceShooter = () => {
           gradient.addColorStop(0, `rgba(20, 0, 50, ${0.9 * pulse})`);
           gradient.addColorStop(0.3, `rgba(80, 0, 120, ${0.5 * pulse})`);
           gradient.addColorStop(0.6, `rgba(100, 50, 150, ${0.2 * pulse})`);
-          gradient.addColorStop(1, rgba(0, 0, 0, 0)');
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
           
           ctx.globalAlpha = 1;
           ctx.fillStyle = gradient;
@@ -9672,7 +9720,7 @@ const SpaceShooter = () => {
             const px = well.x + Math.cos(angle) * dist;
             const py = well.y + Math.sin(angle) * dist;
             
-            ctx.fillStyle = #aa66ff';
+            ctx.fillStyle = '#aa66ff';
             ctx.beginPath();
             ctx.arc(px, py, 3, 0, Math.PI * 2);
             ctx.fill();
@@ -9680,9 +9728,9 @@ const SpaceShooter = () => {
           
           // Center singularity
           ctx.globalAlpha = 1;
-          ctx.shadowColor = #8800ff';
+          ctx.shadowColor = '#8800ff';
           ctx.shadowBlur = 20 * pulse;
-          ctx.fillStyle = #000000';
+          ctx.fillStyle = '#000000';
           ctx.beginPath();
           ctx.arc(well.x, well.y, well.radius * 0.15, 0, Math.PI * 2);
           ctx.fill();
@@ -9690,8 +9738,8 @@ const SpaceShooter = () => {
         }
         
         // Warning indicator (always show)
-        ctx.fillStyle = #ff00ff';
-        ctx.font = 8px "Press Start 2P", 'monospace';
+        ctx.fillStyle = '#ff00ff';
+        ctx.font = '8px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
         ctx.globalAlpha = 0.5 + 0.5 * Math.sin(well.pulsePhase * 3);
         ctx.fillText('GRAVITY', well.x, well.y - well.radius - 10);
@@ -9708,13 +9756,13 @@ const SpaceShooter = () => {
         if (barrier.warningTimer > 0) {
           // Warning indicator
           ctx.globalAlpha = 0.5 + 0.5 * Math.sin(barrier.warningTimer * 0.3);
-          ctx.fillStyle = #ff0000';
-          ctx.font = 10px "Press Start 2P", 'monospace';
+          ctx.fillStyle = '#ff0000';
+          ctx.font = '10px "Press Start 2P", monospace';
           ctx.textAlign = 'center';
           ctx.fillText('? LASER ?', GAME_WIDTH - 60, barrier.y - 15);
           
           // Warning line
-          ctx.strokeStyle = #ff4444';
+          ctx.strokeStyle = '#ff4444';
           ctx.lineWidth = 2;
           ctx.setLineDash([5, 5]);
           ctx.beginPath();
@@ -9732,7 +9780,7 @@ const SpaceShooter = () => {
           
           // Beam gradient
           const beamGrad = ctx.createLinearGradient(barrierX, barrier.y, GAME_WIDTH, barrier.y);
-          beamGrad.addColorStop(0, rgba(255,0,0,0)');
+          beamGrad.addColorStop(0, 'rgba(255,0,0,0)');
           beamGrad.addColorStop(0.1, barrier.active ? '#ff0000' : '#ff6600');
           beamGrad.addColorStop(0.9, barrier.active ? '#ff4444' : '#ffaa00');
           beamGrad.addColorStop(1, barrier.active ? '#ffffff' : '#ffff00');
@@ -9742,12 +9790,12 @@ const SpaceShooter = () => {
           
           // Core
           if (barrier.active) {
-            ctx.fillStyle = #ffffff';
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(barrierX + barrier.width * 0.1, barrier.y - 1, barrier.width * 0.8, 2);
           }
           
           // Emitter at edge
-          ctx.fillStyle = #444444';
+          ctx.fillStyle = '#444444';
           ctx.fillRect(GAME_WIDTH - 10, barrier.y - 15, 10, 30);
           ctx.fillStyle = barrier.active ? '#ff0000' : '#ff6600';
           ctx.beginPath();
@@ -9782,7 +9830,7 @@ const SpaceShooter = () => {
         
         // Shadow
         ctx.globalAlpha = 0.3;
-        ctx.fillStyle = #000000';
+        ctx.fillStyle = '#000000';
         ctx.beginPath();
         ctx.moveTo(points[0].x + 4, points[0].y + 4);
         for (let i = 1; i < points.length; i++) {
@@ -9808,12 +9856,12 @@ const SpaceShooter = () => {
         ctx.fill();
         
         // Edge highlight
-        ctx.strokeStyle = #666666';
+        ctx.strokeStyle = '#666666';
         ctx.lineWidth = 2;
         ctx.stroke();
         
         // Craters
-        ctx.fillStyle = #2a2a2a';
+        ctx.fillStyle = '#2a2a2a';
         ctx.beginPath();
         ctx.arc(-asteroid.size * 0.2, asteroid.size * 0.1, asteroid.size * 0.2, 0, Math.PI * 2);
         ctx.fill();
@@ -9823,10 +9871,10 @@ const SpaceShooter = () => {
         
         // Health indicator for damaged asteroids
         if (asteroid.health < Math.floor(asteroid.size / 10) + 1) {
-          ctx.fillStyle = #ff6600';
+          ctx.fillStyle = '#ff6600';
           const crackCount = (Math.floor(asteroid.size / 10) + 1) - asteroid.health;
           for (let i = 0; i < crackCount; i++) {
-            ctx.strokeStyle = #ff4400';
+            ctx.strokeStyle = '#ff4400';
             ctx.lineWidth = 1;
             ctx.beginPath();
             const startAngle = (i / crackCount) * Math.PI * 2;
@@ -9859,7 +9907,7 @@ const SpaceShooter = () => {
           // Add screen flash for big explosions
           if (explosion.spriteSize > 100 && explosion.frame < 2) {
             ctx.globalAlpha = 0.15 * (1 - explosion.frame / 2);
-            ctx.fillStyle = #ffff88';
+            ctx.fillStyle = '#ffff88';
             ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
             ctx.globalAlpha = 1;
           }
@@ -9904,7 +9952,7 @@ const SpaceShooter = () => {
           gradient.addColorStop(0.2, `rgba(255, 180, 80, ${glowAlpha * 0.7})`);
           gradient.addColorStop(0.4, `rgba(255, 100, 0, ${glowAlpha * 0.5})`);
           gradient.addColorStop(0.7, `rgba(255, 50, 0, ${glowAlpha * 0.2})`);
-          gradient.addColorStop(1, rgba(255, 0, 0, 0)');
+          gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
           ctx.fillStyle = gradient;
           ctx.beginPath();
           ctx.arc(explosion.x, explosion.y, glowSize, 0, Math.PI * 2);
@@ -9945,7 +9993,7 @@ const SpaceShooter = () => {
             // Inner bright core for larger particles
             if (particleSize > 3 && alpha > 0.5) {
               ctx.globalAlpha = alpha * 0.8;
-              ctx.fillStyle = #ffffff';
+              ctx.fillStyle = '#ffffff';
               ctx.beginPath();
               ctx.arc(explosion.x + p.x, explosion.y + p.y, particleSize * 0.4, 0, Math.PI * 2);
               ctx.fill();
@@ -10021,7 +10069,7 @@ const SpaceShooter = () => {
           ctx.strokeStyle = effect.color;
           ctx.lineWidth = effect.size;
           ctx.lineCap = 'round';
-          ctx.shadowColor = #ffff88';
+          ctx.shadowColor = '#ffff88';
           ctx.shadowBlur = 8;
           
           // Draw trail
@@ -10036,7 +10084,7 @@ const SpaceShooter = () => {
           }
           
           // Draw spark head
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(effect.x, effect.y, effect.size, 0, Math.PI * 2);
           ctx.fill();
@@ -10086,7 +10134,7 @@ const SpaceShooter = () => {
         ctx.fillText(text.text, 0, 0);
         
         // Outline
-        ctx.strokeStyle = #ffffff';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1;
         ctx.strokeText(text.text, 0, 0);
         ctx.shadowBlur = 0;
@@ -10110,14 +10158,14 @@ const SpaceShooter = () => {
         ctx.shadowBlur = 15;
         
         // Main text
-        ctx.font = bold 12px "Press Start 2P", 'monospace';
+        ctx.font = 'bold 12px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = bonus.color;
         ctx.fillText(bonus.text, 0, 0);
         
         // White outline
-        ctx.strokeStyle = #ffffff';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1;
         ctx.strokeText(bonus.text, 0, 0);
         
@@ -10140,12 +10188,12 @@ const SpaceShooter = () => {
         ctx.shadowColor = mb.color;
         ctx.shadowBlur = 20;
         ctx.fillStyle = mb.color;
-        ctx.font = bold 24px "Press Start 2P", 'monospace';
+        ctx.font = 'bold 24px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
         ctx.fillText('? ELITE INCOMING ?', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30);
         
-        ctx.font = bold 18px "Press Start 2P", 'monospace';
-        ctx.fillStyle = #ffffff';
+        ctx.font = 'bold 18px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffffff';
         ctx.fillText(mb.name, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 10);
         
         ctx.restore();
@@ -10201,7 +10249,7 @@ const SpaceShooter = () => {
           const pulseScale = 1 + Math.sin(time * 6) * 0.1;
           
           // Outer ring
-          ctx.strokeStyle = #ff00ff';
+          ctx.strokeStyle = '#ff00ff';
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(0, 0, (POWERUP_SIZE / 2 + 8) * pulseScale, 0, Math.PI * 2);
@@ -10230,7 +10278,7 @@ const SpaceShooter = () => {
           
           // Bright core
           ctx.shadowBlur = 0;
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(0, 0, POWERUP_SIZE / 3, 0, Math.PI * 2);
           ctx.fill();
@@ -10252,7 +10300,7 @@ const SpaceShooter = () => {
           
           // Inner bright core
           ctx.shadowBlur = 0;
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(0, 0, POWERUP_SIZE / 4, 0, Math.PI * 2);
           ctx.fill();
@@ -10293,7 +10341,7 @@ const SpaceShooter = () => {
         
         // Pulsing outline for all
         ctx.shadowBlur = 0;
-        ctx.strokeStyle = #ffffff';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1 + Math.sin(time * 4) * 0.5;
         ctx.globalAlpha = 0.5 + Math.sin(time * 4) * 0.3;
         ctx.beginPath();
@@ -10305,7 +10353,7 @@ const SpaceShooter = () => {
         
         // Icon (not rotated)
         ctx.shadowBlur = 0;
-        ctx.font = isUltra ? '18px Arial' : isLegendary ? '16px Arial' : isRare ? '15px Arial' : 14px Arial';
+        ctx.font = isUltra ? '18px Arial' : isLegendary ? '16px Arial' : isRare ? '15px Arial' : '14px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = (isUltra || isLegendary) ? '#000000' : '#ffffff';
@@ -10443,7 +10491,7 @@ const SpaceShooter = () => {
             // Impact flash overlay
             if (shieldFx.pulseIntensity > 0.1) {
               ctx.globalAlpha = shieldFx.pulseIntensity * 0.6;
-              ctx.fillStyle = #ffffff';
+              ctx.fillStyle = '#ffffff';
               ctx.beginPath();
               ctx.ellipse(centerX, centerY, shieldRadiusX + 10, shieldRadiusY + 8, 0, 0, Math.PI * 2);
               ctx.fill();
@@ -10509,8 +10557,8 @@ const SpaceShooter = () => {
               
               // Inner glow
               const bubbleGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, shieldRadiusX);
-              bubbleGrad.addColorStop(0, rgba(0, 255, 136, 0)');
-              bubbleGrad.addColorStop(0.7, rgba(0, 255, 136, 0.05)');
+              bubbleGrad.addColorStop(0, 'rgba(0, 255, 136, 0)');
+              bubbleGrad.addColorStop(0.7, 'rgba(0, 255, 136, 0.05)');
               bubbleGrad.addColorStop(1, shieldColor);
               ctx.globalAlpha = 0.3 + Math.sin(pulseTime) * 0.1;
               ctx.fillStyle = bubbleGrad;
@@ -10520,7 +10568,7 @@ const SpaceShooter = () => {
               
               // Highlight arc
               ctx.globalAlpha = 0.5;
-              ctx.strokeStyle = #ffffff';
+              ctx.strokeStyle = '#ffffff';
               ctx.lineWidth = 2;
               ctx.beginPath();
               ctx.ellipse(centerX - shieldRadiusX * 0.3, centerY - shieldRadiusY * 0.3, shieldRadiusX * 0.4, shieldRadiusY * 0.3, -0.5, 0, Math.PI * 0.8);
@@ -10538,7 +10586,7 @@ const SpaceShooter = () => {
                 ctx.globalAlpha = ringAlpha;
                 ctx.strokeStyle = ring === 0 ? '#ffff00' : ring === 1 ? '#ff8800' : '#ff4400';
                 ctx.lineWidth = 3 - ring * 0.5;
-                ctx.shadowColor = #ff4400';
+                ctx.shadowColor = '#ff4400';
                 ctx.shadowBlur = 15;
                 ctx.beginPath();
                 ctx.ellipse(centerX, centerY, shieldRadiusX + ringOffset, shieldRadiusY + ringOffset, 0, 0, Math.PI * 2);
@@ -10564,9 +10612,9 @@ const SpaceShooter = () => {
               
               // Dark inner void
               const voidGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, shieldRadiusX);
-              voidGrad.addColorStop(0, rgba(0, 0, 0, 0)');
-              voidGrad.addColorStop(0.6, rgba(50, 0, 80, 0.1)');
-              voidGrad.addColorStop(0.9, rgba(100, 0, 150, 0.3)');
+              voidGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+              voidGrad.addColorStop(0.6, 'rgba(50, 0, 80, 0.1)');
+              voidGrad.addColorStop(0.9, 'rgba(100, 0, 150, 0.3)');
               voidGrad.addColorStop(1, shieldColor);
               ctx.fillStyle = voidGrad;
               ctx.beginPath();
@@ -10630,10 +10678,10 @@ const SpaceShooter = () => {
             // Inner energy field (all styles)
             ctx.globalAlpha = (0.08 + shieldLevel * 0.02) + Math.sin(pulseTime) * 0.05;
             const innerGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, shieldRadiusX);
-            innerGrad.addColorStop(0, rgba(255, 255, 255, 0)');
+            innerGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
             // Handle HSL colors properly - use transparent version
             const midColor = shieldColor.startsWith('hsl(') 
-              ? shieldColor.replace('hsl(', hsla(').replace(')', , 0.07)')
+              ? shieldColor.replace('hsl(', 'hsla(').replace(')', ', 0.07)')
               : `${shieldColor}11`;
             innerGrad.addColorStop(0.6, midColor);
             innerGrad.addColorStop(1, shieldColor);
@@ -10645,7 +10693,7 @@ const SpaceShooter = () => {
             // Additional shield rings for high levels
             if (shieldLevel >= 4) {
               ctx.globalAlpha = 0.25 + Math.sin(pulseTime + 1) * 0.1;
-              ctx.strokeStyle = #88ffff';
+              ctx.strokeStyle = '#88ffff';
               ctx.lineWidth = 1;
               ctx.setLineDash([5, 5]);
               ctx.beginPath();
@@ -10656,7 +10704,7 @@ const SpaceShooter = () => {
             
             if (shieldLevel >= 7) {
               ctx.globalAlpha = 0.2 + Math.sin(pulseTime + 2) * 0.1;
-              ctx.strokeStyle = #ffffff';
+              ctx.strokeStyle = '#ffffff';
               ctx.lineWidth = 1.5;
               ctx.beginPath();
               ctx.ellipse(centerX, centerY, shieldRadiusX * 0.7, shieldRadiusY * 0.7, 0, 0, Math.PI * 2);
@@ -10672,7 +10720,7 @@ const SpaceShooter = () => {
                 const py = centerY + Math.sin(orbitAngle) * shieldRadiusY * 0.9;
                 ctx.globalAlpha = 0.5 + Math.sin(pulseTime + i) * 0.3;
                 ctx.fillStyle = i % 2 === 0 ? '#00ffff' : '#ffffff';
-                ctx.shadowColor = #00ffff';
+                ctx.shadowColor = '#00ffff';
                 ctx.shadowBlur = 8;
                 ctx.beginPath();
                 ctx.arc(px, py, 2 + shieldLevel * 0.15, 0, Math.PI * 2);
@@ -10683,7 +10731,7 @@ const SpaceShooter = () => {
             // Draw impact ripples
             shieldFx.impacts.forEach(impact => {
               ctx.globalAlpha = impact.intensity * 0.7;
-              ctx.strokeStyle = #ffffff';
+              ctx.strokeStyle = '#ffffff';
               ctx.lineWidth = 3;
               ctx.beginPath();
               ctx.arc(impact.x, impact.y, impact.radius, impact.angle - 0.5, impact.angle + 0.5);
@@ -10691,7 +10739,7 @@ const SpaceShooter = () => {
               
               // Secondary ripple
               ctx.globalAlpha = impact.intensity * 0.4;
-              ctx.strokeStyle = #00ffff';
+              ctx.strokeStyle = '#00ffff';
               ctx.lineWidth = 2;
               ctx.beginPath();
               ctx.arc(impact.x, impact.y, impact.radius * 0.6, impact.angle - 0.8, impact.angle + 0.8);
@@ -10744,7 +10792,7 @@ const SpaceShooter = () => {
         const speed = Math.sqrt((player.vx || 0) * (player.vx || 0) + (player.vy || 0) * (player.vy || 0));
         if (speed > 4) {
           ctx.globalAlpha = (speed - 4) / 4 * 0.5;
-          ctx.strokeStyle = #00ffff';
+          ctx.strokeStyle = '#00ffff';
           ctx.lineWidth = 1;
           for (let i = 0; i < 3; i++) {
             const lineY = py + 5 + i * (ph - 10) / 2;
@@ -10838,7 +10886,7 @@ const SpaceShooter = () => {
         if (isNebulaX) {
           // 4 BIG GUNS - the signature look
           const gunGlow = Math.sin(Date.now() / 100) * 0.3 + 0.7;
-          const accentColor = shipColors.accent || #ff4400';
+          const accentColor = shipColors.accent || '#ff4400';
           
           // Gun barrel positions (2 top, 2 bottom)
           const gunPositions = [
@@ -10849,13 +10897,13 @@ const SpaceShooter = () => {
           ];
           
           // Draw gun mounts first (behind body)
-          ctx.fillStyle = #333344';
+          ctx.fillStyle = '#333344';
           gunPositions.forEach(gun => {
             ctx.save();
             ctx.translate(gun.x, gun.y);
             ctx.rotate(gun.angle);
             // Gun mount
-            ctx.fillStyle = #222233';
+            ctx.fillStyle = '#222233';
             ctx.fillRect(-8, -4, 10, 8);
             ctx.restore();
           });
@@ -10901,7 +10949,7 @@ const SpaceShooter = () => {
             ctx.fillRect(16, -2, 4, 4);
             
             // Barrel inner glow
-            ctx.fillStyle = #ffff88';
+            ctx.fillStyle = '#ffff88';
             ctx.fillRect(17, -1, 2, 2);
             ctx.shadowBlur = 0;
             
@@ -10954,7 +11002,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Cockpit highlight
-          ctx.fillStyle = rgba(255, 255, 255, 0.7)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
           ctx.beginPath();
           ctx.ellipse(px + pw - 20, py + ph / 2 - 2, 4, 2, -0.3, 0, Math.PI * 2);
           ctx.fill();
@@ -11021,7 +11069,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Cockpit highlight
-          ctx.fillStyle = rgba(255, 255, 255, 0.6)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
           ctx.beginPath();
           ctx.ellipse(px + pw - 22, py + ph / 2 - 2, 3, 2, -0.3, 0, Math.PI * 2);
           ctx.fill();
@@ -11103,8 +11151,8 @@ const SpaceShooter = () => {
         
         // Missile pods (if missiles unlocked)
         if (upgradesRef.current.missiles) {
-          ctx.fillStyle = #ff6600';
-          ctx.shadowColor = #ff6600';
+          ctx.fillStyle = '#ff6600';
+          ctx.shadowColor = '#ff6600';
           ctx.shadowBlur = 5;
           // Top missile pod
           ctx.fillRect(px + 25, py - 3, 8, 3);
@@ -11120,9 +11168,9 @@ const SpaceShooter = () => {
         if (currentShipAbility === 'chainLightning') {
           // THUNDER: Electric sparks around ship
           const sparkTime = Date.now() / 50;
-          ctx.strokeStyle = #ffff00';
+          ctx.strokeStyle = '#ffff00';
           ctx.lineWidth = 1;
-          ctx.shadowColor = #ffff00';
+          ctx.shadowColor = '#ffff00';
           ctx.shadowBlur = 10;
           for (let i = 0; i < 3; i++) {
             const angle = sparkTime + (i * Math.PI * 2 / 3);
@@ -11141,7 +11189,7 @@ const SpaceShooter = () => {
           const frostPulse = Math.sin(Date.now() / 200) * 0.2 + 0.6;
           ctx.strokeStyle = `rgba(136, 255, 255, ${frostPulse})`;
           ctx.lineWidth = 2;
-          ctx.shadowColor = #88ffff';
+          ctx.shadowColor = '#88ffff';
           ctx.shadowBlur = 12;
           ctx.beginPath();
           ctx.arc(px + pw / 2, py + ph / 2, 30, 0, Math.PI * 2);
@@ -11152,10 +11200,10 @@ const SpaceShooter = () => {
           const chargePercent = abilityState.solarFlareTimer / abilityState.solarFlareInterval;
           if (chargePercent > 0.8) {
             // Ready to fire indicator
-            ctx.fillStyle = #ffaa00';
-            ctx.font = bold 8px monospace';
+            ctx.fillStyle = '#ffaa00';
+            ctx.font = 'bold 8px monospace';
             ctx.textAlign = 'center';
-            ctx.shadowColor = #ffaa00';
+            ctx.shadowColor = '#ffaa00';
             ctx.shadowBlur = 10;
             ctx.fillText('??READY', px + pw / 2, py - 10);
             ctx.shadowBlur = 0;
@@ -11167,7 +11215,7 @@ const SpaceShooter = () => {
             const rageIntensity = (3 - livesRef.current) / 3;
             ctx.strokeStyle = `rgba(255, 0, 0, ${ragePulse * rageIntensity})`;
             ctx.lineWidth = 3;
-            ctx.shadowColor = #ff0000';
+            ctx.shadowColor = '#ff0000';
             ctx.shadowBlur = 20 * rageIntensity;
             ctx.beginPath();
             ctx.arc(px + pw / 2, py + ph / 2, 35, 0, Math.PI * 2);
@@ -11175,15 +11223,15 @@ const SpaceShooter = () => {
             ctx.shadowBlur = 0;
             
             // Damage multiplier indicator
-            ctx.fillStyle = #ff4444';
-            ctx.font = bold 8px monospace';
+            ctx.fillStyle = '#ff4444';
+            ctx.font = 'bold 8px monospace';
             ctx.textAlign = 'center';
             ctx.fillText(`${abilityState.berserkMultiplier.toFixed(1)}x DMG`, px + pw / 2, py - 10);
           }
         } else if (currentShipAbility === 'phaseShift' && abilityState.phaseShiftActive) {
           // WRAITH: Phase shift active visual
           ctx.globalAlpha = 0.5;
-          ctx.fillStyle = #8888ff';
+          ctx.fillStyle = '#8888ff';
           ctx.beginPath();
           ctx.arc(px + pw / 2, py + ph / 2, 40, 0, Math.PI * 2);
           ctx.fill();
@@ -11202,7 +11250,7 @@ const SpaceShooter = () => {
           
           // Bright flash
           ctx.globalAlpha = flashAlpha;
-          ctx.shadowColor = #ffff00';
+          ctx.shadowColor = '#ffff00';
           ctx.shadowBlur = 20;
           
           const flashGrad = ctx.createRadialGradient(
@@ -11212,7 +11260,7 @@ const SpaceShooter = () => {
           flashGrad.addColorStop(0, '#ffffff');
           flashGrad.addColorStop(0.3, '#ffff88');
           flashGrad.addColorStop(0.6, '#ff8800');
-          flashGrad.addColorStop(1, rgba(255, 136, 0, 0)');
+          flashGrad.addColorStop(1, 'rgba(255, 136, 0, 0)');
           
           ctx.fillStyle = flashGrad;
           ctx.beginPath();
@@ -11220,7 +11268,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Cone blast
-          ctx.fillStyle = rgba(255, 255, 200,  + (flashAlpha * 0.5) + )';
+          ctx.fillStyle = `rgba(255, 255, 200,  ${flashAlpha * 0.5})`;
           ctx.beginPath();
           ctx.moveTo(muzzleFlash.x, muzzleFlash.y);
           ctx.lineTo(muzzleFlash.x + flashSize * 2, muzzleFlash.y - flashSize);
@@ -11243,7 +11291,7 @@ const SpaceShooter = () => {
         
         // Player hitbox (smaller than visual ship for bullet hell fairness)
         const hitboxMargin = 15; // Player hitbox is smaller than sprite
-        ctx.strokeStyle = #00ff00';
+        ctx.strokeStyle = '#00ff00';
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 5]);
         ctx.strokeRect(
@@ -11254,14 +11302,14 @@ const SpaceShooter = () => {
         );
         
         // Draw center hitpoint (the actual graze/hit detection point)
-        ctx.fillStyle = #00ff00';
+        ctx.fillStyle = '#00ff00';
         ctx.beginPath();
         ctx.arc(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 4, 0, Math.PI * 2);
         ctx.fill();
         
         // Hitbox label
-        ctx.fillStyle = #00ff00';
-        ctx.font = 10px monospace';
+        ctx.fillStyle = '#00ff00';
+        ctx.font = '10px monospace';
         ctx.textAlign = 'center';
         ctx.fillText('HITBOX', player.x + PLAYER_WIDTH / 2, player.y - 5);
         
@@ -11296,7 +11344,7 @@ const SpaceShooter = () => {
           }
           
           // Charging orb
-          ctx.shadowColor = #00ff88';
+          ctx.shadowColor = '#00ff88';
           ctx.shadowBlur = 30 * chargePercent;
           
           const chargeGrad = ctx.createRadialGradient(
@@ -11314,8 +11362,8 @@ const SpaceShooter = () => {
           
           // Warning indicator
           if (chargePercent > 0.7) {
-            ctx.fillStyle = #00ff88';
-            ctx.font = 10px "Press Start 2P", 'monospace';
+            ctx.fillStyle = '#00ff88';
+            ctx.font = '10px "Press Start 2P", monospace';
             ctx.textAlign = 'center';
             if (Math.floor(Date.now() / 100) % 2 === 0) {
               ctx.fillText('LASER READY', player.x + PLAYER_WIDTH / 2, player.y - 15);
@@ -11334,7 +11382,7 @@ const SpaceShooter = () => {
           ctx.save();
           
           // Outer destructive glow
-          ctx.shadowColor = #00ff88';
+          ctx.shadowColor = '#00ff88';
           ctx.shadowBlur = 50;
           
           // Create intense beam gradient
@@ -11342,13 +11390,13 @@ const SpaceShooter = () => {
             player.x + PLAYER_WIDTH, laserY - laserHeight / 2,
             player.x + PLAYER_WIDTH, laserY + laserHeight / 2
           );
-          laserGradient.addColorStop(0, rgba(0, 255, 100, 0)');
-          laserGradient.addColorStop(0.2, rgba(100, 255, 150, 0.6)');
-          laserGradient.addColorStop(0.35, rgba(150, 255, 200, 0.9)');
-          laserGradient.addColorStop(0.5, rgba(255, 255, 255, 1)');
-          laserGradient.addColorStop(0.65, rgba(150, 255, 200, 0.9)');
-          laserGradient.addColorStop(0.8, rgba(100, 255, 150, 0.6)');
-          laserGradient.addColorStop(1, rgba(0, 255, 100, 0)');
+          laserGradient.addColorStop(0, 'rgba(0, 255, 100, 0)');
+          laserGradient.addColorStop(0.2, 'rgba(100, 255, 150, 0.6)');
+          laserGradient.addColorStop(0.35, 'rgba(150, 255, 200, 0.9)');
+          laserGradient.addColorStop(0.5, 'rgba(255, 255, 255, 1)');
+          laserGradient.addColorStop(0.65, 'rgba(150, 255, 200, 0.9)');
+          laserGradient.addColorStop(0.8, 'rgba(100, 255, 150, 0.6)');
+          laserGradient.addColorStop(1, 'rgba(0, 255, 100, 0)');
           
           ctx.fillStyle = laserGradient;
           ctx.fillRect(player.x + PLAYER_WIDTH, laserY - laserHeight / 2 + shake, GAME_WIDTH, laserHeight);
@@ -11367,7 +11415,7 @@ const SpaceShooter = () => {
           for (let i = 0; i < 10; i++) {
             const px = player.x + PLAYER_WIDTH + Math.random() * (GAME_WIDTH - player.x - PLAYER_WIDTH);
             const py = laserY + (Math.random() - 0.5) * laserHeight;
-            ctx.fillStyle = #ffffff';
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(px, py, 2 + Math.random() * 3, 0, Math.PI * 2);
             ctx.fill();
@@ -11378,9 +11426,9 @@ const SpaceShooter = () => {
             player.x + PLAYER_WIDTH, laserY, 0,
             player.x + PLAYER_WIDTH, laserY, 30
           );
-          flashGrad.addColorStop(0, rgba(255, 255, 255, 1)');
-          flashGrad.addColorStop(0.5, rgba(150, 255, 200, 0.8)');
-          flashGrad.addColorStop(1, rgba(0, 255, 100, 0)');
+          flashGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+          flashGrad.addColorStop(0.5, 'rgba(150, 255, 200, 0.8)');
+          flashGrad.addColorStop(1, 'rgba(0, 255, 100, 0)');
           ctx.fillStyle = flashGrad;
           ctx.beginPath();
           ctx.arc(player.x + PLAYER_WIDTH, laserY, 30, 0, Math.PI * 2);
@@ -11416,7 +11464,7 @@ const SpaceShooter = () => {
           ctx.fill();
         } else {
           // Fire/spark
-          ctx.shadowColor = #ff6600';
+          ctx.shadowColor = '#ff6600';
           ctx.shadowBlur = 10;
           ctx.fillStyle = trail.color;
           ctx.beginPath();
@@ -11451,7 +11499,7 @@ const SpaceShooter = () => {
             ctx.globalAlpha = 1;
           }
           
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = perfMode ? 10 : 25;
           
           // Outer glow
@@ -11468,7 +11516,7 @@ const SpaceShooter = () => {
           
           // Core with pulse effect
           const pulse = 0.8 + Math.sin(Date.now() / 30) * 0.2;
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.ellipse(bullet.x + bullet.size * 0.7, bullet.y + beamHeight / 2, bullet.size * 0.5 * pulse, beamHeight / 4 * pulse, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -11498,7 +11546,7 @@ const SpaceShooter = () => {
           
           // Elongated gradient trail behind bullet
           const trailGrad = ctx.createLinearGradient(bullet.x - trailLength, bullet.y, bullet.x, bullet.y);
-          trailGrad.addColorStop(0, rgba(255, 136, 0, 0)');
+          trailGrad.addColorStop(0, 'rgba(255, 136, 0, 0)');
           trailGrad.addColorStop(0.5, `${glowColor}44`);
           trailGrad.addColorStop(1, glowColor);
           ctx.fillStyle = trailGrad;
@@ -11604,7 +11652,7 @@ const SpaceShooter = () => {
           
           // Extra ring effect for regen cannons
           if (isRegenCannon && !reducedBulletEffects) {
-            ctx.strokeStyle = rgba(255, 100, 100, 0.6)';
+            ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(0, 0, baseSize * 1.3, 0, Math.PI * 2);
@@ -11622,7 +11670,7 @@ const SpaceShooter = () => {
           const flicker = Math.sin(firePhase) * 0.2 + 0.8;
           
           // Outer fire glow
-          ctx.shadowColor = #ff4400';
+          ctx.shadowColor = '#ff4400';
           ctx.shadowBlur = 15 * flicker;
           
           // Fire gradient
@@ -11637,17 +11685,17 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Fire trail
-          ctx.fillStyle = rgba(255, 100, 0, 0.6)';
+          ctx.fillStyle = 'rgba(255, 100, 0, 0.6)';
           ctx.beginPath();
           ctx.ellipse(-12, 0, 10, 5, 0, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = rgba(255, 200, 0, 0.4)';
+          ctx.fillStyle = 'rgba(255, 200, 0, 0.4)';
           ctx.beginPath();
           ctx.ellipse(-8, 0, 6, 3, 0, 0, Math.PI * 2);
           ctx.fill();
           
           // Spark particles
-          ctx.fillStyle = #ffff00';
+          ctx.fillStyle = '#ffff00';
           for (let i = 0; i < 3; i++) {
             const sparkAngle = firePhase * 2 + i * 2;
             const sparkDist = 5 + Math.sin(sparkAngle) * 3;
@@ -11667,7 +11715,7 @@ const SpaceShooter = () => {
           const shimmer = Math.sin(icePhase) * 0.15 + 0.85;
           
           // Outer ice glow
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 12 * shimmer;
           
           // Ice gradient (crystalline look)
@@ -11682,7 +11730,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Crystal spikes
-          ctx.strokeStyle = #88eeff';
+          ctx.strokeStyle = '#88eeff';
           ctx.lineWidth = 2;
           for (let i = 0; i < 6; i++) {
             const spikeAngle = (Math.PI * 2 / 6) * i + icePhase * 0.5;
@@ -11694,13 +11742,13 @@ const SpaceShooter = () => {
           }
           
           // Frost trail
-          ctx.fillStyle = rgba(136, 238, 255, 0.4)';
+          ctx.fillStyle = 'rgba(136, 238, 255, 0.4)';
           ctx.beginPath();
           ctx.ellipse(-10, 0, 8, 4, 0, 0, Math.PI * 2);
           ctx.fill();
           
           // Snowflake particles
-          ctx.fillStyle = rgba(255, 255, 255, 0.8)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
           for (let i = 0; i < 4; i++) {
             const snowAngle = icePhase + i * Math.PI / 2;
             const snowDist = 8 + Math.sin(snowAngle * 2) * 3;
@@ -11716,8 +11764,8 @@ const SpaceShooter = () => {
           ctx.translate(bullet.x, bullet.y);
           ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
           
-          ctx.fillStyle = #00ffff';
-          ctx.shadowColor = #00ffff';
+          ctx.fillStyle = '#00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = reducedBulletEffects ? 6 : 12;
           ctx.beginPath();
           ctx.ellipse(0, 0, 8, 4, 0, 0, Math.PI * 2);
@@ -11725,7 +11773,7 @@ const SpaceShooter = () => {
           
           // Core - skip in reduced mode
           if (!reducedBulletEffects) {
-            ctx.fillStyle = #ffffff';
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.ellipse(2, 0, 3, 2, 0, 0, Math.PI * 2);
             ctx.fill();
@@ -11752,13 +11800,13 @@ const SpaceShooter = () => {
           ctx.translate(bullet.x, bullet.y);
           ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
           
-          ctx.shadowColor = bullet.color || #ff00ff';
+          ctx.shadowColor = bullet.color || '#ff00ff';
           ctx.shadowBlur = 15;
           
           const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 8);
           gradient.addColorStop(0, '#ffffff');
-          gradient.addColorStop(0.5, bullet.color || #ff00ff');
-          gradient.addColorStop(1, rgba(0,0,0,0)');
+          gradient.addColorStop(0.5, bullet.color || '#ff00ff');
+          gradient.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = gradient;
           ctx.beginPath();
           ctx.arc(0, 0, 8, 0, Math.PI * 2);
@@ -11768,7 +11816,7 @@ const SpaceShooter = () => {
         } else if (bullet.type === 'bomb') {
           // Bomb - large sphere with glow
           ctx.save();
-          ctx.shadowColor = bullet.color || #ffaa00';
+          ctx.shadowColor = bullet.color || '#ffaa00';
           ctx.shadowBlur = 20;
           
           const size = Math.max(1, bullet.size || 12);
@@ -11783,7 +11831,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Fuse spark
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(bullet.x - size * 0.6, bullet.y - size * 0.6, 3, 0, Math.PI * 2);
           ctx.fill();
@@ -11795,23 +11843,23 @@ const SpaceShooter = () => {
           const w = bullet.width || 250;
           const h = bullet.height || 10;
           
-          ctx.shadowColor = bullet.color || #00ffff';
+          ctx.shadowColor = bullet.color || '#00ffff';
           ctx.shadowBlur = 25;
           
           const gradient = ctx.createLinearGradient(bullet.x, bullet.y, bullet.x + w, bullet.y);
-          gradient.addColorStop(0, rgba(255,255,255,0)');
-          gradient.addColorStop(0.1, bullet.color || #00ffff');
-          gradient.addColorStop(0.9, bullet.color || #00ffff');
-          gradient.addColorStop(1, rgba(255,255,255,0)');
+          gradient.addColorStop(0, 'rgba(255,255,255,0)');
+          gradient.addColorStop(0.1, bullet.color || '#00ffff');
+          gradient.addColorStop(0.9, bullet.color || '#00ffff');
+          gradient.addColorStop(1, 'rgba(255,255,255,0)');
           ctx.fillStyle = gradient;
           ctx.fillRect(bullet.x, bullet.y, w, h);
           
           // Core
           const coreGrad = ctx.createLinearGradient(bullet.x, bullet.y + h/4, bullet.x + w, bullet.y + h/4);
-          coreGrad.addColorStop(0, rgba(255,255,255,0)');
+          coreGrad.addColorStop(0, 'rgba(255,255,255,0)');
           coreGrad.addColorStop(0.2, '#ffffff');
           coreGrad.addColorStop(0.8, '#ffffff');
-          coreGrad.addColorStop(1, rgba(255,255,255,0)');
+          coreGrad.addColorStop(1, 'rgba(255,255,255,0)');
           ctx.fillStyle = coreGrad;
           ctx.fillRect(bullet.x, bullet.y + h/4, w, h/2);
           
@@ -11821,7 +11869,7 @@ const SpaceShooter = () => {
           ctx.save();
           ctx.translate(bullet.x, bullet.y);
           
-          ctx.shadowColor = #ff00ff';
+          ctx.shadowColor = '#ff00ff';
           ctx.shadowBlur = 12;
           
           const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 6);
@@ -11834,7 +11882,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Rotating trail
-          ctx.strokeStyle = rgba(255, 0, 255, 0.5)';
+          ctx.strokeStyle = 'rgba(255, 0, 255, 0.5)';
           ctx.lineWidth = 2;
           const trailAngle = Math.atan2(bullet.vy, bullet.vx) + Math.PI;
           ctx.beginPath();
@@ -11848,7 +11896,7 @@ const SpaceShooter = () => {
           ctx.save();
           ctx.translate(bullet.x, bullet.y);
           
-          ctx.shadowColor = #00ffaa';
+          ctx.shadowColor = '#00ffaa';
           ctx.shadowBlur = 10;
           
           // Main orb
@@ -11862,7 +11910,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Wave trail
-          ctx.strokeStyle = rgba(0, 255, 170, 0.6)';
+          ctx.strokeStyle = 'rgba(0, 255, 170, 0.6)';
           ctx.lineWidth = 3;
           ctx.beginPath();
           for (let i = 0; i < 8; i++) {
@@ -11880,25 +11928,25 @@ const SpaceShooter = () => {
           ctx.translate(bullet.x, bullet.y);
           ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
           
-          ctx.shadowColor = #ff0000';
+          ctx.shadowColor = '#ff0000';
           ctx.shadowBlur = 15;
           
           // Long tracer effect
           const gradient = ctx.createLinearGradient(-30, 0, 10, 0);
-          gradient.addColorStop(0, rgba(255, 0, 0, 0)');
-          gradient.addColorStop(0.5, rgba(255, 100, 100, 0.5)');
+          gradient.addColorStop(0, 'rgba(255, 0, 0, 0)');
+          gradient.addColorStop(0.5, 'rgba(255, 100, 100, 0.5)');
           gradient.addColorStop(1, '#ff0000');
           ctx.fillStyle = gradient;
           ctx.fillRect(-30, -3, 40, 6);
           
           // Bullet core
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.ellipse(5, 0, 4, 2, 0, 0, Math.PI * 2);
           ctx.fill();
           
           // Bright tip
-          ctx.fillStyle = #ff0000';
+          ctx.fillStyle = '#ff0000';
           ctx.beginPath();
           ctx.arc(8, 0, 3, 0, Math.PI * 2);
           ctx.fill();
@@ -11926,7 +11974,7 @@ const SpaceShooter = () => {
         if (!isFinite(bullet.x) || !isFinite(bullet.y)) return;
         ctx.save();
         
-        const bulletColor = bullet.color || #ff8800';
+        const bulletColor = bullet.color || '#ff8800';
         const bulletLevel = bullet.level || 1;
         const isHoming = bullet.homing;
         
@@ -11937,7 +11985,7 @@ const SpaceShooter = () => {
         const gradient = ctx.createRadialGradient(bullet.x, bullet.y, 0, bullet.x, bullet.y, 5 + bulletLevel);
         gradient.addColorStop(0, '#ffffff');
         gradient.addColorStop(0.3, bulletColor);
-        gradient.addColorStop(1, rgba(0,0,0,0)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.arc(bullet.x, bullet.y, 4 + bulletLevel, 0, Math.PI * 2);
@@ -11949,7 +11997,7 @@ const SpaceShooter = () => {
         ctx.fillStyle = bulletColor.replace(')', , 0.5)').replace('rgb', 'rgba').replace('#', ');
         
         // Convert hex to rgba for trail
-        let trailColor = rgba(255, 136, 0, 0.5)';
+        let trailColor = 'rgba(255, 136, 0, 0.5)';
         if (bulletColor.startsWith('#')) {
           const hex = bulletColor.slice(1);
           const r = parseInt(hex.substr(0, 2), 16);
@@ -11968,7 +12016,7 @@ const SpaceShooter = () => {
         
         // Homing bullets get a special indicator ring
         if (isHoming) {
-          ctx.strokeStyle = #00ffff';
+          ctx.strokeStyle = '#00ffff';
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.arc(bullet.x, bullet.y, 8, 0, Math.PI * 2);
@@ -11980,7 +12028,7 @@ const SpaceShooter = () => {
             const pAngle = spinAngle + (i * Math.PI * 2 / 3);
             const px = bullet.x + Math.cos(pAngle) * 10;
             const py = bullet.y + Math.sin(pAngle) * 10;
-            ctx.fillStyle = #00ffff';
+            ctx.fillStyle = '#00ffff';
             ctx.beginPath();
             ctx.arc(px, py, 2, 0, Math.PI * 2);
             ctx.fill();
@@ -12015,13 +12063,13 @@ const SpaceShooter = () => {
         ctx.rotate(missile.angle || 0);
         
         // Enhanced exhaust trail glow
-        ctx.shadowColor = #ff6600';
+        ctx.shadowColor = '#ff6600';
         ctx.shadowBlur = 15;
         
         // Outer flame trail
         const flameGrad = ctx.createLinearGradient(-MISSILE_WIDTH / 2 - 20, 0, -MISSILE_WIDTH / 2, 0);
-        flameGrad.addColorStop(0, rgba(255, 100, 0, 0)');
-        flameGrad.addColorStop(0.5, rgba(255, 150, 0, 0.6)');
+        flameGrad.addColorStop(0, 'rgba(255, 100, 0, 0)');
+        flameGrad.addColorStop(0.5, 'rgba(255, 150, 0, 0.6)');
         flameGrad.addColorStop(1, '#ffff00');
         ctx.fillStyle = flameGrad;
         ctx.beginPath();
@@ -12039,7 +12087,7 @@ const SpaceShooter = () => {
         ctx.fillRect(-MISSILE_WIDTH / 2, -MISSILE_HEIGHT / 2, MISSILE_WIDTH, MISSILE_HEIGHT);
         
         // Missile head
-        ctx.fillStyle = #ff0000';
+        ctx.fillStyle = '#ff0000';
         ctx.beginPath();
         ctx.moveTo(MISSILE_WIDTH / 2, 0);
         ctx.lineTo(MISSILE_WIDTH / 2 - 5, -MISSILE_HEIGHT / 2);
@@ -12048,7 +12096,7 @@ const SpaceShooter = () => {
         ctx.fill();
         
         // Bright core flame
-        ctx.fillStyle = #ffffff';
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.ellipse(-MISSILE_WIDTH / 2 - 2, 0, 4, 2, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -12072,9 +12120,9 @@ const SpaceShooter = () => {
         if (enemy.type === 'heavy') {
           // HEAVY ENEMY - Large cannon ship
           // Engine glow (dual large)
-          ctx.shadowColor = #ff4400';
+          ctx.shadowColor = '#ff4400';
           ctx.shadowBlur = 20;
-          ctx.fillStyle = #ff6600';
+          ctx.fillStyle = '#ff6600';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 8, ey + eh * 0.3, 12, 6, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -12105,29 +12153,29 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Armor plates
-          ctx.strokeStyle = #554433';
+          ctx.strokeStyle = '#554433';
           ctx.lineWidth = 2;
           ctx.stroke();
           
           // Cannon mount (front)
-          ctx.fillStyle = #333333';
+          ctx.fillStyle = '#333333';
           ctx.fillRect(ex - 5, centerY - 8, 20, 16);
           
           // Cannon barrel
-          ctx.fillStyle = #444444';
+          ctx.fillStyle = '#444444';
           ctx.fillRect(ex - 15, centerY - 4, 15, 8);
           
           // Cannon tip glow
-          ctx.shadowColor = #ff8800';
+          ctx.shadowColor = '#ff8800';
           ctx.shadowBlur = 10;
-          ctx.fillStyle = #ffaa00';
+          ctx.fillStyle = '#ffaa00';
           ctx.beginPath();
           ctx.arc(ex - 15, centerY, 5, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
           
           // Bridge/cockpit
-          ctx.fillStyle = #222222';
+          ctx.fillStyle = '#222222';
           ctx.beginPath();
           ctx.moveTo(ex + ew * 0.3, centerY - 8);
           ctx.lineTo(ex + ew * 0.5, centerY - 12);
@@ -12139,9 +12187,9 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Red eye
-          ctx.shadowColor = #ff0000';
+          ctx.shadowColor = '#ff0000';
           ctx.shadowBlur = 8;
-          ctx.fillStyle = #ff0000';
+          ctx.fillStyle = '#ff0000';
           ctx.beginPath();
           ctx.arc(ex + ew * 0.45, centerY, 4, 0, Math.PI * 2);
           ctx.fill();
@@ -12149,7 +12197,7 @@ const SpaceShooter = () => {
           
           // Health pips
           for (let i = 0; i < enemy.health; i++) {
-            ctx.fillStyle = #00ff00';
+            ctx.fillStyle = '#00ff00';
             ctx.fillRect(ex + 10 + i * 8, ey + eh + 4, 6, 3);
           }
           
@@ -12158,13 +12206,13 @@ const SpaceShooter = () => {
           const firePhase = Date.now() / 100;
           
           // Fiery engine glow
-          ctx.shadowColor = #ff4400';
+          ctx.shadowColor = '#ff4400';
           ctx.shadowBlur = 25;
-          ctx.fillStyle = #ff6600';
+          ctx.fillStyle = '#ff6600';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 10, centerY, 15, 10, 0, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = #ffff00';
+          ctx.fillStyle = '#ffff00';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 5, centerY, 8, 5, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -12192,9 +12240,9 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Flame decorations on hull
-          ctx.shadowColor = #ffff00';
+          ctx.shadowColor = ''#ffff00';
           ctx.shadowBlur = 10;
-          ctx.strokeStyle = #ffff00';
+          ctx.strokeStyle = '#ffff00';
           ctx.lineWidth = 2;
           for (let i = 0; i < 3; i++) {
             const flameX = ex + 20 + i * 15;
@@ -12212,31 +12260,31 @@ const SpaceShooter = () => {
           }
           
           // Fire cannon (front)
-          ctx.fillStyle = #440000';
+          ctx.fillStyle = '#440000';
           ctx.fillRect(ex - 10, centerY - 6, 18, 12);
           
           // Cannon tip glow (pulsing fire)
           const firePulse = Math.sin(firePhase * 2) * 0.3 + 0.7;
-          ctx.shadowColor = #ff4400';
+          ctx.shadowColor = '#ff4400';
           ctx.shadowBlur = 15 * firePulse;
-          ctx.fillStyle = #ff8800';
+          ctx.fillStyle = '#ff8800';
           ctx.beginPath();
           ctx.arc(ex - 10, centerY, 6, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = #ffff00';
+          ctx.fillStyle = '#ffff00';
           ctx.beginPath();
           ctx.arc(ex - 10, centerY, 3, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
           
           // Burning eye
-          ctx.shadowColor = #ff0000';
+          ctx.shadowColor = '#ff0000';
           ctx.shadowBlur = 12;
-          ctx.fillStyle = #ff4400';
+          ctx.fillStyle = '#ff4400';
           ctx.beginPath();
           ctx.arc(ex + ew * 0.4, centerY, 5, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(ex + ew * 0.4, centerY, 2, 0, Math.PI * 2);
           ctx.fill();
@@ -12253,13 +12301,13 @@ const SpaceShooter = () => {
           const icePhase = Date.now() / 150;
           
           // Cold engine glow
-          ctx.shadowColor = #00ccff';
+          ctx.shadowColor = '#00ccff';
           ctx.shadowBlur = 20;
-          ctx.fillStyle = #44ddff';
+          ctx.fillStyle = '#44ddff';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 8, centerY, 12, 8, 0, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 4, centerY, 5, 3, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -12287,9 +12335,9 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Ice crystal decorations
-          ctx.strokeStyle = #88eeff';
+          ctx.strokeStyle = '#88eeff';
           ctx.lineWidth = 2;
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 8;
           // Crystal patterns
           for (let i = 0; i < 4; i++) {
@@ -12302,38 +12350,38 @@ const SpaceShooter = () => {
           }
           
           // Frost cannon (front)
-          ctx.fillStyle = #003344';
+          ctx.fillStyle = '#003344';
           ctx.fillRect(ex - 8, centerY - 5, 16, 10);
           
           // Cannon tip glow (icy pulse)
           const icePulse = Math.sin(icePhase * 1.5) * 0.3 + 0.7;
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 12 * icePulse;
-          ctx.fillStyle = #00ddff';
+          ctx.fillStyle = '#00ddff';
           ctx.beginPath();
           ctx.arc(ex - 8, centerY, 5, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(ex - 8, centerY, 2, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
           
           // Frozen eye
-          ctx.shadowColor = #00aaff';
+          ctx.shadowColor = '#00aaff';
           ctx.shadowBlur = 10;
-          ctx.fillStyle = #44ddff';
+          ctx.fillStyle = '#44ddff';
           ctx.beginPath();
           ctx.arc(ex + ew * 0.35, centerY, 4, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(ex + ew * 0.35 - 1, centerY - 1, 1.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
           
           // Snowflake particles around ship
-          ctx.fillStyle = rgba(255, 255, 255, 0.7)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
           for (let i = 0; i < 5; i++) {
             const snowAngle = icePhase + i * Math.PI * 2 / 5;
             const snowDist = 20 + Math.sin(icePhase * 2 + i) * 5;
@@ -12346,7 +12394,7 @@ const SpaceShooter = () => {
           
           // Health pips (cyan)
           for (let i = 0; i < enemy.health; i++) {
-            ctx.fillStyle = #00ddff';
+            ctx.fillStyle = '#00ddff';
             ctx.fillRect(ex + 10 + i * 8, ey + eh + 4, 6, 3);
           }
           
@@ -12373,12 +12421,12 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Base ring
-          ctx.strokeStyle = #666666';
+          ctx.strokeStyle = '#666666';
           ctx.lineWidth = 2;
           ctx.stroke();
           
           // Inner ring
-          ctx.strokeStyle = #00aaaa';
+          ctx.strokeStyle = '#00aaaa';
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.arc(centerX, centerY, ew / 4, 0, Math.PI * 2);
@@ -12398,20 +12446,20 @@ const SpaceShooter = () => {
           ctx.fillRect(0, -4, ew / 2 + 8, 8);
           
           // Barrel tip (glowing)
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 8;
-          ctx.fillStyle = #00ffff';
+          ctx.fillStyle = '#00ffff';
           ctx.beginPath();
           ctx.arc(ew / 2 + 8, 0, 4, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
           
           // Gun housing
-          ctx.fillStyle = #555555';
+          ctx.fillStyle = '#555555';
           ctx.beginPath();
           ctx.arc(0, 0, 8, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = #777777';
+          ctx.strokeStyle = '#777777';
           ctx.lineWidth = 2;
           ctx.stroke();
           
@@ -12426,7 +12474,7 @@ const SpaceShooter = () => {
           
           // Health indicator (for multi-hit turrets)
           if (enemy.health > 1) {
-            ctx.fillStyle = #00ff00';
+            ctx.fillStyle = '#00ff00';
             for (let i = 0; i < enemy.health; i++) {
               ctx.beginPath();
               ctx.arc(centerX - 8 + i * 8, ey + eh + 8, 3, 0, Math.PI * 2);
@@ -12437,9 +12485,9 @@ const SpaceShooter = () => {
         } else if (enemy.type === 'ambush') {
           // AMBUSH ENEMY - Flanker design (faces right, comes from behind)
           // Engine glow (on left side since facing right)
-          ctx.shadowColor = #ffff00';
+          ctx.shadowColor = '#ffff00';
           ctx.shadowBlur = 15;
-          ctx.fillStyle = #ffaa00';
+          ctx.fillStyle = '#ffaa00';
           ctx.beginPath();
           ctx.ellipse(ex - 5, centerY, 8, 4, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -12467,7 +12515,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Top fin
-          ctx.fillStyle = #886600';
+          ctx.fillStyle = '#886600';
           ctx.beginPath();
           ctx.moveTo(ex + ew * 0.5, ey + 5);
           ctx.lineTo(ex + ew * 0.4, ey - 8);
@@ -12484,7 +12532,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Warning stripes
-          ctx.fillStyle = #000000';
+          ctx.fillStyle = '#000000';
           ctx.globalAlpha = 0.3;
           for (let i = 0; i < 3; i++) {
             ctx.fillRect(ex + 10 + i * 12, ey + 8, 4, eh - 16);
@@ -12492,7 +12540,7 @@ const SpaceShooter = () => {
           ctx.globalAlpha = 1;
           
           // Cockpit (on right side)
-          ctx.fillStyle = #000000';
+          ctx.fillStyle = '#000000';
           ctx.beginPath();
           ctx.moveTo(ex + ew - 8, centerY);
           ctx.lineTo(ex + ew - 18, centerY - 4);
@@ -12502,9 +12550,9 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Warning eye glow (yellow)
-          ctx.shadowColor = #ffff00';
+          ctx.shadowColor = '#ffff00';
           ctx.shadowBlur = 10;
-          ctx.fillStyle = #ffff00';
+          ctx.fillStyle = '#ffff00';
           ctx.beginPath();
           ctx.arc(ex + ew - 15, centerY, 3, 0, Math.PI * 2);
           ctx.fill();
@@ -12512,8 +12560,8 @@ const SpaceShooter = () => {
           
           // Danger indicator
           if (Math.floor(Date.now() / 200) % 2 === 0) {
-            ctx.fillStyle = #ff0000';
-            ctx.font = 8px monospace';
+            ctx.fillStyle = '#ff0000';
+            ctx.font = '8px monospace';
             ctx.textAlign = 'center';
             ctx.fillText('!', ex + ew / 2, ey - 5);
           }
@@ -12521,9 +12569,9 @@ const SpaceShooter = () => {
         } else if (enemy.type === 'fast') {
           // FAST ENEMY - Sleek interceptor design
           // Engine glow
-          ctx.shadowColor = #ff6600';
+          ctx.shadowColor = '#ff6600';
           ctx.shadowBlur = 15;
-          ctx.fillStyle = #ff4400';
+          ctx.fillStyle = '#ff4400';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 5, centerY, 8, 4, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -12551,7 +12599,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Top fin
-          ctx.fillStyle = #aa0000';
+          ctx.fillStyle = '#aa0000';
           ctx.beginPath();
           ctx.moveTo(ex + ew * 0.5, ey + 5);
           ctx.lineTo(ex + ew * 0.6, ey - 8);
@@ -12568,7 +12616,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Cockpit (menacing visor)
-          ctx.fillStyle = #000000';
+          ctx.fillStyle = '#000000';
           ctx.beginPath();
           ctx.moveTo(ex + 8, centerY);
           ctx.lineTo(ex + 18, centerY - 4);
@@ -12578,9 +12626,9 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Red eye glow
-          ctx.shadowColor = #ff0000';
+          ctx.shadowColor ='#ff0000';
           ctx.shadowBlur = 8;
-          ctx.fillStyle = #ff0000';
+          ctx.fillStyle = '#ff0000';
           ctx.beginPath();
           ctx.arc(ex + 15, centerY, 2, 0, Math.PI * 2);
           ctx.fill();
@@ -12589,9 +12637,9 @@ const SpaceShooter = () => {
         } else if (enemy.type === 'spiral') {
           // SPIRAL SHOOTER - Rotating attack ship
           // Spinning energy core glow
-          ctx.shadowColor = #ff00ff';
+          ctx.shadowColor = '#ff00ff';
           ctx.shadowBlur = 20;
-          ctx.fillStyle = #ff00ff';
+          ctx.fillStyle = '#ff00ff';
           ctx.beginPath();
           ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
           ctx.fill();
@@ -12608,7 +12656,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Rotating spiral arms
-          ctx.strokeStyle = #ff00ff';
+          ctx.strokeStyle = '#ff00ff';
           ctx.lineWidth = 3;
           for (let i = 0; i < 4; i++) {
             const armAngle = enemy.spiralAngle + (Math.PI / 2) * i;
@@ -12622,7 +12670,7 @@ const SpaceShooter = () => {
           }
           
           // Energy ring
-          ctx.strokeStyle = #ff88ff';
+          ctx.strokeStyle = '#ff88ff';
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(centerX, centerY, ew / 2 + 3, 0, Math.PI * 2);
@@ -12630,16 +12678,16 @@ const SpaceShooter = () => {
           
           // Health pips
           for (let i = 0; i < enemy.health; i++) {
-            ctx.fillStyle = #ff00ff';
+            ctx.fillStyle = '#ff00ff';
             ctx.fillRect(ex + 5 + i * 10, ey + eh + 4, 8, 3);
           }
           
         } else if (enemy.type === 'wave') {
           // WAVE SHOOTER - Sinusoidal attack ship
           // Flowing energy trail
-          ctx.shadowColor = #00ffaa';
+          ctx.shadowColor = '#00ffaa';
           ctx.shadowBlur = 15;
-          ctx.strokeStyle = #00ffaa';
+          ctx.strokeStyle = '#00ffaa';
           ctx.lineWidth = 2;
           ctx.beginPath();
           for (let i = 0; i < 20; i++) {
@@ -12668,8 +12716,8 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Core
-          ctx.fillStyle = #00ffaa';
-          ctx.shadowColor = #00ffaa';
+          ctx.fillStyle = '#00ffaa';
+          ctx.shadowColor = '#00ffaa';
           ctx.shadowBlur = 10;
           ctx.beginPath();
           ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
@@ -12678,20 +12726,20 @@ const SpaceShooter = () => {
           
           // Oscillating eye
           const eyeOffset = Math.sin(enemy.mp3ePhase) * 3;
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(ex + 10, centerY + eyeOffset, 3, 0, Math.PI * 2);
           ctx.fill();
           
           // Health pips
           for (let i = 0; i < enemy.health; i++) {
-            ctx.fillStyle = #00ffaa';
+            ctx.fillStyle = '#00ffaa';
             ctx.fillRect(ex + 5 + i * 10, ey + eh + 4, 8, 3);
           }
           
         } else if (enemy.type === 'sniper') {
           // SNIPER - Precision shooter with targeting laser
-          const laserColor = enemy.fromBehind ? '0, 255, 0' : 255, 0, 0'; // Green for behind, red for normal
+          const laserColor = enemy.fromBehind ? '0, 255, 0' : '255, 0, 0'; // Green for behind, red for normal
           
           // Targeting laser (when aiming)
           if (enemy.targeting) {
@@ -12759,7 +12807,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Long barrel - flip for from behind
-          ctx.fillStyle = #333333';
+          ctx.fillStyle = '#333333';
           if (enemy.fromBehind) {
             ctx.fillRect(ex + ew - 5, centerY - 2, 30, 4);
           } else {
@@ -12772,7 +12820,7 @@ const SpaceShooter = () => {
             ctx.shadowBlur = 15;
             ctx.fillStyle = enemy.fromBehind ? '#00ff00' : '#ff0000';
           } else {
-            ctx.fillStyle = #666666';
+            ctx.fillStyle ='#666666';
           }
           ctx.beginPath();
           ctx.arc(enemy.fromBehind ? ex + ew + 25 : ex - 25, centerY, 4, 0, Math.PI * 2);
@@ -12780,10 +12828,10 @@ const SpaceShooter = () => {
           ctx.shadowBlur = 0;
           
           // Scope - flip for from behind
-          ctx.fillStyle = #222222';
+          ctx.fillStyle = '#222222';
           if (enemy.fromBehind) {
             ctx.fillRect(ex + ew - 20, ey - 3, 12, 6);
-            ctx.strokeStyle = #44ff44';
+            ctx.strokeStyle = '#44ff44';
             ctx.lineWidth = 1;
             ctx.strokeRect(ex + ew - 20, ey - 3, 12, 6);
             // Scope lens
@@ -12791,7 +12839,7 @@ const SpaceShooter = () => {
             ctx.fillRect(ex + ew - 18, ey - 1, 3, 2);
           } else {
             ctx.fillRect(ex + 8, ey - 3, 12, 6);
-            ctx.strokeStyle = #ff4444';
+            ctx.strokeStyle = '#ff4444';
             ctx.lineWidth = 1;
             ctx.strokeRect(ex + 8, ey - 3, 12, 6);
             // Scope lens
@@ -12801,13 +12849,13 @@ const SpaceShooter = () => {
           
           // Health pips
           for (let i = 0; i < enemy.health; i++) {
-            ctx.fillStyle = #ff4444';
+            ctx.fillStyle = '#ff4444';
             ctx.fillRect(ex + 5 + i * 10, ey + eh + 4, 8, 3);
           }
           
         } else if (enemy.type === 'flyby') {
           // FLYBY FORMATION ENEMY - Animated squadron entering the battle
-          const glowColor = enemy.glowColor || #ff4488';
+          const glowColor = enemy.glowColor || '#ff4488';
           const pathProgress = Math.max(0, enemy.pathProgress / enemy.pathDuration);
           
           // Invincibility shimmer effect during flyby
@@ -12841,7 +12889,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Secondary engine trails
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 10, centerY - 4, 4, 2, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -12971,7 +13019,7 @@ const SpaceShooter = () => {
           }
           
           // Cockpit
-          ctx.fillStyle = #001122';
+          ctx.fillStyle = '#001122';
           ctx.beginPath();
           ctx.ellipse(ex + 10, centerY, 5, 4, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -12988,9 +13036,9 @@ const SpaceShooter = () => {
         } else if (enemy.type === 'shielded') {
           // SHIELDED ENEMY - Armored with energy barrier
           // Engine glow
-          ctx.shadowColor = #0088ff';
+          ctx.shadowColor = '#0088ff';
           ctx.shadowBlur = 12;
-          ctx.fillStyle = #00aaff';
+          ctx.fillStyle = '#00aaff';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 4, centerY, 7, 4, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -13018,7 +13066,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Armor plating lines
-          ctx.strokeStyle = #4466aa';
+          ctx.strokeStyle = '#4466aa';
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(ex + 20, ey + 5);
@@ -13028,15 +13076,15 @@ const SpaceShooter = () => {
           ctx.stroke();
           
           // Cockpit
-          ctx.fillStyle = #001133';
+          ctx.fillStyle = '#001133';
           ctx.beginPath();
           ctx.ellipse(ex + 12, centerY, 5, 4, 0, 0, Math.PI * 2);
           ctx.fill();
           
           // Eye
-          ctx.shadowColor = #00aaff';
+          ctx.shadowColor = '#00aaff';
           ctx.shadowBlur = 8;
-          ctx.fillStyle = #00ccff';
+          ctx.fillStyle = '#00ccff';
           ctx.beginPath();
           ctx.arc(ex + 12, centerY, 2, 0, Math.PI * 2);
           ctx.fill();
@@ -13050,7 +13098,7 @@ const SpaceShooter = () => {
             ctx.globalAlpha = shieldAlpha;
             ctx.strokeStyle = enemy.shieldFlash > 0 ? '#ffffff' : '#00aaff';
             ctx.lineWidth = 3;
-            ctx.shadowColor = #00aaff';
+            ctx.shadowColor = '#00aaff';
             ctx.shadowBlur = 15;
             
             // Shield bubble
@@ -13073,8 +13121,8 @@ const SpaceShooter = () => {
             ctx.shadowBlur = 0;
             
             // Shield strength indicator
-            ctx.fillStyle = #00aaff';
-            ctx.font = 8px "Press Start 2P", 'monospace';
+            ctx.fillStyle = '#00aaff';
+            ctx.font = '8px "Press Start 2P", monospace';
             ctx.textAlign = 'center';
             ctx.fillText(`[${enemy.shield}]`, centerX, ey - 8);
           }
@@ -13088,9 +13136,9 @@ const SpaceShooter = () => {
           ctx.globalAlpha = Math.max(0.05, (enemy.cloakAlpha || 0.1) + shimmer);
           
           // Engine glow (faint)
-          ctx.shadowColor = #8800ff';
+          ctx.shadowColor = '#8800ff';
           ctx.shadowBlur = 8;
-          ctx.fillStyle = #aa44ff';
+          ctx.fillStyle = '#aa44ff';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 3, centerY, 5, 3, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -13115,7 +13163,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Stealth panels
-          ctx.strokeStyle = #330066';
+          ctx.strokeStyle = '#330066';
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(ex + 10, centerY);
@@ -13126,9 +13174,9 @@ const SpaceShooter = () => {
           
           // Eye (only visible when revealed)
           if (enemy.cloakAlpha > 0.3) {
-            ctx.shadowColor = #ff00ff';
+            ctx.shadowColor = '#ff00ff';
             ctx.shadowBlur = 10;
-            ctx.fillStyle = #ff00ff';
+            ctx.fillStyle = '#ff00ff';
             ctx.beginPath();
             ctx.arc(ex + 8, centerY, 3, 0, Math.PI * 2);
             ctx.fill();
@@ -13140,8 +13188,8 @@ const SpaceShooter = () => {
           // "STEALTH" indicator when cloaked
           if (enemy.cloaked && enemy.cloakAlpha < 0.3) {
             ctx.globalAlpha = 0.3;
-            ctx.fillStyle = #aa44ff';
-            ctx.font = 6px monospace';
+            ctx.fillStyle = '#aa44ff';
+            ctx.font = '6px monospace';
             ctx.textAlign = 'center';
             ctx.fillText('???', centerX, ey - 5);
             ctx.globalAlpha = 1;
@@ -13163,7 +13211,7 @@ const SpaceShooter = () => {
           
           // Shield pulse ring when active
           const pulseSize = Math.sin(enemy.shieldPulse) * 5;
-          ctx.strokeStyle = #00ffff';
+          ctx.strokeStyle = '#00ffff';
           ctx.lineWidth = 1;
           ctx.globalAlpha = Math.abs(Math.sin(enemy.shieldPulse)) * 0.5;
           ctx.beginPath();
@@ -13173,9 +13221,9 @@ const SpaceShooter = () => {
           ctx.globalAlpha = enemy.revealTimer > 0 ? 0.8 : (enemy.cloakAlpha || 0.15);
           
           // Engine glow (cyan - support ship color)
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 12;
-          ctx.fillStyle = #00aaaa';
+          ctx.fillStyle = '#00aaaa';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 5, centerY, 6, 4, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -13201,15 +13249,15 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Shield generator dish on top
-          ctx.fillStyle = #00ffff';
-          ctx.shadowColor = #00ffff';
+          ctx.fillStyle = '#00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 8;
           ctx.beginPath();
           ctx.arc(ex + 12, centerY, 5, 0, Math.PI * 2);
           ctx.fill();
           
           // Energy lines to dish
-          ctx.strokeStyle = #00aaff';
+          ctx.strokeStyle = '#00aaff';
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(ex + 12, centerY - 5);
@@ -13221,8 +13269,8 @@ const SpaceShooter = () => {
           
           ctx.globalAlpha = 1;// "SUPPORT" indicator when visible
           if (enemy.revealTimer > 0) {
-            ctx.fillStyle = #00ffff';
-            ctx.font = 6px monospace';
+            ctx.fillStyle = '#00ffff';
+            ctx.font = '6px monospace';
             ctx.textAlign = 'center';
             ctx.fillText('SHIELD', centerX, ey - 8);
           }
@@ -13233,7 +13281,7 @@ const SpaceShooter = () => {
           
           // Healing aura when active
           if (enemy.healCooldown === 0) {
-            ctx.strokeStyle = #00ff88';
+            ctx.strokeStyle = '#00ff88';
             ctx.lineWidth = 2;
             ctx.globalAlpha = 0.3 + healPulse * 0.3;
             ctx.beginPath();
@@ -13243,11 +13291,11 @@ const SpaceShooter = () => {
           }
           
           // Green glow
-          ctx.shadowColor = #00ff88';
+          ctx.shadowColor = '#00ff88';
           ctx.shadowBlur = 15 * healPulse;
           
           // Engine glow (green/white)
-          ctx.fillStyle = #88ffaa';
+          ctx.fillStyle = '#88ffaa';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 5, centerY, 5, 3, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -13265,13 +13313,13 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // White cross symbol
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.fillRect(centerX - 2, centerY - 8, 4, 16);
           ctx.fillRect(centerX - 8, centerY - 2, 16, 4);
           
           // Rotating healing ring
           const healAngle = Date.now() / 500;
-          ctx.strokeStyle = #00ff88';
+          ctx.strokeStyle = '#00ff88';
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(centerX, centerY, ew / 2 + 3, healAngle, healAngle + Math.PI);
@@ -13280,8 +13328,8 @@ const SpaceShooter = () => {
           ctx.shadowBlur = 0;
           
           // "HEALER" label
-          ctx.fillStyle = #00ff88';
-          ctx.font = 6px monospace';
+          ctx.fillStyle = '#00ff88';
+          ctx.font = '6px monospace';
           ctx.textAlign = 'center';
           ctx.fillText('HEAL', centerX, ey - 8);
           
@@ -13291,7 +13339,7 @@ const SpaceShooter = () => {
           
           // Teleport charge effect
           if (enemy.teleportCharge > 0) {
-            ctx.strokeStyle = #aa00ff';
+            ctx.strokeStyle = '#aa00ff';
             ctx.lineWidth = 2;
             ctx.globalAlpha = teleportProgress;
             for (let ring = 0; ring < 3; ring++) {
@@ -13306,7 +13354,7 @@ const SpaceShooter = () => {
           // Afterimage effect (ghost trail)
           if (enemy.lastX !== undefined && enemy.lastY !== undefined) {
             ctx.globalAlpha = 0.2;
-            ctx.fillStyle = #8800ff';
+            ctx.fillStyle = '#8800ff';
             ctx.beginPath();
             ctx.arc(enemy.lastX + ew / 2, enemy.lastY + eh / 2, ew / 2 - 3, 0, Math.PI * 2);
             ctx.fill();
@@ -13314,11 +13362,11 @@ const SpaceShooter = () => {
           }
           
           // Purple glow
-          ctx.shadowColor = #aa00ff';
+          ctx.shadowColor = '#aa00ff';
           ctx.shadowBlur = 12;
           
           // Engine glow (purple)
-          ctx.fillStyle = #cc44ff';
+          ctx.fillStyle = '#cc44ff';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 4, centerY, 5, 3, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -13342,7 +13390,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Warp core center
-          ctx.fillStyle = #ff00ff';
+          ctx.fillStyle = '#ff00ff';
           const coreGlow = Math.sin(Date.now() / 100) * 3 + 5;
           ctx.beginPath();
           ctx.arc(centerX - 3, centerY, coreGlow, 0, Math.PI * 2);
@@ -13352,8 +13400,8 @@ const SpaceShooter = () => {
           
           // "WARP" label when charging
           if (enemy.teleportCharge > 15) {
-            ctx.fillStyle = #aa00ff';
-            ctx.font = 6px monospace';
+            ctx.fillStyle = '#aa00ff';
+            ctx.font = '6px monospace';
             ctx.textAlign = 'center';
             ctx.fillText('WARP', centerX, ey - 8);
           }
@@ -13364,7 +13412,7 @@ const SpaceShooter = () => {
           const isLargeSize = enemy.health > 1;
           
           // Unstable energy aura
-          ctx.strokeStyle = #ff8800';
+          ctx.strokeStyle = '#ff8800';
           ctx.lineWidth = 2;
           ctx.globalAlpha = 0.3 + splitPulse * 0.3;
           ctx.beginPath();
@@ -13373,7 +13421,7 @@ const SpaceShooter = () => {
           ctx.globalAlpha = 1;
           
           // Orange glow
-          ctx.shadowColor = #ff8800';
+          ctx.shadowColor = '#ff8800';
           ctx.shadowBlur = 15 * splitPulse;
           
           // Main body gradient (orange/yellow)
@@ -13389,7 +13437,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Division line showing split potential
-          ctx.strokeStyle = #ffff00';
+          ctx.strokeStyle = '#ffff00';
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(centerX, ey + 3);
@@ -13397,7 +13445,7 @@ const SpaceShooter = () => {
           ctx.stroke();
           
           // Two nuclei showing it will split
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(centerX - 6, centerY, 4, 0, Math.PI * 2);
           ctx.fill();
@@ -13408,8 +13456,8 @@ const SpaceShooter = () => {
           ctx.shadowBlur = 0;
           
           // "SPLIT" warning
-          ctx.fillStyle = #ff8800';
-          ctx.font = 6px monospace';
+          ctx.fillStyle = '#ff8800';
+          ctx.font = '6px monospace';
           ctx.textAlign = 'center';
           ctx.fillText('SPLIT', centerX, ey - 8);
           
@@ -13420,7 +13468,7 @@ const SpaceShooter = () => {
           
           // Danger radius when armed
           if (enemy.armed) {
-            ctx.strokeStyle = #ff0000';
+            ctx.strokeStyle = '#ff0000';
             ctx.lineWidth = 1;
             ctx.globalAlpha = 0.2 + minePulse * 0.2;
             ctx.setLineDash([5, 5]);
@@ -13465,7 +13513,7 @@ const SpaceShooter = () => {
           
           // Center warning light
           if (enemy.armed && Math.floor(Date.now() / 100) % 2 === 0) {
-            ctx.fillStyle = #ffffff';
+            ctx.fillStyle = '#ffffff';
           } else {
             ctx.fillStyle = enemy.armed ? '#ff0000' : '#ffaa00';
           }
@@ -13477,16 +13525,16 @@ const SpaceShooter = () => {
           
           // Arming progress bar
           if (!enemy.armed && armProgress > 0) {
-            ctx.fillStyle = #333333';
+            ctx.fillStyle = '#333333';
             ctx.fillRect(ex, ey - 8, ew, 4);
-            ctx.fillStyle = #ffaa00';
+            ctx.fillStyle = '#ffaa00';
             ctx.fillRect(ex, ey - 8, ew * armProgress, 4);
           }
           
           // "ARMED" warning
           if (enemy.armed) {
-            ctx.fillStyle = #ff0000';
-            ctx.font = 6px monospace';
+            ctx.fillStyle = '#ff0000';
+            ctx.font = '6px monospace';
             ctx.textAlign = 'center';
             if (Math.floor(Date.now() / 200) % 2 === 0) {
               ctx.fillText('ARMED', centerX, ey - 10);
@@ -13498,11 +13546,11 @@ const SpaceShooter = () => {
           const pulse = Math.sin(enemy.pulsePhase || 0) * 0.3 + 0.7;
           
           // Warning glow
-          ctx.shadowColor = #ff0000';
+          ctx.shadowColor = '#ff0000';
           ctx.shadowBlur = 20 * pulse;
           
           // Engine trail
-          ctx.fillStyle = #ff4400';
+          ctx.fillStyle = '#ff4400';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 10, centerY, 12, 5, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -13520,7 +13568,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Danger stripes
-          ctx.strokeStyle = #000000';
+          ctx.strokeStyle = '#000000';
           ctx.lineWidth = 3;
           ctx.beginPath();
           ctx.moveTo(ex + 5, centerY - 5);
@@ -13531,25 +13579,25 @@ const SpaceShooter = () => {
           
           // Flashing warning light
           if (Math.floor(Date.now() / 100) % 2 === 0) {
-            ctx.fillStyle = #ffffff';
+            ctx.fillStyle = '#ffffff';
           } else {
-            ctx.fillStyle = #ff0000';
+            ctx.fillStyle = '#ff0000';
           }
           ctx.beginPath();
           ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
           ctx.fill();
           
           // Skull icon
-          ctx.fillStyle = #ffffff';
-          ctx.font = bold 10px monospace';
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 10px monospace';
           ctx.textAlign = 'center';
           ctx.fillText('?', centerX, centerY + 4);
           
           ctx.shadowBlur = 0;
           
           // "DANGER" text
-          ctx.fillStyle = #ff0000';
-          ctx.font = 6px "Press Start 2P", 'monospace';
+          ctx.fillStyle = '#ff0000';
+          ctx.font = '6px "Press Start 2P", monospace';
           ctx.textAlign = 'center';
           if (Math.floor(Date.now() / 200) % 2 === 0) {
             ctx.fillText('DANGER', centerX, ey - 8);
@@ -13558,9 +13606,9 @@ const SpaceShooter = () => {
         } else {
           // NORMAL ENEMY - Heavy fighter design
           // Engine glows (dual)
-          ctx.shadowColor = #ff00ff';
+          ctx.shadowColor = '#ff00ff';
           ctx.shadowBlur = 12;
-          ctx.fillStyle = #ff44ff';
+          ctx.fillStyle = '#ff44ff';
           ctx.beginPath();
           ctx.ellipse(ex + ew + 3, ey + eh * 0.3, 6, 3, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -13591,7 +13639,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Wing plates
-          ctx.fillStyle = #880088';
+          ctx.fillStyle = '#880088';
           ctx.beginPath();
           ctx.moveTo(ex + 20, ey);
           ctx.lineTo(ex + 30, ey - 10);
@@ -13609,14 +13657,14 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Weapon pods
-          ctx.fillStyle = #444444';
+          ctx.fillStyle = '#444444';
           ctx.fillRect(ex + 5, ey - 3, 12, 6);
           ctx.fillRect(ex + 5, ey + eh - 3, 12, 6);
           
           // Glowing weapon tips
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 6;
-          ctx.fillStyle = #00ffff';
+          ctx.fillStyle = '#00ffff';
           ctx.beginPath();
           ctx.arc(ex + 5, ey, 2, 0, Math.PI * 2);
           ctx.fill();
@@ -13626,18 +13674,18 @@ const SpaceShooter = () => {
           ctx.shadowBlur = 0;
           
           // Central eye/sensor
-          ctx.fillStyle = #220022';
+          ctx.fillStyle = '#220022';
           ctx.beginPath();
           ctx.arc(ex + 18, centerY, 6, 0, Math.PI * 2);
           ctx.fill();
           
-          ctx.shadowColor = #ff00ff';
+          ctx.shadowColor = '#ff00ff';
           ctx.shadowBlur = 10;
-          ctx.fillStyle = #ff00ff';
+          ctx.fillStyle = '#ff00ff';
           ctx.beginPath();
           ctx.arc(ex + 18, centerY, 3, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(ex + 17, centerY - 1, 1, 0, Math.PI * 2);
           ctx.fill();
@@ -13646,7 +13694,7 @@ const SpaceShooter = () => {
         
         // Damage sparks when hit recently (optional visual)
         if (enemy.hitFlash && enemy.hitFlash > 0) {
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.globalAlpha = enemy.hitFlash / 10;
           ctx.fillRect(ex, ey, ew, eh);
           ctx.globalAlpha = 1;
@@ -13657,23 +13705,23 @@ const SpaceShooter = () => {
           const elitePulse = Math.sin(Date.now() / 150) * 0.3 + 0.7;
           
           // Golden aura ring
-          ctx.strokeStyle = #ffd700';
+          ctx.strokeStyle = '#ffd700';
           ctx.lineWidth = 3;
-          ctx.shadowColor = #ffd700';
+          ctx.shadowColor = '#ffd700';
           ctx.shadowBlur = 15 * elitePulse;
           ctx.beginPath();
           ctx.arc(centerX, centerY, Math.max(ew, eh) / 2 + 8, 0, Math.PI * 2);
           ctx.stroke();
           
           // Crown icon above enemy
-          ctx.fillStyle = #ffd700';
-          ctx.font = 10px monospace';
+          ctx.fillStyle = '#ffd700';
+          ctx.font = '10px monospace';
           ctx.textAlign = 'center';
           ctx.fillText('??', centerX, ey - 12);
           
           // "ELITE" label
-          ctx.fillStyle = #ffd700';
-          ctx.font = bold 6px monospace';
+          ctx.fillStyle = '#ffd700';
+          ctx.font = 'bold 6px monospace';
           ctx.fillText('ELITE', centerX, ey - 2);
           
           ctx.shadowBlur = 0;
@@ -13685,14 +13733,14 @@ const SpaceShooter = () => {
           
           // Ice overlay
           ctx.globalAlpha = 0.4;
-          ctx.fillStyle = #88ffff';
+          ctx.fillStyle = '#88ffff';
           ctx.beginPath();
           ctx.arc(centerX, centerY, Math.max(ew, eh) / 2 + 2, 0, Math.PI * 2);
           ctx.fill();
           
           // Ice crystals
           ctx.globalAlpha = 0.8;
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           for (let i = 0; i < 6; i++) {
             const angle = (i / 6) * Math.PI * 2 + Date.now() / 500;
             const crystalX = centerX + Math.cos(angle) * (ew / 2 + 5);
@@ -13708,10 +13756,10 @@ const SpaceShooter = () => {
           
           // "FROZEN" label
           ctx.globalAlpha = frozenPulse;
-          ctx.fillStyle = #88ffff';
-          ctx.font = bold 6px monospace';
+          ctx.fillStyle = '#88ffff';
+          ctx.font = 'bold 6px monospace';
           ctx.textAlign = 'center';
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 8;
           ctx.fillText('??FROZEN', centerX, ey - 15);
           ctx.shadowBlur = 0;
@@ -13748,20 +13796,20 @@ const SpaceShooter = () => {
         const engineGlow = carrier.engineGlow;
         
         // Massive engine array (8 engines)
-        ctx.shadowColor = #ff6600';
+        ctx.shadowColor = '#ff6600';
         ctx.shadowBlur = 30 * engineGlow;
         for (let i = 0; i < 8; i++) {
           const engineY = cy + ch * (0.1 + i * 0.11);
           const flameLen = 20 + Math.sin(phase * 3 + i) * 8;
           
           // Engine flame
-          ctx.fillStyle = #ff8800';
+          ctx.fillStyle = '#ff8800';
           ctx.beginPath();
           ctx.ellipse(cx + cw + flameLen, engineY, flameLen, 8, 0, 0, Math.PI * 2);
           ctx.fill();
           
           // Engine core
-          ctx.fillStyle = #ffff88';
+          ctx.fillStyle = '#ffff88';
           ctx.beginPath();
           ctx.ellipse(cx + cw + 10, engineY, 10, 5, 0, 0, Math.PI * 2);
           ctx.fill();
@@ -13790,7 +13838,7 @@ const SpaceShooter = () => {
         ctx.fill();
         
         // Hull plating lines
-        ctx.strokeStyle = #333344';
+        ctx.strokeStyle = '#333344';
         ctx.lineWidth = 2;
         for (let i = 1; i < 8; i++) {
           const plateX = cx + 30 + i * (cw - 50) / 8;
@@ -13801,7 +13849,7 @@ const SpaceShooter = () => {
         }
         
         // Upper deck structure
-        ctx.fillStyle = #333344';
+        ctx.fillStyle = '#333344';
         ctx.beginPath();
         ctx.moveTo(cx + 80, cy + 10);
         ctx.lineTo(cx + cw - 80, cy + 5);
@@ -13824,13 +13872,13 @@ const SpaceShooter = () => {
         ctx.fill();
         
         // Bridge tower
-        ctx.fillStyle = #444466';
+        ctx.fillStyle = '#444466';
         ctx.fillRect(cx + cw * 0.6, cy - 35, 60, 35);
         ctx.fillRect(cx + cw * 0.6 + 10, cy - 50, 40, 20);
         
         // Bridge windows
-        ctx.fillStyle = #88aaff';
-        ctx.shadowColor = #88aaff';
+        ctx.fillStyle = '#88aaff';
+        ctx.shadowColor = '#88aaff';
         ctx.shadowBlur = 5;
         for (let i = 0; i < 4; i++) {
           ctx.fillRect(cx + cw * 0.6 + 8 + i * 13, cy - 45, 8, 10);
@@ -13839,22 +13887,22 @@ const SpaceShooter = () => {
         
         // Hangar bay doors (glowing when dropping)
         const hangarGlow = carrier.dropsRemaining > 0 ? Math.sin(phase * 2) * 0.3 + 0.7 : 0.3;
-        ctx.fillStyle = #222222';
+        ctx.fillStyle = '#222222';
         ctx.fillRect(cx + 20, centerY - 30, 80, 60);
-        ctx.shadowColor = #ff8800';
+        ctx.shadowColor = '#ff8800';
         ctx.shadowBlur = 15 * hangarGlow;
         ctx.fillStyle = `rgba(255, 136, 0, ${hangarGlow * 0.5})`;
         ctx.fillRect(cx + 25, centerY - 25, 70, 50);
         ctx.shadowBlur = 0;
         
         // Hangar bay interior glow
-        ctx.fillStyle = #ff6600';
+        ctx.fillStyle = '#ff6600';
         ctx.fillRect(cx + 30, centerY - 20, 60, 40);
-        ctx.fillStyle = #ffaa00';
+        ctx.fillStyle = '#ffaa00';
         ctx.fillRect(cx + 35, centerY - 15, 50, 30);
         
         // Defensive turrets on hull
-        ctx.fillStyle = #555555';
+        ctx.fillStyle = '#555555';
         const turretPositions = [
           { x: cx + 100, y: cy - 10 },
           { x: cx + 200, y: cy - 8 },
@@ -13867,16 +13915,16 @@ const SpaceShooter = () => {
           ctx.beginPath();
           ctx.arc(t.x, t.y, 8, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = #666666';
+          ctx.fillStyle = '#666666';
           ctx.fillRect(t.x - 12, t.y - 2, 12, 4);
-          ctx.fillStyle = #555555';
+          ctx.fillStyle = '#555555';
         });
         
         // Running lights (blinking)
         const lightPhase = Math.floor(Date.now() / 500) % 2;
         ctx.shadowBlur = 8;
         // Red lights
-        ctx.shadowColor = #ff0000';
+        ctx.shadowColor = '#ff0000';
         ctx.fillStyle = lightPhase ? '#ff0000' : '#440000';
         ctx.beginPath();
         ctx.arc(cx + 5, centerY, 4, 0, Math.PI * 2);
@@ -13889,7 +13937,7 @@ const SpaceShooter = () => {
         ctx.fill();
         
         // Green lights
-        ctx.shadowColor = #00ff00';
+        ctx.shadowColor = '#00ff00';
         ctx.fillStyle = lightPhase ? '#00ff00' : '#004400';
         ctx.beginPath();
         ctx.arc(cx + 50, cy - 5, 3, 0, Math.PI * 2);
@@ -13900,13 +13948,13 @@ const SpaceShooter = () => {
         ctx.shadowBlur = 0;
         
         // "CARRIER" label
-        ctx.fillStyle = #666688';
-        ctx.font = bold 12px "Press Start 2P", 'monospace';
+        ctx.fillStyle = '#666688';
+        ctx.font = 'bold 12px "Press Start 2P", \'monospace\'';
         ctx.textAlign = 'center';
         ctx.fillText('CARRIER', cx + cw / 2, centerY);
         
         // Warning stripes near hangar
-        ctx.strokeStyle = #ffaa00';
+        ctx.strokeStyle = '#ffaa00';
         ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
           ctx.beginPath();
@@ -14040,7 +14088,7 @@ const SpaceShooter = () => {
           
           // MAIN DEATH LASER - Central weapon
           const laserActive = boss.laserCharging || boss.laserFiring;
-          ctx.fillStyle = #111111';
+          ctx.fillStyle = '#111111';
           ctx.beginPath();
           ctx.moveTo(bx - 10, centerY);
           ctx.lineTo(bx + 50, centerY - 35);
@@ -14072,7 +14120,7 @@ const SpaceShooter = () => {
             ctx.beginPath();
             ctx.arc(bx + 40, weaponY, 12, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = #ffffff';
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(bx + 40, weaponY, 5, 0, Math.PI * 2);
             ctx.fill();
@@ -14086,15 +14134,15 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Main eye
-          ctx.shadowColor = #ff0000';
+          ctx.shadowColor = '#ff0000';
           ctx.shadowBlur = 25;
-          ctx.fillStyle = #ff0000';
+          ctx.fillStyle = '#ff0000';
           ctx.beginPath();
           ctx.arc(bx + bossW * 0.45, centerY, 15, 0, Math.PI * 2);
           ctx.fill();
           
           // Eye highlight
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(bx + bossW * 0.45 - 5, centerY - 5, 5, 0, Math.PI * 2);
           ctx.fill();
@@ -14105,9 +14153,9 @@ const SpaceShooter = () => {
             const eyeAngle = (Math.PI / 3) * i + Math.PI / 6 + pulsePhase * 0.3;
             const eyeX = bx + bossW * 0.45 + Math.cos(eyeAngle) * 35;
             const eyeY = centerY + Math.sin(eyeAngle) * 30;
-            ctx.shadowColor = #ff4444';
+            ctx.shadowColor = '#ff4444';
             ctx.shadowBlur = 8;
-            ctx.fillStyle = #ff4444';
+            ctx.fillStyle = '#ff4444';
             ctx.beginPath();
             ctx.arc(eyeX, eyeY, 6, 0, Math.PI * 2);
             ctx.fill();
@@ -14250,13 +14298,13 @@ const SpaceShooter = () => {
             ctx.arc(bx + bossW * 0.5, eyeY, 12, 0, Math.PI * 2);
             ctx.fill();
             
-            ctx.shadowColor = #ff0000';
+            ctx.shadowColor = '#ff0000';
             ctx.shadowBlur = 15;
-            ctx.fillStyle = #ff0000';
+            ctx.fillStyle = '#ff0000';
             ctx.beginPath();
             ctx.arc(bx + bossW * 0.5, eyeY, 6, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = #ffffff';
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(bx + bossW * 0.5 - 2, eyeY - 2, 2, 0, Math.PI * 2);
             ctx.fill();
@@ -14266,15 +14314,15 @@ const SpaceShooter = () => {
         } else {
           // ========== REGULAR BOSS - BATTLECRUISER ==========
           // Engine glow array
-          ctx.shadowColor = #ff00ff';
+          ctx.shadowColor = '#ff00ff';
           ctx.shadowBlur = 20;
           for (let i = 0; i < 3; i++) {
             const engineY = by + bossH * (0.25 + i * 0.25);
-            ctx.fillStyle = #ff44ff';
+            ctx.fillStyle = '#ff44ff';
             ctx.beginPath();
             ctx.ellipse(bx + bossW + 8, engineY, 12, 6, 0, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = #ffffff';
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.ellipse(bx + bossW + 5, engineY, 5, 3, 0, 0, Math.PI * 2);
             ctx.fill();
@@ -14303,7 +14351,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Top wing
-          ctx.fillStyle = #440044';
+          ctx.fillStyle = '#440044';
           ctx.beginPath();
           ctx.moveTo(bx + bossW * 0.35, by + 5);
           ctx.lineTo(bx + bossW * 0.4, by - 20);
@@ -14322,7 +14370,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Wing edge glow
-          ctx.strokeStyle = #ff00ff';
+          ctx.strokeStyle = '#ff00ff';
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(bx + bossW * 0.4, by - 20);
@@ -14332,7 +14380,7 @@ const SpaceShooter = () => {
           ctx.stroke();
           
           // Front weapon prong
-          ctx.fillStyle = #550055';
+          ctx.fillStyle = '#550055';
           ctx.beginPath();
           ctx.moveTo(bx, centerY);
           ctx.lineTo(bx + 25, centerY - 12);
@@ -14341,22 +14389,22 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Weapon tip glow
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 12;
-          ctx.fillStyle = #00ffff';
+          ctx.fillStyle = '#00ffff';
           ctx.beginPath();
           ctx.arc(bx + 8, centerY, 5, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
           
           // Side weapon pods
-          ctx.fillStyle = #333333';
+          ctx.fillStyle = '#333333';
           ctx.fillRect(bx + 30, by - 5, 20, 10);
           ctx.fillRect(bx + 30, by + bossH - 5, 20, 10);
           
-          ctx.shadowColor = #ff00ff';
+          ctx.shadowColor = '#ff00ff';
           ctx.shadowBlur = 8;
-          ctx.fillStyle = #ff00ff';
+          ctx.fillStyle = '#ff00ff';
           ctx.beginPath();
           ctx.arc(bx + 35, by, 4, 0, Math.PI * 2);
           ctx.fill();
@@ -14366,18 +14414,18 @@ const SpaceShooter = () => {
           ctx.shadowBlur = 0;
           
           // Central eye/core
-          ctx.fillStyle = #220022';
+          ctx.fillStyle = '#220022';
           ctx.beginPath();
           ctx.arc(bx + bossW * 0.45, centerY, 15, 0, Math.PI * 2);
           ctx.fill();
           
-          ctx.shadowColor = #ff0000';
+          ctx.shadowColor = '#ff0000';
           ctx.shadowBlur = 20;
-          ctx.fillStyle = #ff0000';
+          ctx.fillStyle = '#ff0000';
           ctx.beginPath();
           ctx.arc(bx + bossW * 0.45, centerY, 8, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(bx + bossW * 0.45 - 3, centerY - 2, 3, 0, Math.PI * 2);
           ctx.fill();
@@ -14397,24 +14445,24 @@ const SpaceShooter = () => {
           
           // Main charging orb
           ctx.fillStyle = `rgba(255, 255, 0, ${0.4 + boss.laserCharge / 200})`;
-          ctx.shadowColor = #ffff00';
+          ctx.shadowColor = '#ffff00';
           ctx.shadowBlur = 40 + boss.laserCharge / 3;
           ctx.beginPath();
           ctx.arc(bx + 15, centerY, chargeRadius, 0, Math.PI * 2);
           ctx.fill();
           
           // Inner hot core
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(bx + 15, centerY, chargeRadius * 0.4, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
           
           // Warning indicator - flashing
-          ctx.shadowColor = #ff0000';
+          ctx.shadowColor = '#ff0000';
           ctx.shadowBlur = 10;
-          ctx.fillStyle = #ff0000';
-          ctx.font = bold 14px "Press Start 2P", 'monospace';
+          ctx.fillStyle = '#ff0000';
+          ctx.font = 'bold 14px "Press Start 2P", \'monospace\'';
           ctx.textAlign = 'center';
           if (Math.floor(Date.now() / 150) % 2 === 0) {
             ctx.fillText('? DANGER ?', bx + bossW / 2, by - 75);
@@ -14438,19 +14486,19 @@ const SpaceShooter = () => {
           
           // Create intense beam gradient
           const laserGradient = ctx.createLinearGradient(0, laserY - laserHalfSize - 5, 0, laserY + laserHalfSize + 5);
-          laserGradient.addColorStop(0, rgba(255, 0, 0, 0)');
-          laserGradient.addColorStop(0.2, rgba(255, 50, 0, 0.6)');
-          laserGradient.addColorStop(0.35, rgba(255, 150, 50, 0.9)');
-          laserGradient.addColorStop(0.5, rgba(255, 255, 255, 1)');
-          laserGradient.addColorStop(0.65, rgba(255, 150, 50, 0.9)');
-          laserGradient.addColorStop(0.8, rgba(255, 50, 0, 0.6)');
-          laserGradient.addColorStop(1, rgba(255, 0, 0, 0)');
+          laserGradient.addColorStop(0, 'rgba(255, 0, 0, 0)');
+          laserGradient.addColorStop(0.2, 'rgba(255, 50, 0, 0.6)');
+          laserGradient.addColorStop(0.35, 'rgba(255, 150, 50, 0.9)');
+          laserGradient.addColorStop(0.5, 'rgba(255, 255, 255, 1)');
+          laserGradient.addColorStop(0.65, 'rgba(255, 150, 50, 0.9)');
+          laserGradient.addColorStop(0.8, 'rgba(255, 50, 0, 0.6)');
+          laserGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
           
           ctx.fillStyle = laserGradient;
           ctx.fillRect(0, laserY - laserHalfSize + shake, bx + 15, laserSize);
           
           // Hot core beam
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, laserY - coreSize + shake, bx + 15, coreSize * 2);
           
           // Flickering intensity
@@ -14596,7 +14644,7 @@ const SpaceShooter = () => {
             }
             
             // Outer ring
-            ctx.shadowColor = #00aaff';
+            ctx.shadowColor = '#00aaff';
             ctx.shadowBlur = 30 * chargePercent;
             ctx.strokeStyle = `rgba(0, 150, 255, ${chargePercent})`;
             ctx.lineWidth = 3;
@@ -14615,10 +14663,10 @@ const SpaceShooter = () => {
             ctx.fill();
           
             // Warning text
-            ctx.shadowColor = #ff0000';
+            ctx.shadowColor = '#ff0000';
             ctx.shadowBlur = 10;
-            ctx.fillStyle = #ff4444';
-            ctx.font = bold 12px "Press Start 2P", 'monospace';
+            ctx.fillStyle = '#ff4444';
+            ctx.font = 'bold 12px "Press Start 2P", \'monospace\'';
             ctx.textAlign = 'center';
             if (Math.floor(Date.now() / 100) % 2 === 0) {
               ctx.fillText('? EMP CHARGING ?', empX, by - (boss.isSuperBoss ? 120 : 80));
@@ -14644,7 +14692,7 @@ const SpaceShooter = () => {
             const alpha = 1 - (boss.empRadius / boss.empRange) * 0.7;
             
             // Outer glow
-            ctx.shadowColor = #00aaff';
+            ctx.shadowColor = '#00aaff';
             ctx.shadowBlur = 30;
             
             // Create shockwave gradient
@@ -14707,12 +14755,12 @@ const SpaceShooter = () => {
           
           // Inner glow fill
           ctx.globalAlpha = 0.15 * shieldPulse + flashIntensity * 0.3;
-          ctx.fillStyle = #ffcc00';
+          ctx.fillStyle = '#ffcc00';
           ctx.fill();
           
           // Rotating energy arcs
           ctx.globalAlpha = 0.6 * shieldPulse;
-          ctx.strokeStyle = #ffff88';
+          ctx.strokeStyle = '#ffff88';
           ctx.lineWidth = 2;
           const arcAngle = (Date.now() / 500) % (Math.PI * 2);
           for (let i = 0; i < 4; i++) {
@@ -14727,10 +14775,10 @@ const SpaceShooter = () => {
           
           // "EMERGING" text indicator
           ctx.globalAlpha = shieldPulse;
-          ctx.fillStyle = #ffcc00';
-          ctx.font = bold 12px "Press Start 2P", 'monospace';
+          ctx.fillStyle = '#ffcc00';
+          ctx.font = 'bold 12px "Press Start 2P", \'monospace\'';
           ctx.textAlign = 'center';
-          ctx.shadowColor = #ff8800';
+          ctx.shadowColor = '#ff8800';
           ctx.shadowBlur = 10;
           ctx.fillText('? INVINCIBLE ?', bx + bossW / 2, by - (boss.isSuperBoss ? 130 : (boss.isMegaBoss ? 100 : 55)));
           
@@ -14768,7 +14816,7 @@ const SpaceShooter = () => {
           
           // Shield label
           ctx.fillStyle = shieldColor2;
-          ctx.font = 8px "Press Start 2P", 'monospace';
+          ctx.font = '8px "Press Start 2P", monospace';
           ctx.textAlign = 'right';
           ctx.fillText('SHIELD', bx - 5, shieldBarY + 10);
         }
@@ -14776,7 +14824,7 @@ const SpaceShooter = () => {
         // Health bar background with border glow
         ctx.shadowColor = boss.isSuperBoss ? '#ff0000' : (boss.isMegaBoss ? '#ff4400' : '#ff00ff');
         ctx.shadowBlur = 5;
-        ctx.fillStyle = #222222';
+        ctx.fillStyle = '#222222';
         ctx.fillRect(bx, healthBarY, healthBarWidth, healthBarHeight);
         ctx.shadowBlur = 0;
         
@@ -14796,7 +14844,7 @@ const SpaceShooter = () => {
         ctx.fillRect(bx, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
         
         // Health bar segments
-        ctx.strokeStyle = #000000';
+        ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
         for (let i = 1; i < 10; i++) {
           ctx.beginPath();
@@ -14810,10 +14858,10 @@ const SpaceShooter = () => {
         ctx.strokeRect(bx, healthBarY, healthBarWidth, healthBarHeight);
         
         // Boss label with shadow
-        ctx.shadowColor = #000000';
+        ctx.shadowColor = '#000000';
         ctx.shadowBlur = 4;
         ctx.fillStyle = isDark ? '#ff0000' : (boss.isSuperBoss ? '#ff0000' : (boss.isMegaBoss ? '#ff4400' : '#ff00ff'));
-        ctx.font = boss.isSuperBoss ? bold 16px "Press Start 2P", 'monospace' : (boss.isMegaBoss ? bold 14px "Press Start 2P", 'monospace' : bold 11px "Press Start 2P", 'monospace');
+        ctx.font = boss.isSuperBoss ? 'bold 16px "Press Start 2P", \'monospace\'' : (boss.isMegaBoss ? 'bold 14px "Press Start 2P", \'monospace\'' : 'bold 11px "Press Start 2P", \'monospace\'');
         ctx.textAlign = 'center';
         const bossName = boss.isSuperBoss 
           ? (isDark ? `?? DARK OVERLORD ??` : `?? OVERLORD ??`) 
@@ -14860,7 +14908,7 @@ const SpaceShooter = () => {
         
         // Different shapes based on attack pattern
         switch (mb.attackPattern) {
-          case spread': // Gunship - angular design
+          case 'spread': // Gunship - angular design
             ctx.beginPath();
             ctx.moveTo(mbX, mbY + mbH / 2);
             ctx.lineTo(mbX + mbW * 0.2, mbY);
@@ -14872,7 +14920,7 @@ const SpaceShooter = () => {
             ctx.closePath();
             ctx.fill();
             break;
-          case bombs': // Bomber - bulky design
+          case 'bombs': // Bomber - bulky design
             ctx.beginPath();
             ctx.moveTo(mbX + 10, mbY + mbH / 2);
             ctx.quadraticCurveTo(mbX, mbY + 10, mbX + mbW * 0.3, mbY);
@@ -14883,7 +14931,7 @@ const SpaceShooter = () => {
             ctx.closePath();
             ctx.fill();
             break;
-          case chase': // Hunter - sleek design
+          case 'chase': // Hunter - sleek design
             ctx.beginPath();
             ctx.moveTo(mbX, mbY + mbH / 2);
             ctx.lineTo(mbX + mbW * 0.15, mbY + 5);
@@ -14893,18 +14941,18 @@ const SpaceShooter = () => {
             ctx.closePath();
             ctx.fill();
             break;
-          case laser': // Sentinel - circular design
+          case 'laser': // Sentinel - circular design
             ctx.beginPath();
             ctx.arc(mbX + mbW / 2, mbY + mbH / 2, Math.min(mbW, mbH) / 2, 0, Math.PI * 2);
             ctx.fill();
             // Inner ring
-            ctx.strokeStyle = #ffffff';
+            ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(mbX + mbW / 2, mbY + mbH / 2, Math.min(mbW, mbH) / 3, 0, Math.PI * 2);
             ctx.stroke();
             break;
-          case spawn': // Swarm Lord - insectoid design
+          case 'spawn': // Swarm Lord - insectoid design
             ctx.beginPath();
             ctx.moveTo(mbX + 5, mbY + mbH / 2);
             ctx.lineTo(mbX + mbW * 0.3, mbY);
@@ -14921,7 +14969,7 @@ const SpaceShooter = () => {
             break;
             
           // === NEW MINI-BOSS TYPE SHAPES ===
-          case snipe': // Deadeye - sniper rifle shape
+          case 'snipe': // Deadeye - sniper rifle shape
             ctx.beginPath();
             ctx.moveTo(mbX, mbY + mbH / 2);
             ctx.lineTo(mbX + mbW * 0.15, mbY + mbH * 0.3);
@@ -14932,13 +14980,13 @@ const SpaceShooter = () => {
             ctx.closePath();
             ctx.fill();
             // Scope
-            ctx.fillStyle = #ff0088';
+            ctx.fillStyle = '#ff0088';
             ctx.beginPath();
             ctx.arc(mbX + mbW * 0.3, mbY + mbH * 0.35, 6, 0, Math.PI * 2);
             ctx.fill();
             break;
             
-          case barrage': // Juggernaut - tank shape
+          case 'barrage': // Juggernaut - tank shape
             ctx.beginPath();
             ctx.moveTo(mbX + 10, mbY + 10);
             ctx.lineTo(mbX + mbW - 5, mbY + 5);
@@ -14951,7 +14999,7 @@ const SpaceShooter = () => {
             ctx.closePath();
             ctx.fill();
             // Armor plates
-            ctx.strokeStyle = #555555';
+            ctx.strokeStyle = '#555555';
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(mbX + mbW * 0.3, mbY);
@@ -14961,7 +15009,7 @@ const SpaceShooter = () => {
             ctx.stroke();
             break;
             
-          case teleport': // Phantom - ethereal shape
+          case 'teleport': // Phantom - ethereal shape
             const phantomAlpha = mb.teleportFlashTimer > 0 ? 0.3 + 0.7 * Math.sin(mb.teleportFlashTimer * 0.5) : 1;
             ctx.globalAlpha = phantomAlpha;
             ctx.beginPath();
@@ -14975,7 +15023,7 @@ const SpaceShooter = () => {
             ctx.globalAlpha = 1;
             break;
             
-          case pulse': // Pulsar - star/burst shape
+          case 'pulse': // Pulsar - star/burst shape
             const starPoints = 8;
             ctx.beginPath();
             for (let i = 0; i < starPoints * 2; i++) {
@@ -14990,7 +15038,7 @@ const SpaceShooter = () => {
             ctx.fill();
             break;
             
-          case berserk': // Berserker - aggressive spiky shape
+          case 'berserk': // Berserker - aggressive spiky shape
             const spikeIntensity = 1 + (1 - mb.health / mb.maxHealth) * 0.5; // Spikier at low health
             ctx.beginPath();
             ctx.moveTo(mbX, mbY + mbH / 2);
@@ -15011,7 +15059,7 @@ const SpaceShooter = () => {
             ctx.fill();
             // Rage glow at low health
             if (mb.health / mb.maxHealth < 0.4) {
-              ctx.shadowColor = #ff0000';
+              ctx.shadowColor = '#ff0000';
               ctx.shadowBlur = 20 + Math.sin(pulsePhase * 3) * 10;
             }
             break;
@@ -15025,54 +15073,54 @@ const SpaceShooter = () => {
         if (mb.modifierEffect) {
           ctx.save();
           switch (mb.modifierEffect) {
-            case armor':
+            case 'armor':
               // Metallic armor overlay
               ctx.globalAlpha = 0.3;
-              ctx.fillStyle = #888888';
+              ctx.fillStyle = '#888888';
               ctx.fillRect(mbX, mbY, mbW, mbH);
-              ctx.strokeStyle = #aaaaaa';
+              ctx.strokeStyle = '#aaaaaa';
               ctx.lineWidth = 3;
               ctx.strokeRect(mbX + 3, mbY + 3, mbW - 6, mbH - 6);
               break;
               
-            case shield':
+            case 'shield':
               // Shield bubble
               if (mb.modShield > 0) {
                 const shieldAlpha = 0.3 + (mb.modShield / mb.modShieldMax) * 0.3;
                 ctx.globalAlpha = shieldAlpha;
-                ctx.strokeStyle = #00aaff';
+                ctx.strokeStyle = '#00aaff';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
                 ctx.arc(mbX + mbW / 2, mbY + mbH / 2, Math.max(mbW, mbH) / 2 + 10, 0, Math.PI * 2);
                 ctx.stroke();
-                ctx.fillStyle = rgba(0, 170, 255, 0.15)';
+                ctx.fillStyle = 'rgba(0, 170, 255, 0.15)';
                 ctx.fill();
               }
               break;
               
-            case rage':
+            case 'rage':
               // Rage aura
               ctx.globalAlpha = 0.4;
-              ctx.shadowColor = #ff4400';
+              ctx.shadowColor = '#ff4400';
               ctx.shadowBlur = 15 + Math.sin(pulsePhase * 2) * 5;
-              ctx.strokeStyle = #ff4400';
+              ctx.strokeStyle = '#ff4400';
               ctx.lineWidth = 2;
               ctx.strokeRect(mbX - 5, mbY - 5, mbW + 10, mbH + 10);
               break;
               
-            case phase':
+            case 'phase':
               // Phasing effect
               if (mb.phaseInvulnTimer > 0) {
                 ctx.globalAlpha = 0.3 + 0.2 * Math.sin(pulsePhase * 4);
-                ctx.fillStyle = #cc88ff';
+                ctx.fillStyle = '#cc88ff';
                 ctx.fillRect(mbX, mbY, mbW, mbH);
               }
               break;
               
-            case speed':
+            case 'speed':
               // Speed lines
               ctx.globalAlpha = 0.5;
-              ctx.strokeStyle = #00ff88';
+              ctx.strokeStyle = '#00ff88';
               ctx.lineWidth = 2;
               for (let i = 0; i < 3; i++) {
                 const lineY = mbY + mbH * 0.25 + i * mbH * 0.25;
@@ -15083,13 +15131,13 @@ const SpaceShooter = () => {
               }
               break;
               
-            case vampire':
+            case 'vampire':
               // Dark aura
               ctx.globalAlpha = 0.4;
               const vampGrad = ctx.createRadialGradient(mbX + mbW / 2, mbY + mbH / 2, 0, mbX + mbW / 2, mbY + mbH / 2, Math.max(mbW, mbH));
-              vampGrad.addColorStop(0, rgba(136, 0, 0, 0)');
-              vampGrad.addColorStop(0.7, rgba(136, 0, 0, 0.3)');
-              vampGrad.addColorStop(1, rgba(136, 0, 0, 0.6)');
+              vampGrad.addColorStop(0, 'rgba(136, 0, 0, 0)');
+              vampGrad.addColorStop(0.7, 'rgba(136, 0, 0, 0.3)');
+              vampGrad.addColorStop(1, 'rgba(136, 0, 0, 0.6)');
               ctx.fillStyle = vampGrad;
               ctx.beginPath();
               ctx.arc(mbX + mbW / 2, mbY + mbH / 2, Math.max(mbW, mbH) * 0.7, 0, Math.PI * 2);
@@ -15103,7 +15151,7 @@ const SpaceShooter = () => {
         if (mb.sniperLocked && mb.sniperLockTimer > 0) {
           ctx.save();
           ctx.globalAlpha = 0.5 + 0.5 * Math.sin(mb.sniperLockTimer * 0.3);
-          ctx.strokeStyle = #ff0088';
+          ctx.strokeStyle = '#ff0088';
           ctx.lineWidth = 2;
           ctx.setLineDash([5, 5]);
           ctx.beginPath();
@@ -15135,7 +15183,7 @@ const SpaceShooter = () => {
         ctx.stroke();
         
         // Eye/cockpit glow
-        ctx.fillStyle = #ffffff';
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(mbX + mbW * 0.3, mbY + mbH / 2, 5, 0, Math.PI * 2);
         ctx.fill();
@@ -15149,7 +15197,7 @@ const SpaceShooter = () => {
         const hpPercent = mb.health / mb.maxHealth;
         const hpBarY = mbY - 20;
         
-        ctx.fillStyle = #222222';
+        ctx.fillStyle = '#222222';
         ctx.fillRect(mbX, hpBarY, hpBarWidth, hpBarHeight);
         
         const hpGrad = ctx.createLinearGradient(mbX, hpBarY, mbX + hpBarWidth * hpPercent, hpBarY);
@@ -15164,7 +15212,7 @@ const SpaceShooter = () => {
         
         // Name label
         ctx.fillStyle = mb.color;
-        ctx.font = 10px "Press Start 2P", 'monospace';
+        ctx.font = '10px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
         ctx.fillText(mb.name, mbX + mbW / 2, hpBarY - 5);
         
@@ -15198,16 +15246,16 @@ const SpaceShooter = () => {
         gradient.addColorStop(0, '#000000');
         gradient.addColorStop(0.5, '#220044');
         gradient.addColorStop(0.8, '#6600ff');
-        gradient.addColorStop(1, rgba(102, 0, 255, 0)');
+        gradient.addColorStop(1, 'rgba(102, 0, 255, 0)');
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.arc(0, 0, bh.radius * pulseScale, 0, Math.PI * 2);
         ctx.fill();
         
         // Core singularity
-        ctx.shadowColor = #ff00ff';
+        ctx.shadowColor = '#ff00ff';
         ctx.shadowBlur = 20;
-        ctx.fillStyle = #000000';
+        ctx.fillStyle = '#000000';
         ctx.beginPath();
         ctx.arc(0, 0, 15, 0, Math.PI * 2);
         ctx.fill();
@@ -15224,9 +15272,9 @@ const SpaceShooter = () => {
         ctx.globalAlpha = clone.alpha * (0.5 + Math.sin(time * 4) * 0.2);
         
         // Draw ghost-like player copy
-        ctx.shadowColor = #00ffff';
+        ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 15;
-        ctx.fillStyle = #00aaaa';
+        ctx.fillStyle = '#00aaaa';
         
         // Simple ship shape for clone
         ctx.beginPath();
@@ -15260,7 +15308,7 @@ const SpaceShooter = () => {
         ctx.stroke();
         
         // Inner glow
-        ctx.strokeStyle = #ffffff';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1;
         ctx.globalAlpha = 0.5 + Math.sin(time * 10) * 0.3;
         ctx.beginPath();
@@ -15277,7 +15325,7 @@ const SpaceShooter = () => {
         
         // Screen tint
         ctx.globalAlpha = 0.1 + Math.sin(time * 2) * 0.05;
-        ctx.fillStyle = #8800ff';
+        ctx.fillStyle = '#8800ff';
         ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
         
         // Clock-like circles at edges
@@ -15287,7 +15335,7 @@ const SpaceShooter = () => {
           const y = GAME_HEIGHT / 2 + Math.sin(angle) * (GAME_HEIGHT / 2 - 30);
           
           ctx.globalAlpha = 0.3;
-          ctx.strokeStyle = #aa00ff';
+          ctx.strokeStyle = '#aa00ff';
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(x, y, 15, 0, Math.PI * 2);
@@ -15309,11 +15357,11 @@ const SpaceShooter = () => {
         const gradient = ctx.createLinearGradient(player.x + PLAYER_WIDTH, beamY, GAME_WIDTH, beamY);
         gradient.addColorStop(0, '#ff00aa');
         gradient.addColorStop(0.5, '#ff44cc');
-        gradient.addColorStop(1, rgba(255, 0, 170, 0)');
+        gradient.addColorStop(1, 'rgba(255, 0, 170, 0)');
         
         ctx.strokeStyle = gradient;
         ctx.lineWidth = 8 + Math.sin(time * 20) * 3;
-        ctx.shadowColor = #ff00aa';
+        ctx.shadowColor = '#ff00aa';
         ctx.shadowBlur = 20;
         
         ctx.beginPath();
@@ -15322,7 +15370,7 @@ const SpaceShooter = () => {
         ctx.stroke();
         
         // Core beam
-        ctx.strokeStyle = #ffffff';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(player.x + PLAYER_WIDTH, beamY);
@@ -15397,7 +15445,7 @@ const SpaceShooter = () => {
             forceGradient.addColorStop(0.5, '#00ddff');
             forceGradient.addColorStop(0.8, '#0088ff');
             forceGradient.addColorStop(1, '#0044aa');
-            ctx.shadowColor = #00aaff';
+            ctx.shadowColor = '#00aaff';
           } else {
             // Convert levelColor to gradient
             forceGradient.addColorStop(0, '#ffffff');
@@ -15412,7 +15460,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Inner core - brighter for higher levels
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(x, y, size / 6 + forceLevel, 0, Math.PI * 2);
           ctx.fill();
@@ -15469,8 +15517,8 @@ const SpaceShooter = () => {
               const px = x + Math.cos(pAngle) * pDist;
               const py = y + Math.sin(pAngle) * pDist;
               
-              ctx.fillStyle = #00ffff';
-              ctx.shadowColor = #00ffff';
+              ctx.fillStyle = '#00ffff';
+              ctx.shadowColor = '#00ffff';
               ctx.shadowBlur = 8;
               ctx.beginPath();
               ctx.arc(px, py, 3, 0, Math.PI * 2);
@@ -15481,7 +15529,7 @@ const SpaceShooter = () => {
           // Level name indicator (small text above pod when powered)
           if (forceLevel > 1 && isPrimary) {
             ctx.fillStyle = levelColor;
-            ctx.font = bold 8px Arial';
+            ctx.font = 'bold 8px Arial';
             ctx.textAlign = 'center';
             ctx.fillText(levelData.name, x, y - size / 2 - 8);
           }
@@ -15504,9 +15552,9 @@ const SpaceShooter = () => {
           
           // Draw connecting electricity between split pods
           ctx.save();
-          ctx.strokeStyle = rgba(100, 200, 255, 0.6)';
+          ctx.strokeStyle = 'rgba(100, 200, 255, 0.6)';
           ctx.lineWidth = 2;
-          ctx.shadowColor = #00aaff';
+          ctx.shadowColor = '#00aaff';
           ctx.shadowBlur = 10;
           ctx.setLineDash([4, 4]);
           ctx.beginPath();
@@ -15517,7 +15565,7 @@ const SpaceShooter = () => {
           
           // Draw orbit trail effect
           ctx.globalAlpha = 0.3;
-          ctx.strokeStyle = #00aaff';
+          ctx.strokeStyle = '#00aaff';
           ctx.lineWidth = 1;
           ctx.setLineDash([]);
           ctx.beginPath();
@@ -15537,7 +15585,7 @@ const SpaceShooter = () => {
           const meterX = force.x - meterWidth / 2;
           const meterY = force.y + (force.split ? force.splitY + 20 : currentSize / 2 + 10);
           
-          ctx.fillStyle = #333333';
+          ctx.fillStyle = '#333333';
           ctx.fillRect(meterX, meterY, meterWidth, meterHeight);
           
           const powerGradient = ctx.createLinearGradient(meterX, meterY, meterX + meterWidth, meterY);
@@ -15559,7 +15607,7 @@ const SpaceShooter = () => {
           const shieldPulse = Math.sin(Date.now() / 100) * 5;
           
           ctx.save();
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 20;
           
           // Main shield bubble around player
@@ -15567,10 +15615,10 @@ const SpaceShooter = () => {
             player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 0,
             player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, shieldRadius + shieldPulse
           );
-          shieldGradient.addColorStop(0, rgba(0, 255, 255, 0)');
-          shieldGradient.addColorStop(0.7, rgba(0, 255, 255, 0.1)');
-          shieldGradient.addColorStop(0.9, rgba(0, 255, 255, 0.4)');
-          shieldGradient.addColorStop(1, rgba(0, 255, 255, 0.6)');
+          shieldGradient.addColorStop(0, 'rgba(0, 255, 255, 0)');
+          shieldGradient.addColorStop(0.7, 'rgba(0, 255, 255, 0.1)');
+          shieldGradient.addColorStop(0.9, 'rgba(0, 255, 255, 0.4)');
+          shieldGradient.addColorStop(1, 'rgba(0, 255, 255, 0.6)');
           
           ctx.fillStyle = shieldGradient;
           ctx.beginPath();
@@ -15578,7 +15626,7 @@ const SpaceShooter = () => {
           ctx.fill();
           
           // Hexagonal shield pattern
-          ctx.strokeStyle = rgba(0, 255, 255, 0.5)';
+          ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
           ctx.lineWidth = 1;
           const hexCount = 6;
           for (let i = 0; i < hexCount; i++) {
@@ -15599,8 +15647,8 @@ const SpaceShooter = () => {
           
           // Shield timer indicator
           const timerRatio = force.shieldTimer / 180;
-          ctx.fillStyle = #00ffff';
-          ctx.font = bold 10px Arial';
+          ctx.fillStyle = '#00ffff';
+          ctx.font = 'bold 10px Arial';
           ctx.textAlign = 'center';
           ctx.fillText(`SHIELD: ${Math.ceil(force.shieldTimer / 60)}s`, 
             player.x + PLAYER_WIDTH / 2, player.y - 20);
@@ -15614,7 +15662,7 @@ const SpaceShooter = () => {
         ctx.save();
         ctx.strokeStyle = `rgba(100, 200, 255, ${elec.lifetime / 10})`;
         ctx.lineWidth = 3;
-        ctx.shadowColor = #00aaff';
+        ctx.shadowColor = '#00aaff';
         ctx.shadowBlur = 15;
         
         // Draw jagged lightning
@@ -15649,13 +15697,13 @@ const SpaceShooter = () => {
       ctx.save();
       // Score background panel
       const scoreGrad = ctx.createLinearGradient(0, 0, 200, 0);
-      scoreGrad.addColorStop(0, rgba(0, 20, 40, 0.85)');
-      scoreGrad.addColorStop(1, rgba(0, 20, 40, 0)');
+      scoreGrad.addColorStop(0, 'rgba(0, 20, 40, 0.85)');
+      scoreGrad.addColorStop(1, 'rgba(0, 20, 40, 0)');
       ctx.fillStyle = scoreGrad;
       ctx.fillRect(0, 0, 200, 45);
       
       // Score border
-      ctx.strokeStyle = rgba(0, 255, 136, 0.5)';
+      ctx.strokeStyle = 'rgba(0, 255, 136, 0.5)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, 45);
@@ -15664,16 +15712,16 @@ const SpaceShooter = () => {
       ctx.stroke();
       
       // Score label
-      ctx.font = 8px "Press Start 2P", 'monospace';
-      ctx.fillStyle = #00ff88';
+      ctx.font = '8px "Press Start 2P", monospace';
+      ctx.fillStyle = '#00ff88';
       ctx.textAlign = 'left';
       ctx.fillText('SCORE', 12, 14);
       
       // Score value with glow
-      ctx.shadowColor = #00ff88';
+      ctx.shadowColor = '#00ff88';
       ctx.shadowBlur = 10;
-      ctx.font = 18px "Press Start 2P", 'monospace';
-      ctx.fillStyle = #ffffff';
+      ctx.font = '18px "Press Start 2P", monospace';
+      ctx.fillStyle = '#ffffff';
       ctx.fillText(scoreRef.current.toLocaleString(), 12, 35);
       ctx.shadowBlur = 0;
       
@@ -15685,7 +15733,7 @@ const SpaceShooter = () => {
         ctx.globalAlpha = multAlpha;
         ctx.shadowColor = multColor;
         ctx.shadowBlur = 15;
-        ctx.font = 12px "Press Start 2P", 'monospace';
+        ctx.font = '12px "Press Start 2P", monospace';
         ctx.fillStyle = multColor;
         ctx.fillText(`�${mult.toFixed(1)}`, 12, 52);
         ctx.shadowBlur = 0;
@@ -15704,27 +15752,27 @@ const SpaceShooter = () => {
         const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
         // Timer label
-        ctx.font = 6px "Press Start 2P", 'monospace';
+        ctx.font = '6px "Press Start 2P", monospace';
         ctx.fillStyle = currentMode === 'survival' ? '#ff4444' : '#4488ff';
         ctx.fillText(currentMode === 'survival' ? 'SURVIVAL TIME' : 'TIME', 130, 14);
         
         // Timer value
         ctx.shadowColor = currentMode === 'survival' ? '#ff4444' : '#4488ff';
         ctx.shadowBlur = 10;
-        ctx.font = 14px "Press Start 2P", 'monospace';
-        ctx.fillStyle = #ffffff';
+        ctx.font = '14px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffffff';
         ctx.fillText(timerText, 130, 32);
         ctx.shadowBlur = 0;
       } else if (currentMode === 'bossRush') {
         // Boss Rush mode: show bosses defeated
-        ctx.font = 6px "Press Start 2P", 'monospace';
-        ctx.fillStyle = #aa44ff';
+        ctx.font = '6px "Press Start 2P", monospace';
+        ctx.fillStyle = '#aa44ff';
         ctx.fillText('BOSS RUSH', 130, 14);
         
-        ctx.shadowColor = #aa44ff';
+        ctx.shadowColor = '#aa44ff';
         ctx.shadowBlur = 10;
-        ctx.font = 14px "Press Start 2P", 'monospace';
-        ctx.fillStyle = #ffffff';
+        ctx.font = '14px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffffff';
         ctx.fillText(`BOSS ${Math.ceil(waveRef.current / 5)}/4`, 130, 32);
         ctx.shadowBlur = 0;
       }
@@ -15733,13 +15781,13 @@ const SpaceShooter = () => {
       // === TOP RIGHT: Lives Panel ===
       ctx.save();
       const livesGrad = ctx.createLinearGradient(GAME_WIDTH - 180, 0, GAME_WIDTH, 0);
-      livesGrad.addColorStop(0, rgba(40, 0, 0, 0)');
-      livesGrad.addColorStop(1, rgba(40, 0, 0, 0.85)');
+      livesGrad.addColorStop(0, 'rgba(40, 0, 0, 0)');
+      livesGrad.addColorStop(1, 'rgba(40, 0, 0, 0.85)');
       ctx.fillStyle = livesGrad;
       ctx.fillRect(GAME_WIDTH - 180, 0, 180, 45);
       
       // Lives border
-      ctx.strokeStyle = rgba(255, 100, 100, 0.5)';
+      ctx.strokeStyle = 'rgba(255, 100, 100, 0.5)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(GAME_WIDTH, 45);
@@ -15748,8 +15796,8 @@ const SpaceShooter = () => {
       ctx.stroke();
       
       // Lives label
-      ctx.font = 8px "Press Start 2P", 'monospace';
-      ctx.fillStyle = #ff6666';
+      ctx.font = '8px "Press Start 2P", monospace';
+      ctx.fillStyle = '#ff6666';
       ctx.textAlign = 'right';
       ctx.fillText('LIVES', GAME_WIDTH - 12, 14);
       
@@ -15769,17 +15817,17 @@ const SpaceShooter = () => {
         ctx.bezierCurveTo(heartX + 8, heartY, heartX, heartY, heartX, heartY + 4);
         
         if (isActive) {
-          ctx.shadowColor = #ff0000';
+          ctx.shadowColor = '#ff0000';
           ctx.shadowBlur = 8;
-          ctx.fillStyle = #ff4444';
+          ctx.fillStyle = '#ff4444';
           ctx.fill();
           // Highlight
-          ctx.fillStyle = rgba(255, 255, 255, 0.3)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
           ctx.beginPath();
           ctx.arc(heartX - 3, heartY + 5, 3, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          ctx.strokeStyle = #442222';
+          ctx.strokeStyle = '#442222';
           ctx.lineWidth = 2;
           ctx.stroke();
         }
@@ -15791,8 +15839,8 @@ const SpaceShooter = () => {
       ctx.save();
       const bombY = 55;
       const bombX = GAME_WIDTH - 15;
-      ctx.font = 8px "Press Start 2P", 'monospace';
-      ctx.fillStyle = #ff8800';
+      ctx.font = '8px "Press Start 2P", monospace';
+      ctx.fillStyle = '#ff8800';
       ctx.textAlign = 'right';
       ctx.fillText('BOMB', bombX, bombY);
       
@@ -15803,10 +15851,10 @@ const SpaceShooter = () => {
         const iconY = bombY + 10;
         const isActive = i < bombStock;
         
-        ctx.font = 14px Arial';
+        ctx.font = '14px Arial';
         ctx.globalAlpha = isActive ? 1 : 0.3;
         if (isActive) {
-          ctx.shadowColor = #ff4400';
+          ctx.shadowColor = '#ff4400';
           ctx.shadowBlur = 8;
         }
         ctx.fillText('??', iconX, iconY + 12);
@@ -15824,7 +15872,7 @@ const SpaceShooter = () => {
       const graze = grazeRef.current;
       
       // Graze meter background
-      ctx.fillStyle = rgba(0, 0, 0, 0.6)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(grazeMeterX, grazeMeterY, grazeMeterWidth, grazeMeterHeight);
       
       // Graze meter fill
@@ -15838,7 +15886,7 @@ const SpaceShooter = () => {
       
       // Graze meter border with glow when active
       if (graze.displayTimer > 0) {
-        ctx.shadowColor = #00ffff';
+        ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 10;
       }
       ctx.strokeStyle = graze.displayTimer > 0 ? '#00ffff' : '#004466';
@@ -15847,22 +15895,22 @@ const SpaceShooter = () => {
       ctx.shadowBlur = 0;
       
       // Graze label and count
-      ctx.font = 7px "Press Start 2P", 'monospace';
+      ctx.font = '7px "Press Start 2P", monospace';
       ctx.fillStyle = graze.displayTimer > 0 ? '#00ffff' : '#88aacc';
       ctx.textAlign = 'left';
       ctx.fillText('GRAZE', grazeMeterX, grazeMeterY - 4);
       
       // Show graze count
       ctx.textAlign = 'right';
-      ctx.fillStyle = #ffffff';
+      ctx.fillStyle = '#ffffff';
       ctx.fillText(graze.count.toString(), grazeMeterX + grazeMeterWidth, grazeMeterY - 4);
       
       // Meter full indicator
       if (graze.meter >= GRAZE_METER_MAX) {
         const flash = Math.sin(Date.now() / 100) > 0;
         if (flash) {
-          ctx.font = 6px "Press Start 2P", 'monospace';
-          ctx.fillStyle = #ffff00';
+          ctx.font = '6px "Press Start 2P", monospace';
+          ctx.fillStyle = '#ffff00';
           ctx.textAlign = 'center';
           ctx.fillText('MAX!', grazeMeterX + grazeMeterWidth / 2, grazeMeterY + grazeMeterHeight + 10);
         }
@@ -15892,7 +15940,7 @@ const SpaceShooter = () => {
       }
       
       // Weapon label
-      ctx.font = 7px "Press Start 2P", 'monospace';
+      ctx.font = '7px "Press Start 2P", monospace';
       ctx.textAlign = 'left';
       ctx.fillStyle = levelUpTimer > 0 ? weaponColor : '#aaaacc';
       ctx.fillText('WEAPON', weaponHudX, weaponHudY - 12);
@@ -15903,7 +15951,7 @@ const SpaceShooter = () => {
       ctx.fillText(`LV.${weaponLevel}`, weaponHudX + weaponBarWidth, weaponHudY - 12);
       
       // XP bar background
-      ctx.fillStyle = rgba(0, 0, 0, 0.6)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(weaponHudX, weaponHudY, weaponBarWidth, weaponBarHeight);
       
       // XP bar fill with gradient
@@ -15925,7 +15973,7 @@ const SpaceShooter = () => {
       ctx.shadowBlur = 0;
       
       // Weapon name below bar
-      ctx.font = 5px "Press Start 2P", 'monospace';
+      ctx.font = '5px "Press Start 2P", monospace';
       ctx.textAlign = 'center';
       ctx.fillStyle = weaponColor;
       ctx.fillText(weaponName, weaponHudX + weaponBarWidth / 2, weaponHudY + weaponBarHeight + 8);
@@ -15934,10 +15982,10 @@ const SpaceShooter = () => {
       if (weaponLevel >= 5) {
         const flash = Math.sin(Date.now() / 80) > 0;
         if (flash) {
-          ctx.shadowColor = #ff8800';
+          ctx.shadowColor = '#ff8800';
           ctx.shadowBlur = 12;
-          ctx.font = 6px "Press Start 2P", 'monospace';
-          ctx.fillStyle = #ff8800';
+          ctx.font = '6px "Press Start 2P", monospace';
+          ctx.fillStyle = '#ff8800';
           ctx.fillText('MAX POWER!', weaponHudX + weaponBarWidth / 2, weaponHudY + weaponBarHeight + 16);
           ctx.shadowBlur = 0;
         }
@@ -15949,17 +15997,17 @@ const SpaceShooter = () => {
         const alpha = p.timer / 25;
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.shadowColor = #00ffff';
+        ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 8;
-        ctx.fillStyle = #00ffff';
+        ctx.fillStyle = '#00ffff';
         ctx.beginPath();
         ctx.arc(p.x, p.y, 4 * alpha, 0, Math.PI * 2);
         ctx.fill();
         
         // Points text
-        ctx.font = 8px "Press Start 2P", 'monospace';
+        ctx.font = '8px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
-        ctx.fillStyle = #ffffff';
+        ctx.fillStyle = '#ffffff';
         ctx.fillText('+' + p.points, p.x, p.y - 8);
         ctx.restore();
       });
@@ -15973,11 +16021,11 @@ const SpaceShooter = () => {
         ctx.save();
         // Expanding ring
         const ringGrad = ctx.createRadialGradient(bomb.x, bomb.y, 0, bomb.x, bomb.y, bombRadius);
-        ringGrad.addColorStop(0, rgba(255, 100, 0, 0)');
-        ringGrad.addColorStop(0.7, rgba(255, 100, 0, 0)');
-        ringGrad.addColorStop(0.85, rgba(255, 150, 50, 0.4)');
-        ringGrad.addColorStop(0.95, rgba(255, 255, 100, 0.8)');
-        ringGrad.addColorStop(1, rgba(255, 255, 255, 0)');
+        ringGrad.addColorStop(0, 'rgba(255, 100, 0, 0)');
+        ringGrad.addColorStop(0.7, 'rgba(255, 100, 0, 0)');
+        ringGrad.addColorStop(0.85, 'rgba(255, 150, 50, 0.4)');
+        ringGrad.addColorStop(0.95, 'rgba(255, 255, 100, 0.8)');
+        ringGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
         
         ctx.fillStyle = ringGrad;
         ctx.beginPath();
@@ -15998,7 +16046,7 @@ const SpaceShooter = () => {
       const waveCenterX = GAME_WIDTH / 2;
       
       // Wave panel background
-      ctx.fillStyle = rgba(0, 30, 60, 0.8)';
+      ctx.fillStyle = 'rgba(0, 30, 60, 0.8)';
       ctx.beginPath();
       ctx.moveTo(waveCenterX - 80, 0);
       ctx.lineTo(waveCenterX + 80, 0);
@@ -16014,13 +16062,13 @@ const SpaceShooter = () => {
       
       // Wave text
       ctx.textAlign = 'center';
-      ctx.font = 10px "Press Start 2P", 'monospace';
-      ctx.fillStyle = #88aaff';
+      ctx.font = '10px "Press Start 2P", monospace';
+      ctx.fillStyle = '#88aaff';
       ctx.fillText('WAVE', waveCenterX, 18);
       
       ctx.shadowColor = bossActiveRef.current ? '#ff00ff' : '#00ff88';
       ctx.shadowBlur = 15;
-      ctx.font = 20px "Press Start 2P", 'monospace';
+      ctx.font = '20px "Press Start 2P", monospace';
       ctx.fillStyle = bossActiveRef.current ? '#ff88ff' : '#ffffff';
       ctx.fillText(waveRef.current.toString(), waveCenterX, 42);
       ctx.shadowBlur = 0;
@@ -16036,7 +16084,7 @@ const SpaceShooter = () => {
         const barY = 55;
         
         // Progress bar background
-        ctx.fillStyle = rgba(0, 0, 0, 0.5)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(barX, barY, barWidth, 6);
         
         // Progress fill
@@ -16047,18 +16095,18 @@ const SpaceShooter = () => {
         ctx.fillRect(barX, barY, barWidth * killProgress, 6);
         
         // Progress border
-        ctx.strokeStyle = #ff8800';
+        ctx.strokeStyle = '#ff8800';
         ctx.lineWidth = 1;
         ctx.strokeRect(barX, barY, barWidth, 6);
         
         // Kill count text
-        ctx.font = 7px "Press Start 2P", 'monospace';
-        ctx.fillStyle = #ffaa00';
+        ctx.font = '7px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffaa00';
         ctx.fillText(`${currentKills}/${killsNeeded} KILLS`, waveCenterX, barY + 16);
       } else {
         // Boss indicator
-        ctx.font = 8px "Press Start 2P", 'monospace';
-        ctx.fillStyle = #ff00ff';
+        ctx.font = '8px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ff00ff';
         const bossFlash = Math.sin(hudTime / 150) > 0;
         if (bossFlash) {
           ctx.fillText('? BOSS BATTLE ?', waveCenterX, 62);
@@ -16094,15 +16142,15 @@ const SpaceShooter = () => {
         if (blackHoleRef.current) panelHeight += 16;
         if (cloneRef.current) panelHeight += 16;
         if (upgradesRef.current.phoenix) panelHeight += 16;
-        ctx.fillStyle = rgba(0, 0, 0, 0.5)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(0, 50, 140, panelHeight);
-        ctx.strokeStyle = rgba(255, 255, 255, 0.2)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.lineWidth = 1;
         ctx.strokeRect(0, 50, 140, panelHeight);
         
         // Power-ups label
-        ctx.font = 6px "Press Start 2P", 'monospace';
-        ctx.fillStyle = #666666';
+        ctx.font = '6px "Press Start 2P", monospace';
+        ctx.fillStyle = '#666666';
         ctx.textAlign = 'left';
         ctx.fillText('POWER-UPS', upgradeX, upgradeY);
         upgradeY += 12;
@@ -16110,10 +16158,10 @@ const SpaceShooter = () => {
       
       if (upgradesRef.current.rapidFire > 0) {
         const rapidLevel = upgradesRef.current.rapidFire;
-        ctx.fillStyle = #ffff00';
-        ctx.shadowColor = #ffff00';
+        ctx.fillStyle = '#ffff00';
+        ctx.shadowColor = '#ffff00';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`? RAPID`, upgradeX, upgradeY);
         // Level pips
         for (let i = 0; i < 3; i++) {
@@ -16125,13 +16173,13 @@ const SpaceShooter = () => {
       }
       
       if (upgradesRef.current.missiles) {
-        ctx.fillStyle = #ff6600';
-        ctx.shadowColor = #ff6600';
+        ctx.fillStyle = '#ff6600';
+        ctx.shadowColor = '#ff6600';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`?? MISSILE`, upgradeX, upgradeY);
-        ctx.font = 7px "Press Start 2P", 'monospace';
-        ctx.fillStyle = #888888';
+        ctx.font = '7px "Press Start 2P", monospace';
+        ctx.fillStyle = '#888888';
         ctx.fillText('[M]', upgradeX + 95, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16143,7 +16191,7 @@ const SpaceShooter = () => {
         ctx.fillStyle = shieldColor;
         ctx.shadowColor = shieldColor;
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`???� SHIELD`, upgradeX, upgradeY);
         // Shield pips
         for (let i = 0; i < 9; i++) {
@@ -16157,10 +16205,10 @@ const SpaceShooter = () => {
       // Speed Boost display
       if (upgradesRef.current.speedBoost > 0) {
         const speedLevel = upgradesRef.current.speedBoost;
-        ctx.fillStyle = #00ffaa';
-        ctx.shadowColor = #00ffaa';
+        ctx.fillStyle = '#00ffaa';
+        ctx.shadowColor = '#00ffaa';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`?? SPEED`, upgradeX, upgradeY);
         // Level pips
         for (let i = 0; i < 3; i++) {
@@ -16173,13 +16221,13 @@ const SpaceShooter = () => {
       
       // Spread Shot display
       if (upgradesRef.current.spreadShot) {
-        ctx.fillStyle = #ff0066';
-        ctx.shadowColor = #ff0066';
+        ctx.fillStyle = '#ff0066';
+        ctx.shadowColor = '#ff0066';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`? SPREAD`, upgradeX, upgradeY);
-        ctx.fillStyle = #ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText('?', upgradeX + 90, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16188,14 +16236,14 @@ const SpaceShooter = () => {
       // Magnet display with timer
       if (upgradesRef.current.magnet && upgradesRef.current.magnetTimer > 0) {
         const magnetTime = Math.ceil(upgradesRef.current.magnetTimer / 60); // Convert to seconds
-        ctx.fillStyle = #ffff00';
-        ctx.shadowColor = #ffff00';
+        ctx.fillStyle = '#ffff00';
+        ctx.shadowColor = '#ffff00';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`?? MAGNET`, upgradeX, upgradeY);
         // Timer display
         ctx.fillStyle = magnetTime <= 3 ? '#ff4444' : '#ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${magnetTime}s`, upgradeX + 90, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16204,13 +16252,13 @@ const SpaceShooter = () => {
       // New power-up displays
       if (upgradesRef.current.piercing && upgradesRef.current.piercingTimer > 0) {
         const piercingTime = Math.ceil(upgradesRef.current.piercingTimer / 60);
-        ctx.fillStyle = #ff8800';
-        ctx.shadowColor = #ff8800';
+        ctx.fillStyle = '#ff8800';
+        ctx.shadowColor = '#ff8800';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`??? PIERCE`, upgradeX, upgradeY);
         ctx.fillStyle = piercingTime <= 3 ? '#ff4444' : '#ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${piercingTime}s`, upgradeX + 90, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16218,13 +16266,13 @@ const SpaceShooter = () => {
       
       if (upgradesRef.current.doubleScore && upgradesRef.current.doubleScoreTimer > 0) {
         const scoreTime = Math.ceil(upgradesRef.current.doubleScoreTimer / 60);
-        ctx.fillStyle = #ffff88';
-        ctx.shadowColor = #ffff00';
+        ctx.fillStyle = '#ffff88';
+        ctx.shadowColor = '#ffff00';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`?? 2X SCORE`, upgradeX, upgradeY);
         ctx.fillStyle = scoreTime <= 5 ? '#ff4444' : '#ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${scoreTime}s`, upgradeX + 98, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16232,13 +16280,13 @@ const SpaceShooter = () => {
       
       if (upgradesRef.current.ricochet && upgradesRef.current.ricochetTimer > 0) {
         const ricochetTime = Math.ceil(upgradesRef.current.ricochetTimer / 60);
-        ctx.fillStyle = #88ffff';
-        ctx.shadowColor = #00ffff';
+        ctx.fillStyle = '#88ffff';
+        ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`?? BOUNCE`, upgradeX, upgradeY);
         ctx.fillStyle = ricochetTime <= 3 ? '#ff4444' : '#ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${ricochetTime}s`, upgradeX + 90, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16248,12 +16296,12 @@ const SpaceShooter = () => {
         const invincTime = Math.ceil(upgradesRef.current.invincibleTimer / 60);
         const flash = Math.sin(hudTime / 100) > 0;
         ctx.fillStyle = flash ? '#ffffff' : '#ffff00';
-        ctx.shadowColor = #ffffff';
+        ctx.shadowColor = '#ffffff';
         ctx.shadowBlur = 8;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`? INVINCIBLE`, upgradeX, upgradeY);
         ctx.fillStyle = invincTime <= 2 ? '#ff4444' : '#ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${invincTime}s`, upgradeX + 110, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16261,13 +16309,13 @@ const SpaceShooter = () => {
       
       if (upgradesRef.current.laserBeam && upgradesRef.current.laserBeamTimer > 0) {
         const laserTime = Math.ceil(upgradesRef.current.laserBeamTimer / 60);
-        ctx.fillStyle = #ff00aa';
-        ctx.shadowColor = #ff00aa';
+        ctx.fillStyle = '#ff00aa';
+        ctx.shadowColor = '#ff00aa';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`?? LASER`, upgradeX, upgradeY);
         ctx.fillStyle = laserTime <= 3 ? '#ff4444' : '#ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${laserTime}s`, upgradeX + 85, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16275,13 +16323,13 @@ const SpaceShooter = () => {
       
       if (upgradesRef.current.chainLightning && upgradesRef.current.chainLightningTimer > 0) {
         const chainTime = Math.ceil(upgradesRef.current.chainLightningTimer / 60);
-        ctx.fillStyle = #00aaff';
-        ctx.shadowColor = #00aaff';
+        ctx.fillStyle = '#00aaff';
+        ctx.shadowColor = '#00aaff';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`?? CHAIN`, upgradeX, upgradeY);
         ctx.fillStyle = chainTime <= 3 ? '#ff4444' : '#ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${chainTime}s`, upgradeX + 80, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16291,12 +16339,12 @@ const SpaceShooter = () => {
         const warpTime = Math.ceil(upgradesRef.current.timeWarpTimer / 60);
         const flash = Math.sin(hudTime / 150) > 0;
         ctx.fillStyle = flash ? '#aa00ff' : '#cc44ff';
-        ctx.shadowColor = #aa00ff';
+        ctx.shadowColor = '#aa00ff';
         ctx.shadowBlur = 8;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`? TIME WARP`, upgradeX, upgradeY);
         ctx.fillStyle = warpTime <= 3 ? '#ff4444' : '#ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${warpTime}s`, upgradeX + 100, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16304,13 +16352,13 @@ const SpaceShooter = () => {
       
       if (blackHoleRef.current) {
         const bhTime = Math.ceil(blackHoleRef.current.lifetime / 60);
-        ctx.fillStyle = #6600ff';
-        ctx.shadowColor = #6600ff';
+        ctx.fillStyle = '#6600ff';
+        ctx.shadowColor = '#6600ff';
         ctx.shadowBlur = 8;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`?? BLACK HOLE`, upgradeX, upgradeY);
         ctx.fillStyle = bhTime <= 2 ? '#ff4444' : '#ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${bhTime}s`, upgradeX + 110, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16318,13 +16366,13 @@ const SpaceShooter = () => {
       
       if (cloneRef.current) {
         const cloneTime = Math.ceil(cloneRef.current.lifetime / 60);
-        ctx.fillStyle = #00ffff';
-        ctx.shadowColor = #00ffff';
+        ctx.fillStyle = '#00ffff';
+        ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 5;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`?? CLONE`, upgradeX, upgradeY);
         ctx.fillStyle = cloneTime <= 3 ? '#ff4444' : '#ffffff';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${cloneTime}s`, upgradeX + 85, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16333,12 +16381,12 @@ const SpaceShooter = () => {
       if (upgradesRef.current.phoenix) {
         const flash = Math.sin(hudTime / 200) > 0;
         ctx.fillStyle = flash ? '#ff8800' : '#ffaa00';
-        ctx.shadowColor = #ff8800';
+        ctx.shadowColor = '#ff8800';
         ctx.shadowBlur = 8;
-        ctx.font = 9px "Press Start 2P", 'monospace';
+        ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillText(`?? PHOENIX`, upgradeX, upgradeY);
-        ctx.fillStyle = #00ff00';
-        ctx.font = 7px "Press Start 2P", 'monospace';
+        ctx.fillStyle = '#00ff00';
+        ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`READY`, upgradeX + 90, upgradeY);
         ctx.shadowBlur = 0;
         upgradeY += 16;
@@ -16351,21 +16399,21 @@ const SpaceShooter = () => {
         const levelData = FORCE_LEVELS[forceLevel] || FORCE_LEVELS[1];
         
         if (force.split) {
-          ctx.fillStyle = #00ffff';
-          ctx.shadowColor = #00ffff';
+          ctx.fillStyle = '#00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 8;
-          ctx.font = 9px "Press Start 2P", 'monospace';
+          ctx.font = '9px "Press Start 2P", monospace';
           ctx.fillText(`? FORCE`, upgradeX, upgradeY);
-          ctx.fillStyle = #ffffff';
+          ctx.fillStyle = '#ffffff';
           ctx.fillText('MAX', upgradeX + 75, upgradeY);
         } else {
           ctx.fillStyle = levelData.color;
           ctx.shadowColor = levelData.color;
           ctx.shadowBlur = 5;
-          ctx.font = 9px "Press Start 2P", 'monospace';
+          ctx.font = '9px "Press Start 2P", monospace';
           ctx.fillText(`?? FORCE`, upgradeX, upgradeY);
           // Power bar
-          ctx.fillStyle = #333333';
+          ctx.fillStyle = '#333333';
           ctx.fillRect(upgradeX + 75, upgradeY - 7, 40, 8);
           ctx.fillStyle = levelData.color;
           ctx.fillRect(upgradeX + 75, upgradeY - 7, 40 * powerPercent, 8);
@@ -16381,7 +16429,7 @@ const SpaceShooter = () => {
           ctx.fillStyle = levelData.color;
           ctx.shadowColor = levelData.color;
           ctx.shadowBlur = 3;
-          ctx.font = 7px "Press Start 2P", 'monospace';
+          ctx.font = '7px "Press Start 2P", monospace';
           ctx.fillText(`  LV${forceLevel} ${levelData.name}`, upgradeX, upgradeY);
           ctx.shadowBlur = 0;
           upgradeY += 12;
@@ -16391,8 +16439,8 @@ const SpaceShooter = () => {
         if (forceLevel >= 4 && force.power >= 50 && !force.shieldActive) {
           const flash = Math.sin(hudTime / 200) > 0;
           if (flash) {
-            ctx.fillStyle = #00ffff';
-            ctx.font = 6px "Press Start 2P", 'monospace';
+            ctx.fillStyle = '#00ffff';
+            ctx.font = '6px "Press Start 2P", monospace';
             ctx.fillText(`  [G] SHIELD`, upgradeX, upgradeY);
             upgradeY += 10;
           }
@@ -16410,14 +16458,14 @@ const SpaceShooter = () => {
         const chargePercent = waveCannonChargeRef.current / WAVE_CANNON_MAX_CHARGE;
         
         // Background panel
-        ctx.fillStyle = rgba(0, 20, 50, 0.8)';
+        ctx.fillStyle ='rgba(0, 20, 50, 0.8)';
         ctx.fillRect(chargeX - 5, chargeY - 20, chargeBarWidth + 20, 45);
         ctx.strokeStyle = chargePercent >= 1 ? '#00ffff' : '#0066aa';
         ctx.lineWidth = 1;
         ctx.strokeRect(chargeX - 5, chargeY - 20, chargeBarWidth + 20, 45);
         
         // Label
-        ctx.font = 8px "Press Start 2P", 'monospace';
+        ctx.font = '8px "Press Start 2P", monospace';
         ctx.textAlign = 'left';
         ctx.fillStyle = chargePercent >= 1 ? '#00ffff' : '#4488aa';
         ctx.fillText('WAVE CANNON', chargeX, chargeY - 8);
@@ -16426,17 +16474,17 @@ const SpaceShooter = () => {
           // Ready indicator flashing
           const flash = Math.sin(hudTime / 100) > 0;
           if (flash) {
-            ctx.fillStyle = #ffffff';
+            ctx.fillStyle = '#ffffff';
             ctx.fillText('READY!', chargeX + 110, chargeY - 8);
           }
         } else {
-          ctx.font = 6px "Press Start 2P", 'monospace';
-          ctx.fillStyle = #666666';
+          ctx.font = '6px "Press Start 2P", monospace';
+          ctx.fillStyle = '#666666';
           ctx.fillText('[SHIFT]', chargeX + 100, chargeY - 8);
         }
         
         // Charge bar background
-        ctx.fillStyle = #111133';
+        ctx.fillStyle = '#111133';
         ctx.fillRect(chargeX, chargeY, chargeBarWidth, chargeBarHeight);
         
         // Charge segments
@@ -16458,14 +16506,14 @@ const SpaceShooter = () => {
         
         // Glow when full
         if (chargePercent >= 1) {
-          ctx.shadowColor = #00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 15 + Math.sin(hudTime / 50) * 5;
-          ctx.strokeStyle = #00ffff';
+          ctx.strokeStyle = '#00ffff';
           ctx.lineWidth = 2;
           ctx.strokeRect(chargeX, chargeY, chargeBarWidth, chargeBarHeight);
           ctx.shadowBlur = 0;
         } else {
-          ctx.strokeStyle = #0066aa';
+          ctx.strokeStyle = '#0066aa';
           ctx.lineWidth = 1;
           ctx.strokeRect(chargeX, chargeY, chargeBarWidth, chargeBarHeight);
         }
@@ -16481,7 +16529,7 @@ const SpaceShooter = () => {
       const dashCooldownPercent = 1 - (dashRef.current.cooldown / DASH_COOLDOWN);
       
       // Dash icon/label
-      ctx.font = 8px "Press Start 2P", 'monospace';
+      ctx.font = '8px "Press Start 2P", monospace';
       ctx.textAlign = 'left';
       ctx.fillStyle = dashReady ? '#00ffff' : '#444466';
       ctx.fillText('DASH', dashX, dashY);
@@ -16490,8 +16538,8 @@ const SpaceShooter = () => {
         // Ready - pulsing glow
         const pulse = Math.sin(hudTime / 80) * 0.3 + 0.7;
         ctx.globalAlpha = pulse;
-        ctx.fillStyle = #00ffff';
-        ctx.shadowColor = #00ffff';
+        ctx.fillStyle = '#00ffff';
+        ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 10;
         ctx.beginPath();
         ctx.arc(dashX + 50, dashY - 4, 6, 0, Math.PI * 2);
@@ -16500,18 +16548,18 @@ const SpaceShooter = () => {
         ctx.globalAlpha = 1;
         
         // Key hint
-        ctx.font = 6px "Press Start 2P", 'monospace';
-        ctx.fillStyle = #666666';
+        ctx.font = '6px "Press Start 2P", monospace';
+        ctx.fillStyle = '#666666';
         ctx.fillText('[Q]', dashX + 60, dashY);
       } else {
         // Cooldown bar
         const barWidth = 40;
         const barHeight = 6;
-        ctx.fillStyle = #111133';
+        ctx.fillStyle = '#111133';
         ctx.fillRect(dashX + 40, dashY - 8, barWidth, barHeight);
-        ctx.fillStyle = #0088aa';
+        ctx.fillStyle = '#0088aa';
         ctx.fillRect(dashX + 40, dashY - 8, barWidth * dashCooldownPercent, barHeight);
-        ctx.strokeStyle = #336688';
+        ctx.strokeStyle = '#336688';
         ctx.lineWidth = 1;
         ctx.strokeRect(dashX + 40, dashY - 8, barWidth, barHeight);
       }
@@ -16523,20 +16571,20 @@ const SpaceShooter = () => {
       const polarityY = GAME_HEIGHT - 25;
       
       // Polarity indicator panel
-      ctx.fillStyle = rgba(0, 0, 0, 0.6)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(polarityX - 80, polarityY - 18, 160, 35);
       ctx.strokeStyle = polarityRef.current === 'light' ? '#aaaaff' : '#8B00FF';
       ctx.lineWidth = 2;
       ctx.strokeRect(polarityX - 80, polarityY - 18, 160, 35);
       
       // Polarity label and value
-      ctx.font = 7px "Press Start 2P", 'monospace';
+      ctx.font = '7px "Press Start 2P", monospace';
       ctx.textAlign = 'center';
-      ctx.fillStyle = #888888';
+      ctx.fillStyle = '#888888';
       ctx.fillText('POLARITY [C]', polarityX - 40, polarityY - 5);
       
       // Polarity value with glow
-      ctx.font = 10px "Press Start 2P", 'monospace';
+      ctx.font = '10px "Press Start 2P", monospace';
       const polarityColor = polarityRef.current === 'light' ? '#ffffff' : '#8B00FF';
       ctx.fillStyle = polarityColor;
       ctx.shadowColor = polarityColor;
@@ -16547,22 +16595,22 @@ const SpaceShooter = () => {
       // Absorb meter
       const absorbPercent = polarityAbsorbedRef.current / POLARITY_MAX_ABSORB;
       if (absorbPercent > 0) {
-        ctx.fillStyle = #333333';
+        ctx.fillStyle = '#333333';
         ctx.fillRect(polarityX - 70, polarityY + 14, 60, 4);
         ctx.fillStyle = polarityColor;
         ctx.fillRect(polarityX - 70, polarityY + 14, 60 * absorbPercent, 4);
       }
       
       // Speed indicator
-      ctx.font = 7px "Press Start 2P", 'monospace';
-      ctx.fillStyle = #888888';
+      ctx.font = '7px "Press Start 2P", monospace';
+      ctx.fillStyle = '#888888';
       ctx.fillText('SPEED [[]]', polarityX + 40, polarityY - 5);
       
       // Speed pips
       for (let i = 1; i <= 4; i++) {
         ctx.fillStyle = i <= speedSettingRef.current ? '#00ff00' : '#333333';
         if (i <= speedSettingRef.current) {
-          ctx.shadowColor = #00ff00';
+          ctx.shadowColor = '#00ff00';
           ctx.shadowBlur = 5;
         }
         ctx.fillRect(polarityX + 20 + i * 12, polarityY + 2, 8, 8);
@@ -16574,15 +16622,15 @@ const SpaceShooter = () => {
       if (chainDisplayRef.current) {
         const chain = chainDisplayRef.current;
         ctx.save();
-        ctx.font = 14px "Press Start 2P", 'monospace';
+        ctx.font = '14px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
         const chainColor = chain.polarity === 'light' ? '#ffffff' : '#8B00FF';
         ctx.fillStyle = chainColor;
         ctx.shadowColor = chainColor;
         ctx.shadowBlur = 15;
         ctx.fillText(`${chain.count} CHAIN!`, chain.x, chain.y - 10);
-        ctx.font = 10px "Press Start 2P", 'monospace';
-        ctx.fillStyle = #ffff00';
+        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffff00';
         ctx.fillText(`+${chain.multiplier}`, chain.x, chain.y + 5);
         ctx.shadowBlur = 0;
         ctx.restore();
@@ -16598,7 +16646,7 @@ const SpaceShooter = () => {
         const pulse = Math.sin(Date.now() / 100 + index) * 2;
         
         // Option glow
-        ctx.shadowColor = #00ffff';
+        ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 10 + pulse;
         
         // Option body
@@ -16613,7 +16661,7 @@ const SpaceShooter = () => {
         ctx.fill();
         
         // Inner core
-        ctx.fillStyle = #ffffff';
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(option.x, option.y, optionSize / 3, 0, Math.PI * 2);
         ctx.fill();
@@ -16624,12 +16672,12 @@ const SpaceShooter = () => {
       
       // === BOTTOM RIGHT: High Score ===
       ctx.save();
-      ctx.font = 8px "Press Start 2P", 'monospace';
+      ctx.font = '8px "Press Start 2P", monospace';
       ctx.textAlign = 'right';
-      ctx.fillStyle = #666666';
+      ctx.fillStyle = '#666666';
       ctx.fillText('HI-SCORE', GAME_WIDTH - 10, GAME_HEIGHT - 20);
-      ctx.fillStyle = #ffff00';
-      ctx.shadowColor = #ffff00';
+      ctx.fillStyle = '#ffff00';
+      ctx.shadowColor = '#ffff00';
       ctx.shadowBlur = 5;
       ctx.fillText(Math.max(scoreRef.current, highScore).toLocaleString(), GAME_WIDTH - 10, GAME_HEIGHT - 8);
       ctx.shadowBlur = 0;
@@ -16646,14 +16694,14 @@ const SpaceShooter = () => {
         if (transition.phase === 'fade' || transition.phase === 'complete') {
           const textAlpha = Math.min(1, transition.fadeAlpha * 2);
           ctx.globalAlpha = textAlpha;
-          ctx.font = bold 24px "Press Start 2P", 'monospace';
+          ctx.font = 'bold 24px "Press Start 2P", monospace';
           ctx.textAlign = 'center';
-          ctx.fillStyle = #00ffff';
-          ctx.shadowColor = #00ffff';
+          ctx.fillStyle = '#00ffff';
+          ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 20;
           ctx.fillText('CHECKPOINT', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20);
-          ctx.font = 16px "Press Start 2P", 'monospace';
-          ctx.fillStyle = #ffffff';
+          ctx.font = '16px "Press Start 2P", monospace';
+          ctx.fillStyle = '#ffffff';
           ctx.shadowBlur = 10;
           ctx.fillText(`WAVE ${transition.pendingCheckpoint?.mp3e || 0} COMPLETE`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
           ctx.shadowBlur = 0;
@@ -16673,19 +16721,19 @@ const SpaceShooter = () => {
         if (victory.phase === 'fade' || victory.phase === 'complete') {
           const textAlpha = Math.min(1, victory.fadeAlpha * 2);
           ctx.globalAlpha = textAlpha;
-          ctx.font = bold 32px "Press Start 2P", 'monospace';
+          ctx.font = 'bold 32px "Press Start 2P", monospace';
           ctx.textAlign = 'center';
-          ctx.fillStyle = #ffd700';
-          ctx.shadowColor = #ffd700';
+          ctx.fillStyle = '#ffd700';
+          ctx.shadowColor = '#ffd700';
           ctx.shadowBlur = 30;
           ctx.fillText('VICTORY!', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30);
-          ctx.font = 14px "Press Start 2P", 'monospace';
-          ctx.fillStyle = #ffffff';
-          ctx.shadowColor = #ffffff';
+          ctx.font = '14px "Press Start 2P", monospace';
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = '#ffffff';
           ctx.shadowBlur = 15;
           ctx.fillText('THE NEXUS CORE HAS BEEN DESTROYED', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
-          ctx.font = 12px "Press Start 2P", 'monospace';
-          ctx.fillStyle = #00ffff';
+          ctx.font = '12px "Press Start 2P", monospace';
+          ctx.fillStyle = '#00ffff';
           ctx.fillText('HUMANITY IS SAVED', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 50);
           ctx.shadowBlur = 0;
           ctx.globalAlpha = 1;
@@ -16727,7 +16775,7 @@ const SpaceShooter = () => {
           const zone = zones[zoneNum] || zones[1];
           
           // Zone title
-          ctx.font = 12px "Press Start 2P", 'monospace';
+          ctx.font = '12px "Press Start 2P", monospace';
           ctx.textAlign = 'center';
           ctx.fillStyle = zone.color;
           ctx.shadowColor = zone.color;
@@ -16735,15 +16783,15 @@ const SpaceShooter = () => {
           ctx.fillText(zone.name, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40);
           
           // Wave number - big and bold
-          ctx.font = bold 32px "Press Start 2P", 'monospace';
-          ctx.fillStyle = #ffffff';
-          ctx.shadowColor = #ffffff';
+          ctx.font = 'bold 32px "Press Start 2P", monospace';
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = '#ffffff';
           ctx.shadowBlur = 20;
           ctx.fillText(`WAVE ${levelFade.mp3e}`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 10);
           
           // Subtext
-          ctx.font = 10px "Press Start 2P", 'monospace';
-          ctx.fillStyle = #888888';
+          ctx.font = '10px "Press Start 2P", monospace';
+          ctx.fillStyle = '#888888';
           ctx.shadowBlur = 0;
           ctx.fillText('GET READY', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 45);
           
@@ -16764,15 +16812,15 @@ const SpaceShooter = () => {
         const settings = practiceSettingsRef.current;
         
         // Practice mode banner
-        ctx.fillStyle = rgba(0, 50, 0, 0.7)';
+        ctx.fillStyle = 'rgba(0, 50, 0, 0.7)';
         ctx.fillRect(GAME_WIDTH / 2 - 80, 5, 160, 22);
-        ctx.strokeStyle = #00ff88';
+        ctx.strokeStyle = '#00ff88';
         ctx.lineWidth = 1;
         ctx.strokeRect(GAME_WIDTH / 2 - 80, 5, 160, 22);
         
-        ctx.font = bold 10px monospace';
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'center';
-        ctx.fillStyle = #00ff88';
+        ctx.fillStyle = '#00ff88';
         ctx.fillText('PRACTICE MODE', GAME_WIDTH / 2, 20);
         
         // Active options indicators
@@ -16784,14 +16832,14 @@ const SpaceShooter = () => {
         if (settings.showHitboxes) activeOptions.push('HBX');
         
         if (activeOptions.length > 0) {
-          ctx.font = 8px monospace';
-          ctx.fillStyle = #88ffaa';
-          ctx.fillText(activeOptions.join(' | ), GAME_WIDTH / 2, 38);
+          ctx.font = '8px monospace';
+          ctx.fillStyle = '#88ffaa';
+          ctx.fillText(activeOptions.join(' | '), GAME_WIDTH / 2, 38);
         }
         
         // "Scores not saved" reminder
-        ctx.font = 7px monospace';
-        ctx.fillStyle = #ff8866';
+        ctx.font = '7px monospace';
+        ctx.fillStyle = '#ff8866';
         ctx.fillText('SCORES NOT SAVED', GAME_WIDTH / 2, 50);
         
         ctx.restore();
@@ -16800,11 +16848,11 @@ const SpaceShooter = () => {
       // Draw FPS counter if enabled
       if (userSettingsRef.current?.showFPS) {
         ctx.save();
-        ctx.font = 10px monospace';
+        ctx.font = '10px monospace';
         ctx.textAlign = 'left';
         const fps = fpsRef.current.fps;
         const fpsColor = fps >= 55 ? '#00ff00' : fps >= 30 ? '#ffff00' : '#ff0000';
-        ctx.fillStyle = rgba(0, 0, 0, 0.5)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(5, 5, 60, 18);
         ctx.fillStyle = fpsColor;
         ctx.fillText(`FPS: ${fps}`, 10, 18);
@@ -16857,7 +16905,7 @@ const SpaceShooter = () => {
                 maxWidth: '400px',
                 maxHeight: '300px',
                 objectFit: 'contain',
-                animation: brandFadeIn 1.5s ease-out forwards'
+                animation: 'brandFadeIn 1.5s ease-out forwards'
               }}
               onLoad={() => {
                 // Play brand whoosh sound
@@ -17019,10 +17067,10 @@ const SpaceShooter = () => {
                   <div className="avatar-ring ring-2"></div>
                   <div className="avatar-particles">
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="avatar-particle" style={{ --i': i }}></div>
+                      <div key={i} className="avatar-particle" style={{ '--i': i }}></div>
                     ))}
                   </div>
-                  <span className="profile-avatar">{AVATAR_OPTIONS[userSettings.avatar]?.icon || ?????'}</span>
+                  <span className="profile-avatar">{AVATAR_OPTIONS[userSettings.avatar]?.icon || '🚀'}</span>
                 </div>
                 <div className="profile-info">
                   <span className="profile-name">{userSettings.playerName || 'PILOT'}</span>
@@ -17055,7 +17103,7 @@ const SpaceShooter = () => {
                     setGameMode('campaign');
                     startGame();
                   }} 
-                  className={`start-button ${menuSelection === 0 ? 'gamepad-selected' : '}`}
+                  className={`start-button ${menuSelection === 0 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(0)}
                 >
                   <span className="btn-icon">?</span> NEW MISSION
@@ -17064,17 +17112,17 @@ const SpaceShooter = () => {
                 {hasSaveGame() && (
                   <button 
                     onClick={() => { soundSystem.playUISparkle(); loadGame(); }} 
-                    className={`start-button continue-button ${menuSelection === 1 ? 'gamepad-selected' : '}`}
+                    className={`start-button continue-button ${menuSelection === 1 ? 'gamepad-selected' : ''}`}
                     onMouseEnter={() => setMenuSelection(1)}
                   >
-                    <span className="btn-icon">??</span> CONTINUE
+                    <span className="btn-icon">?</span> CONTINUE
                     <span className="btn-shine"></span>
                   </button>
                 )}
                 {gameBeaten && (
                   <button 
                     onClick={() => { soundSystem.playUISparkle(); setShowChallenges(true); }} 
-                    className={`start-button challenge-button ${menuSelection === (hasSaveGame() ? 2 : 1) ? 'gamepad-selected' : '}`}
+                    className={`start-button challenge-button ${menuSelection === (hasSaveGame() ? 2 : 1) ? 'gamepad-selected' : ''}`}
                     onMouseEnter={() => setMenuSelection(hasSaveGame() ? 2 : 1)}
                   >
                     <span className="btn-icon">??</span> CHALLENGE MODES
@@ -17083,21 +17131,21 @@ const SpaceShooter = () => {
                 )}
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowCustomize(true); }} 
-                  className={`settings-button customize-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 3 : 2) : (gameBeaten ? 2 : 1)) ? 'gamepad-selected' : '}`}
+                  className={`settings-button customize-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 3 : 2) : (gameBeaten ? 2 : 1)) ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 3 : 2) : (gameBeaten ? 2 : 1))}
                 >
                   <span className="btn-icon">??</span> CUSTOMIZE
                 </button>
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowPracticeMode(true); }} 
-                  className={`settings-button practice-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2)) ? 'gamepad-selected' : '}`}
+                  className={`settings-button practice-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2)) ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2))}
                 >
                   <span className="btn-icon">??</span> PRACTICE
                 </button>
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowSettings(true); }} 
-                  className={`settings-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 5 : 4) : (gameBeaten ? 4 : 3)) ? 'gamepad-selected' : '}`}
+                  className={`settings-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 5 : 4) : (gameBeaten ? 4 : 3)) ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 5 : 4) : (gameBeaten ? 4 : 3))}
                 >
                   <span className="btn-icon">?</span> SETTINGS
@@ -17206,7 +17254,7 @@ const SpaceShooter = () => {
                         <button 
                           className="wave-btn"
                           onClick={() => {
-                            const maxWave = parseInt(localStorage.getItem('nebulaXHighestWave') || 1', 10);
+                            const maxWave = parseInt(localStorage.getItem('nebulaXHighestWave') || '1', 10);
                             setPracticeSettings(prev => ({ 
                               ...prev, 
                               startWave: Math.min(Math.max(maxWave, 20), prev.startWave + 1)
@@ -17214,7 +17262,7 @@ const SpaceShooter = () => {
                           }}
                         >+</button>
                       </div>
-                      <span className="setting-hint">Highest reached: Wave {parseInt(localStorage.getItem('nebulaXHighestWave') || 1', 10)}</span>
+                      <span className="setting-hint">Highest reached: Wave {parseInt(localStorage.getItem('nebulaXHighestWave') || '1', 10)}</span>
                     </div>
                     
                     <div className="practice-toggles">
@@ -17304,37 +17352,39 @@ const SpaceShooter = () => {
         )}
         
         {gameState === 'menu' && showSettings && (
-          <div className="overlay settings-overlay">
+          <><div className="overlay settings-overlay">
             <h2>??� SETTINGS</h2>
-            
+
             {/* Settings Tabs */}
+                        // Lines 17365-17390 should be:
+            
             <div className="settings-tabs">
-              <button 
-                className={`settings-tab ${settingsTab === 'audio' ? 'active' : '}`}
+              <button
+                className={`settings-tab ${settingsTab === 'audio' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('audio')}
               >
                 ?? Audio
               </button>
-              <button 
-                className={`settings-tab ${settingsTab === 'profile' ? 'active' : '}`}
+              <button
+                className={`settings-tab ${settingsTab === 'profile' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('profile')}
               >
                 ?? Profile
               </button>
-              <button 
-                className={`settings-tab ${settingsTab === 'controls' ? 'active' : '}`}
+              <button
+                className={`settings-tab ${settingsTab === 'controls' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('controls')}
               >
                 ?? Controls
               </button>
-              <button 
-                className={`settings-tab ${settingsTab === 'achievements' ? 'active' : '}`}
+              <button
+                className={`settings-tab ${settingsTab === 'achievements' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('achievements')}
               >
                 ?? Achievements
               </button>
             </div>
-            
+
             <div className="settings-content">
               {/* Audio Tab */}
               {settingsTab === 'audio' && (
@@ -17342,95 +17392,91 @@ const SpaceShooter = () => {
                   <div className="volume-control">
                     <label>?? Master Volume</label>
                     <div className="slider-row">
-                      <input 
-                        type="range" 
-                        min="0" 
-                        max="100" 
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
                         value={userSettings.masterVolume}
                         onChange={(e) => setUserSettings(prev => ({ ...prev, masterVolume: parseInt(e.target.value) }))}
-                        className="volume-slider"
-                      />
+                        className="volume-slider" />
                       <span className="volume-value">{userSettings.masterVolume}%</span>
                     </div>
                   </div>
                   <div className="volume-control">
                     <label>??� Music Volume</label>
                     <div className="slider-row">
-                      <input 
-                        type="range" 
-                        min="0" 
-                        max="100" 
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
                         value={userSettings.musicVolume}
                         onChange={(e) => setUserSettings(prev => ({ ...prev, musicVolume: parseInt(e.target.value) }))}
-                        className="volume-slider"
-                      />
+                        className="volume-slider" />
                       <span className="volume-value">{userSettings.musicVolume}%</span>
                     </div>
                   </div>
                   <div className="volume-control">
                     <label>?? SFX Volume</label>
                     <div className="slider-row">
-                      <input 
-                        type="range" 
-                        min="0" 
-                        max="100" 
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
                         value={userSettings.sfxVolume}
                         onChange={(e) => setUserSettings(prev => ({ ...prev, sfxVolume: parseInt(e.target.value) }))}
-                        className="volume-slider"
-                      />
+                        className="volume-slider" />
                       <span className="volume-value">{userSettings.sfxVolume}%</span>
                     </div>
                   </div>
-                  <button 
-                    className="test-sound-button"
-                    onClick={() => soundSystem.playShoot()}
-                  >
-                    ?? Test Sound
-                  </button>
-                  
-                  <div className="performance-section">
-                    <h4 style={{ marginTop: '20px', marginBottom: '10px', color: '#00ffff' }}>? PERFORMANCE</h4>
-                    <div className="toggle-option">
-                      <label className="toggle-label">
-                        <span>?? Performance Mode</span>
-                        <span className="toggle-desc">Reduce visual effects for smoother gameplay</span>
-                      </label>
-                      <button 
-                        className={`toggle-button ${userSettings.performanceMode ? 'active' : '}`}
-                        onClick={() => setUserSettings(prev => ({ ...prev, performanceMode: !prev.performanceMode }))}
-                      >
-                        {userSettings.performanceMode ? 'ON' : 'OFF'}
-                      </button>
-                    </div>
-                    <div className="toggle-option">
-                      <label className="toggle-label">
-                        <span>?? Show FPS</span>
-                        <span className="toggle-desc">Display frames per second counter</span>
-                      </label>
-                      <button 
-                        className={`toggle-button ${userSettings.showFPS ? 'active' : '}`}
-                        onClick={() => setUserSettings(prev => ({ ...prev, showFPS: !prev.showFPS }))}
-                      >
-                        {userSettings.showFPS ? 'ON' : 'OFF'}
-                      </button>
+                    <button
+                      className="test-sound-button"
+                      onClick={() => soundSystem.playShoot()}
+                    >
+                      ?? Test Sound
+                    </button>
+  
+                    <div className="performance-section">
+                      <h4 style={{ marginTop: '20px', marginBottom: '10px', color: '#00ffff' }}>? PERFORMANCE</h4>
+                      <div className="toggle-option">
+                        <label className="toggle-label">
+                          <span>?? Performance Mode</span>
+                          <span className="toggle-desc">Reduce visual effects for smoother gameplay</span>
+                        </label>
+                        <button 
+                          className={`toggle-button ${userSettings.performanceMode ? 'active' : ''}`}
+                          onClick={() => setUserSettings(prev => ({ ...prev, performanceMode: !prev.performanceMode }))}
+                        >
+                          {userSettings.performanceMode ? 'ON' : 'OFF'}
+                        </button>
+                      </div>
+                      <div className="toggle-option">
+                        <label className="toggle-label">
+                          <span>?? Show FPS</span>
+                          <span className="toggle-desc">Display frames per second counter</span>
+                        </label>
+                        <button 
+                          className={`toggle-button ${userSettings.showFPS ? 'active' : ''}`}
+                          onClick={() => setUserSettings(prev => ({ ...prev, showFPS: !prev.showFPS }))}
+                        >
+                          {userSettings.showFPS ? 'ON' : 'OFF'}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
               )}
-              
+
               {/* Profile Tab */}
               {settingsTab === 'profile' && (
                 <div className="settings-profile">
                   <div className="profile-name-section">
                     <label>?️ Pilot Name</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={userSettings.playerName}
                       onChange={(e) => setUserSettings(prev => ({ ...prev, playerName: e.target.value.toUpperCase().slice(0, 12) }))}
                       className="name-input"
                       maxLength={12}
-                      placeholder="ENTER NAME"
-                    />
+                      placeholder="ENTER NAME" />
                   </div>
                   <div className="avatar-section">
                     <label>?? Avatar</label>
@@ -17438,7 +17484,7 @@ const SpaceShooter = () => {
                       {AVATAR_OPTIONS.map(avatar => (
                         <button
                           key={avatar.id}
-                          className={`avatar-option rarity-${avatar.rarity} ${userSettings.avatar === avatar.id ? 'selected' : '}`}
+                          className={`avatar-option rarity-${avatar.rarity} ${userSettings.avatar === avatar.id ? 'selected' : ''}`}
                           onClick={() => setUserSettings(prev => ({ ...prev, avatar: avatar.id }))}
                           title={`${avatar.name} (${avatar.rarity.toUpperCase()})`}
                           style={userSettings.avatar === avatar.id ? { 
@@ -17449,10 +17495,6 @@ const SpaceShooter = () => {
                           <span className="avatar-icon">{avatar.icon}</span>
                         </button>
                       ))}
-                    </div>
-                    <div className="rarity-legend">
-                      <span className="legend-item common">? Common</span>
-                      <span className="legend-item uncommon">? Uncommon</span>
                       <span className="legend-item rare">? Rare</span>
                       <span className="legend-item epic">? Epic</span>
                       <span className="legend-item legendary">? Legendary</span>
@@ -17461,128 +17503,130 @@ const SpaceShooter = () => {
                   <div className="avatar-color-section">
                     <label>? Avatar Color</label>
                     <div className="color-grid">
-                      {AVATAR_COLORS.map(colorOption => (
-                        <button
-                          key={colorOption.id}
-                          className={`color-option ${userSettings.avatarColor === colorOption.color ? 'selected' : '} ${colorOption.special ? 'special-gradient' : '}`}
-                          onClick={() => setUserSettings(prev => ({ ...prev, avatarColor: colorOption.color }))}
-                          title={colorOption.name}
-                          style={{ 
-                            background: colorOption.color,
-                            borderColor: userSettings.avatarColor === colorOption.color ? '#ffffff' : 'transparent',
-                            boxShadow: userSettings.avatarColor === colorOption.color && colorOption.glow ? `0 0 12px ${colorOption.glow}` : 'none'
-                          }}
-                        >
-                          {userSettings.avatarColor === colorOption.color && <span className="color-check">?</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="profile-preview">
-                    <span className="preview-label">Preview:</span>
-                    <div 
-                      className={`preview-card rarity-${AVATAR_OPTIONS[userSettings.avatar]?.rarity || 'common'}`}
-                      style={{ 
-                        borderColor: userSettings.avatarColor,
-                        boxShadow: `0 0 20px ${userSettings.avatarColor}40`
-                      }}
-                    >
-                      <div 
-                        className="preview-avatar-wrapper"
-                        style={{ 
-                          background: `${userSettings.avatarColor}22`,
-                          borderColor: userSettings.avatarColor
+                    {AVATAR_COLORS.map(colorOption => (
+                      <button
+                        key={colorOption.id}
+                        className={`color-option ${userSettings.avatarColor === colorOption.color ? 'selected' : ''} ${colorOption.special ? 'special-gradient' : ''}`}
+                        onClick={() => setUserSettings(prev => ({ ...prev, avatarColor: colorOption.color }))}
+                        title={colorOption.name}
+                        style={{
+                          background: colorOption.color,
+                          borderColor: userSettings.avatarColor === colorOption.color ? '#ffffff' : 'transparent',
+                          boxShadow: userSettings.avatarColor === colorOption.color && colorOption.glow ? `0 0 12px ${colorOption.glow}` : 'none'
                         }}
                       >
-                        <span className="preview-avatar">{AVATAR_OPTIONS[userSettings.avatar]?.icon}</span>
-                      </div>
-                      <div className="preview-info">
-                        <span className="preview-name" style={{ color: userSettings.avatarColor }}>
-                          {userSettings.playerName || 'PILOT'}
-                        </span>
-                        <span className="preview-rank" style={{ color: getRankTitle(highScore).color }}>
-                          {getRankTitle(highScore).icon} {getRankTitle(highScore).title}
-                        </span>
-                      </div>
-                    </div>
+                        {userSettings.avatarColor === colorOption.color && <span className="color-check">?</span>}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
-              
-              {/* Controls Tab */}
-              {settingsTab === 'controls' && (
-                <>
-                  <div className="controls-section">
-                    <h3>??� Keyboard</h3>
-                    <div className="controls-info">
-                      <p>??�??�??�??� / WASD - Move</p>
-                      <p>SPACE - Shoot</p>
-                      <p>Q - Dash (while moving)</p>
-                      <p>SHIFT - Wave Cannon</p>
-                      <p>L - Laser Beam (�3 Rapid)</p>
-                      <p>M - Missile</p>
-                      <p>F - Force Toggle</p>
-                      <p>ESC - Pause</p>
+                <div className="profile-preview">
+                  <span className="preview-label">Preview:</span>
+                  <div
+                    className={`preview-card rarity-${AVATAR_OPTIONS[userSettings.avatar]?.rarity || 'common'}`}
+                    style={{
+                      borderColor: userSettings.avatarColor,
+                      boxShadow: `0 0 20px ${userSettings.avatarColor}40`
+                    }}
+                  >
+                    <div
+                      className="preview-avatar-wrapper"
+                      style={{
+                        background: `${userSettings.avatarColor}22`,
+                        borderColor: userSettings.avatarColor
+                      }}
+                    >
+                      <span className="preview-avatar">{AVATAR_OPTIONS[userSettings.avatar]?.icon}</span>
+                    </div>
+                    <div className="preview-info">
+                      <span className="preview-name" style={{ color: userSettings.avatarColor }}>
+                        {userSettings.playerName || 'PILOT'}
+                      </span>
+                      <span className="preview-rank" style={{ color: getRankTitle(highScore).color }}>
+                        {getRankTitle(highScore).icon} {getRankTitle(highScore).title}
+                      </span>
                     </div>
                   </div>
-                  <div className="controls-section">
-                    <h3>?? Controller</h3>
-                    <div className="controls-info">
-                      <p>Left Stick / D-Pad - Move</p>
-                      <p>? / R1 / R2 - Shoot</p>
-                      <p>L3 / R3 - Dash</p>
-                      <p>? - Laser Beam (�3 Rapid)</p>
-                      <p>L2 - Wave Cannon</p>
-                      <p>? - Missile</p>
-                      <p>? - Force Toggle</p>
-                      <p>OPTIONS - Pause</p>
-                    </div>
-                  </div>
-                  <div className="powerups-section">
-                    <h3>Power-Ups</h3>
-                    <div className="powerup-info">
-                      <p>? Rapid Fire - Faster shooting (�3 = LASER!)</p>
-                      <p>?? Missiles - Homing missiles</p>
-                      <p>???� Shield - Block 3 hits (stacks to 9)</p>
-                      <p>?? Force - Follows movement!</p>
-                    </div>
-                  </div>
-                </>
-              )}
+                </div>)}
+            </div>
+            )}
 
-              {/* Achievements Tab */}
-              {settingsTab === 'achievements' && (
-                <div className="achievements-section">
-                  <div className="achievements-header">
-                    <span>?? {unlockedAchievements.length} / {ACHIEVEMENTS.length} Unlocked</span>
+            {/* Controls Tab */}
+            {settingsTab === 'controls' && (
+              <>
+                <div className="controls-section">
+                  <h3>??� Keyboard</h3>
+                  <div className="controls-info">
+                    <p>??�??�??�??� / WASD - Move</p>
+                    <p>SPACE - Shoot</p>
+                    <p>Q - Dash (while moving)</p>
+                    <p>SHIFT - Wave Cannon</p>
+                    <p>L - Laser Beam (�3 Rapid)</p>
+                    <p>M - Missile</p>
+                    <p>F - Force Toggle</p>
+                    <p>ESC - Pause</p>
                   </div>
-                  <div className="achievements-grid">
-                    {ACHIEVEMENTS.map(achievement => {
-                      const isUnlocked = unlockedAchievements.includes(achievement.id);
-                      return (
-                        <div 
-                          key={achievement.id} 
-                          className={`achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`}
-                        >
-                          <div className="achievement-card-icon">
-                            {isUnlocked ? '🏆' : '🔒'}
+                </div>
+                <div className="controls-section">
+                  <h3>?? Controller</h3>
+                  <div className="controls-info">
+                    <p>Left Stick / D-Pad - Move</p>
+                    <p>? / R1 / R2 - Shoot</p>
+                    <p>L3 / R3 - Dash</p>
+                    <p>? - Laser Beam (�3 Rapid)</p>
+                    <p>L2 - Wave Cannon</p>
+                    <p>? - Missile</p>
+                    <p>? - Force Toggle</p>
+                    <p>OPTIONS - Pause</p>
+                  </div>
+                </div>
+                <div className="powerups-section">
+                  <h3>Power-Ups</h3>
+                  <div className="powerup-info">
+                    <p>? Rapid Fire - Faster shooting (�3 = LASER!)</p>
+                    <p>?? Missiles - Homing missiles</p>
+                    <p>???� Shield - Block 3 hits (stacks to 9)</p>
+                    <p>?? Force - Follows movement!</p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Achievements Tab */}
+            {settingsTab === 'achievements' && (
+              <div className="achievements-section">
+                <div className="achievements-header">
+                  <span>?? {unlockedAchievements.length} / {ACHIEVEMENTS.length} Unlocked</span>
+                </div>
+                <div className="achievements-grid">
+                  {ACHIEVEMENTS.map(achievement => {
+                    const isUnlocked = unlockedAchievements.includes(achievement.id);
+                    return (
+                      <div
+                        key={achievement.id}
+                        className={`achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`}
+                      >
+                        <div className="achievement-card-icon">
+                          {isUnlocked ? '🏆' : '🔒'}
+                        </div>
+                        <div className="achievement-card-info">
+                          <div className="achievement-card-name">
+                            {isUnlocked ? achievement.name : '???'}
                           </div>
-                          <div className="achievement-card-info">
-                            <div className="achievement-card-name">
-                              {isUnlocked ? achievement.name : '???'}
-                            </div>
-                            <div className="achievement-card-desc">
-                              {isUnlocked ? achievement.description : Keep playing to unlock!'}
-                            </div>
+                          <div className="achievement-card-desc">
+                            {isUnlocked ? achievement.description : 'Keep playing to unlock!'}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-            <div className="settings-buttons-row">
+              </div>
+            )}
+          </div>
+          </>
+          
+          <div className="settings-buttons-row">
               <button onClick={() => setShowSettings(false)} className="back-button">
                 ? BACK
               </button>
@@ -17601,7 +17645,7 @@ const SpaceShooter = () => {
               {/* Ship Preview Section */}
               <div className="customize-preview-section">
                 <div className="ship-preview-large">
-                  <div className="preview-glow" style={{ backgroundColor: SHIP_DESIGNS[selectedShip].colors.glow + 22' }}></div>
+                    <div className="preview-glow" style={{ backgroundColor: SHIP_DESIGNS[selectedShip].colors.glow + '22' }}></div>
                   <canvas 
                     ref={(canvas) => {
                       if (canvas) {
@@ -17623,7 +17667,7 @@ const SpaceShooter = () => {
                         const flameLen = flameFlicker * boosterOpt.flameLength;
                         const flameGrad = ctx.createLinearGradient(-25 * boosterOpt.flameLength, 0, -15, 0);
                         flameGrad.addColorStop(0, 'transparent');
-                        flameGrad.addColorStop(0.5, ship.colors.glow + 88');
+                        flameGrad.addColorStop(0.5, 'ship.colors.glow + 88');
                         flameGrad.addColorStop(1, ship.colors.glow);
                         ctx.fillStyle = flameGrad;
                         
@@ -17666,7 +17710,7 @@ const SpaceShooter = () => {
                         if (isNebulaXPreview) {
                           // ========== NEBULA - X PREVIEW (4 Big Guns) ==========
                           const gunGlow = Math.sin(Date.now() / 100) * 0.3 + 0.7;
-                          const accentColor = ship.colors.accent || #ff4400';
+                          const accentColor = ship.colors.accent || '#ff4400';
                           
                           // Main body (angular design)
                           ctx.fillStyle = bodyGradient;
@@ -17709,7 +17753,7 @@ const SpaceShooter = () => {
                             // Gun tip glow
                             ctx.fillStyle = accentColor;
                             ctx.fillRect(7, -1, 2, 2);
-                            ctx.fillStyle = #ffff88';
+                            ctx.fillStyle = '#ffff88';
                             ctx.fillRect(7.5, -0.5, 1, 1);
                             
                             ctx.restore();
@@ -18120,10 +18164,13 @@ const SpaceShooter = () => {
                       active: true, 
                       fadeIn: true, 
                       alpha: 1, 
-                      showText: 'playing'); 
+                      showText: true, 
+                      wave: waveRef.current 
+                    }; 
+                    setGameState('playing'); 
                     gameStateRef.current = 'playing'; 
                   }}
-                  className={`start-button ${checkpointSelection === 0 ? 'gamepad-selected' : '}`}
+                  className={`start-button ${checkpointSelection === 0 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(0)}
                 >
                   <span className="btn-icon">?</span> CONTINUE MISSION
@@ -18137,14 +18184,14 @@ const SpaceShooter = () => {
                 </button>
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowCustomize(true); }}
-                  className={`customize-checkpoint-button ${checkpointSelection === 2 ? 'gamepad-selected' : '}`}
+                  className={`customize-checkpoint-button ${checkpointSelection === 2 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(2)}
                 >
                   <span className="btn-icon">???</span> CUSTOMIZE SHIP
                 </button>
                 <button 
                   onClick={() => { soundSystem.stopMusic(); setGameState('menu'); gameStateRef.current = 'menu'; }}
-                  className={`quit-button ${checkpointSelection === 3 ? 'gamepad-selected' : '}`}
+                  className={`quit-button ${checkpointSelection === 3 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(3)}
                 >
                   <span className="btn-icon">??</span> QUIT TO MENU
@@ -18159,7 +18206,7 @@ const SpaceShooter = () => {
         
         {gameState === 'gameOver' && (
           <div className="overlay game-over">
-            <h2>{gameMode === 'survival' ? 'SURVIVAL ENDED' : GAME OVER'}</h2>
+            <h2>{gameMode === 'survival' ? 'SURVIVAL ENDED' : 'GAME OVER'}</h2>
             
             {/* Challenge Mode Stats */}
             {gameMode === 'survival' && (
@@ -18189,8 +18236,8 @@ const SpaceShooter = () => {
                   {Object.entries(DIFFICULTY_SETTINGS).map(([key, diff]) => (
                     <button
                       key={key}
-                      className={`difficulty-btn ${userSettings.difficulty === key ? 'active' : '}`}
-                      style={{ --diff-color': diff.color }}
+                      className={`difficulty-btn ${userSettings.difficulty === key ? 'active' : ''}`}
+                      style={{ '--diff-color': diff.color }}
                       onClick={() => setUserSettings(prev => ({ ...prev, difficulty: key }))}
                     >
                       {diff.label}
