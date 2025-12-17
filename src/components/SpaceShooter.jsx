@@ -2995,8 +2995,23 @@ const SpaceShooter = () => {
     img.onload = () => {
       explosionSpriteRef.current = img;
       explosionSpriteLoadedRef.current = true;
+      console.log('[EXPLOSION] Sprite loaded successfully');
     };
+    img.onerror = () => {
+      console.warn('[EXPLOSION] Failed to load sprite, using particle effects only');
+      explosionSpriteLoadedRef.current = false;
+    };
+    // Start loading immediately
     img.src = '/explosion2.png';
+    
+    // Set a timeout to mark as failed if not loaded within 5 seconds
+    const timeout = setTimeout(() => {
+      if (!explosionSpriteLoadedRef.current) {
+        console.warn('[EXPLOSION] Sprite load timeout, using particle effects');
+      }
+    }, 5000);
+    
+    return () => clearTimeout(timeout);
   }, []);
 
   // Trigger screen shake
@@ -16244,30 +16259,16 @@ const SpaceShooter = () => {
       // Note: player variable already declared at line 12014
       
       // Clean up any invalid powerups first
-      const beforeCount = powerupsRef.current.length;
       powerupsRef.current = powerupsRef.current.filter(p => isFinite(p.x) && isFinite(p.y) && p.type);
-      const afterCount = powerupsRef.current.length;
-      if (beforeCount !== afterCount) {
-        console.log('[POWERUP CLEANUP] Removed', beforeCount - afterCount, 'invalid powerups');
-      }
       
-      // Debug: Check player and powerup state
-      if (powerupsRef.current.length > 0) {
-        console.log('[POWERUP UPDATE] Player:', {x: player?.x, y: player?.y, valid: !!(player && player.x)}, 'Powerups:', powerupsRef.current.length);
-      }
-      
-      let powerupProcessCount = 0;
       powerupsRef.current = powerupsRef.current.filter(powerup => {
-        powerupProcessCount++;
         // Remove invalid power-ups
         if (!isFinite(powerup.x) || !isFinite(powerup.y)) {
-          console.log('[POWERUP] Removing invalid powerup:', powerup);
           return false;
         }
         
         // Guard against undefined player first
         if (!player || !isFinite(player.x) || !isFinite(player.y)) {
-          console.warn('[POWERUP] Player position invalid:', player);
           return true; // Keep powerup, don't remove it
         }
         
@@ -16305,16 +16306,9 @@ const SpaceShooter = () => {
         
         const collisionCheck = distance < pickupRadius;
         
-        // Debug logging for collision detection
-        if (powerupsRef.current.length > 0 && powerupsRef.current.indexOf(powerup) === 0) {
-          console.log('[COLLISION] Distance:', distance.toFixed(1), 'Required:', pickupRadius, 'Hit:', collisionCheck);
-        }
-        
         if (collisionCheck) {
-          console.log('[POWERUP PICKED UP]', powerup.type);
           const config = POWERUP_TYPES[powerup.type];
           if (!config) {
-            console.warn('[POWERUP] Invalid config for type:', powerup.type);
             return false; // Remove invalid power-ups
           }
           
@@ -16322,7 +16316,7 @@ const SpaceShooter = () => {
           try {
             soundSystem.playPowerup(config.rarity);
           } catch (e) {
-            console.warn('[POWERUP] Sound error:', e);
+            // Silently fail if sound system not ready
           }
           
           // Create enhanced pickup effect based on rarity
@@ -16672,10 +16666,6 @@ const SpaceShooter = () => {
         
         return powerup.x > -POWERUP_SIZE;
       });
-      
-      if (powerupProcessCount > 0) {
-        console.log('[POWERUP FILTER] Processed', powerupProcessCount, 'powerups, remaining:', powerupsRef.current.length);
-      }
 
       // Force pod collision with enemies (damages them!)
       if (forceRef.current) {
