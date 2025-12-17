@@ -3455,6 +3455,8 @@ const SpaceShooter = () => {
     powerupsRef.current.push({
       x,
       y,
+      vx: -1.5,
+      vy: (Math.random() - 0.5) * 1.5,
       type: selectedType,
       bobOffset: Math.random() * Math.PI * 2,
       spawnTime: Date.now(),
@@ -4660,39 +4662,18 @@ const SpaceShooter = () => {
             ctx.restore();
           }
           
-          // Draw sprite - save context for transformation
+          // Draw sprite - centered and clean
           ctx.save();
           ctx.globalAlpha = 1;
           
-          // Add slight rotation and scale variation for more dynamic feel
-          const rotationAngle = (currentFrame * 0.1) * (explosion.spriteSize > 100 ? 0.05 : 0);
-          const scaleVariation = 1 + Math.sin(currentFrame * 0.8) * 0.05;
-          const finalSize = destSize * scaleVariation;
-          
-          // Transform to explosion center for proper rotation
-          ctx.translate(explosion.x, explosion.y);
-          ctx.rotate(rotationAngle);
-          
-          // Draw sprite centered at origin (0, 0) after translation
+          // Draw sprite centered at explosion position
           ctx.drawImage(
             sprite,
             srcX, srcY, frameWidth, frameHeight,
-            -finalSize / 2, -finalSize / 2,
-            finalSize, finalSize
+            explosion.x - destSize / 2, explosion.y - destSize / 2,
+            destSize, destSize
           );
           
-          // Add bright center flash for first few frames
-          if (currentFrame < 3 && !perfMode) {
-            ctx.globalAlpha = (3 - currentFrame) / 3 * 0.5;
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = '#ffff00';
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.arc(0, 0, finalSize * 0.15, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          
-          ctx.restore(); // Restore sprite transformation
           ctx.restore(); // Restore main context
           return; // Skip particle rendering for sprite explosions
         }
@@ -5623,8 +5604,8 @@ const SpaceShooter = () => {
         // Spawn glow animation - expanding cyan/white glow with particles
         if (playerSpawnGlowRef.current > 0) {
           const spawnTimer = playerSpawnGlowRef.current;
-          const spawnProgress = 1 - (spawnTimer / 90); // 0 to 1
-          const fadeOut = spawnTimer / 90; // 1 to 0 (for fade out)
+          const spawnProgress = 1 - (spawnTimer / 180); // 0 to 1
+          const fadeOut = spawnTimer / 180; // 1 to 0 (for fade out)
           const centerX = px + pw / 2;
           const centerY = py + ph / 2;
           
@@ -5652,8 +5633,8 @@ const SpaceShooter = () => {
           // Expanding circular waves
           for (let i = 0; i < 3; i++) {
             const waveDelay = i * 10;
-            if (spawnTimer < 90 - waveDelay) {
-              const waveProgress = Math.min(1, (90 - spawnTimer - waveDelay) / 40);
+            if (spawnTimer < 180 - waveDelay) {
+              const waveProgress = Math.min(1, (180 - spawnTimer - waveDelay) / 40);
               const radius = waveProgress * 80;
               const alpha = (1 - waveProgress) * 0.8 * fadeOut;
               
@@ -16051,8 +16032,9 @@ const SpaceShooter = () => {
           powerup.x += (pullDx / pullDist) * pullStrength;
           powerup.y += (pullDy / pullDist) * pullStrength;
         } else {
-          // Drift left slower when not being pulled
-          powerup.x -= 2;
+          // Apply natural drift velocity when not being pulled
+          powerup.x += (powerup.vx || -1.5);
+          powerup.y += (powerup.vy || 0);
         }
         
         powerup.bobOffset = (powerup.bobOffset || 0) + 0.1;
@@ -17738,7 +17720,7 @@ const SpaceShooter = () => {
         playerInvincibleRef.current = 120;
         
         // Trigger spawn glow animation on respawn
-        playerSpawnGlowRef.current = 90;
+        playerSpawnGlowRef.current = 180;
         
         if (newLives <= 0) {
           // Game over
