@@ -12256,12 +12256,6 @@ const SpaceShooter = () => {
         return;
       }
       
-      // Debug: Confirm we're updating
-      if (enemiesRef.current.length > 0 && !window.gameLoopRunning) {
-        console.log('[GAME LOOP] Running with enemies:', enemiesRef.current.length, 'explosions:', explosionsRef.current.length);
-        window.gameLoopRunning = true;
-      }
-
       // Update challenge mode timers
       const mode = gameModeRef.current;
       if (mode === 'survival' || mode === 'timeAttack') {
@@ -15386,7 +15380,6 @@ const SpaceShooter = () => {
       
       // Update boss
       if (bossRef.current) {
-        console.log('[BOSS BLOCK ENTERED - This should NOT appear if boss is null]');
         const boss = bossRef.current;
         
         // Enter screen
@@ -16137,8 +16130,7 @@ const SpaceShooter = () => {
             return true; // Keep bullet
           });
         }
-        } // CLOSE FIRST BOSS BLOCK HERE
-        console.log('[DEBUG-BOSS] After first boss block');
+        } // Boss update block closes here
         
         // Check super boss collision with player bullets
         if (bossRef.current) {
@@ -16297,15 +16289,9 @@ const SpaceShooter = () => {
           return true; // Keep bullet that didn't hit
         });
       }
-      console.log('[DEBUG-1] Right before powerup update');
 
       // Update power-ups
       // Note: player variable already declared at line 12014
-      console.log('[DEBUG-2] Inside powerup section');
-      if (!window.powerupUpdateLogged) {
-        console.log('[POWERUP UPDATE] Reached powerup update code, count:', powerupsRef.current.length);
-        window.powerupUpdateLogged = true;
-      }
       
       // Clean up any invalid powerups first
       powerupsRef.current = powerupsRef.current.filter(p => isFinite(p.x) && isFinite(p.y) && p.type);
@@ -17036,17 +17022,8 @@ const SpaceShooter = () => {
       }
 
       // Update explosions
-      let firstExplosionLogged = false;
-      const explosionCountBefore = explosionsRef.current.length;
-      if (explosionCountBefore > 0 && !window.explosionFilterRunning) {
-        console.log('[EXPLOSION UPDATE] Filter running, count:', explosionCountBefore);
-        window.explosionFilterRunning = true;
-      }
       explosionsRef.current = explosionsRef.current.filter(explosion => {
         explosion.lifetime--;
-        if (!firstExplosionLogged && explosionsRef.current.length > 0) {
-          firstExplosionLogged = true;
-        }
         
         // Handle sprite-based explosions
         if (explosion.isSprite) {
@@ -17056,12 +17033,7 @@ const SpaceShooter = () => {
             explosion.frame++;
           }
           // Remove if frames complete OR lifetime expired
-          const shouldKeep = explosion.frame < explosion.totalFrames && explosion.lifetime > 0;
-          if (!shouldKeep && !window.explosionRemoveLogged) {
-            console.log('[EXPLOSION REMOVE] frame:', explosion.frame, 'totalFrames:', explosion.totalFrames, 'lifetime:', explosion.lifetime);
-            window.explosionRemoveLogged = true;
-          }
-          return shouldKeep;
+          return explosion.frame < explosion.totalFrames && explosion.lifetime > 0;
         }
         
         // Handle particle-based explosions
@@ -17077,11 +17049,6 @@ const SpaceShooter = () => {
         });
         return explosion.lifetime > 0;
       });
-      const explosionCountAfter = explosionsRef.current.length;
-      if (!window.explosionFilterLogged && explosionCountBefore !== explosionCountAfter) {
-        console.log('[EXPLOSION FILTER] Before:', explosionCountBefore, 'After:', explosionCountAfter, 'Removed:', explosionCountBefore - explosionCountAfter);
-        window.explosionFilterLogged = true;
-      }
       
       // Cap explosions during boss battles
       const MAX_EXPLOSIONS_CAP = bossActiveRef.current ? 15 : 30;
