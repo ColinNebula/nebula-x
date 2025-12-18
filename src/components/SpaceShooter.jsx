@@ -15384,6 +15384,7 @@ const SpaceShooter = () => {
       
       // Update boss
       if (bossRef.current) {
+        console.log('[BOSS BLOCK ENTERED - This should NOT appear if boss is null]');
         const boss = bossRef.current;
         
         // Enter screen
