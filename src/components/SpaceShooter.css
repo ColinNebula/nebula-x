@@ -4365,6 +4365,33 @@
 }
 
 /* Mode-specific colors */
+.campaign-mode {
+  border-color: rgba(0, 200, 255, 0.4) !important;
+}
+.campaign-mode:hover {
+  border-color: rgba(0, 220, 255, 0.6) !important;
+  box-shadow: 0 0 15px rgba(0, 200, 255, 0.3);
+}
+.campaign-mode h3 { color: #00ccff !important; }
+
+.practice-mode {
+  border-color: rgba(0, 255, 136, 0.4) !important;
+}
+.practice-mode:hover {
+  border-color: rgba(0, 255, 150, 0.6) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+.practice-mode h3 { color: #00ff88 !important; }
+
+.replay-mode {
+  border-color: rgba(255, 0, 200, 0.4) !important;
+}
+.replay-mode:hover {
+  border-color: rgba(255, 50, 220, 0.6) !important;
+  box-shadow: 0 0 15px rgba(255, 0, 200, 0.3);
+}
+.replay-mode h3 { color: #ff00cc !important; }
+
 .survival-mode {
   border-color: rgba(255, 100, 100, 0.4) !important;
 }
@@ -4574,3 +4601,185 @@
   text-align: center;
 }
 
+/* Replay System Styles */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.replay-button {
+  background: linear-gradient(180deg, 
+    rgba(255, 0, 136, 0.3) 0%, 
+    rgba(200, 0, 100, 0.4) 100%) !important;
+  border-color: rgba(255, 0, 200, 0.6) !important;
+}
+
+.replay-button:hover {
+  background: linear-gradient(180deg, 
+    rgba(255, 50, 150, 0.4) 0%, 
+    rgba(220, 0, 120, 0.5) 100%) !important;
+  border-color: rgba(255, 50, 220, 0.8) !important;
+}
+
+.replay-modal {
+  max-width: 600px !important;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.replay-controls {
+  margin-bottom: 20px;
+}
+
+.replay-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  padding: 15px 25px;
+  background: linear-gradient(135deg, #ff0088 0%, #cc0066 100%);
+  border: 2px solid #ff00aa;
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 15px rgba(255, 0, 136, 0.3);
+}
+
+.replay-btn:hover {
+  background: linear-gradient(135deg, #ff3399 0%, #dd0077 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(255, 0, 136, 0.5);
+}
+
+.replay-btn.recording {
+  background: linear-gradient(135deg, #ff3333 0%, #cc0000 100%);
+  border-color: #ff0000;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.replay-list {
+  margin-bottom: 20px;
+}
+
+.replay-list h3 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: #00ffff;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.no-replays {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.45rem;
+  color: #888899;
+  padding: 20px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.replay-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 12px;
+  background: rgba(50, 40, 80, 0.5);
+  border: 1px solid rgba(150, 100, 255, 0.3);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.replay-item:hover {
+  background: rgba(70, 50, 100, 0.6);
+  border-color: rgba(200, 150, 255, 0.5);
+  transform: translateX(3px);
+}
+
+.replay-info {
+  flex: 1;
+  text-align: left;
+}
+
+.replay-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.replay-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: #ffffff;
+}
+
+.replay-mode {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.35rem;
+  color: #00ffff;
+  background: rgba(0, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.replay-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+
+.replay-stats span {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.4rem;
+  color: #aabbcc;
+}
+
+.replay-date {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.35rem;
+  color: #666677;
+}
+
+.replay-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.replay-play-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.45rem;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+  border: 2px solid #00ff88;
+  border-radius: 5px;
+  color: #003322;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: bold;
+}
+
+.replay-play-btn:hover {
+  background: linear-gradient(135deg, #33ffaa 0%, #00dd77 100%);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+}
+
+.replay-delete-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.45rem;
+  padding: 8px 12px;
+  background: rgba(255, 50, 50, 0.2);
+  border: 2px solid rgba(255, 50, 50, 0.5);
+  border-radius: 5px;
+  color: #ff6666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.replay-delete-btn:hover {
+  background: rgba(255, 50, 50, 0.4);
+  border-color: #ff3333;
+  transform: scale(1.05);
+}

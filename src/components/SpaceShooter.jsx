@@ -979,6 +979,7 @@ const SpaceShooter = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showPauseControls, setShowPauseControls] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
+  const [showMissionMenu, setShowMissionMenu] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [settingsTab, setSettingsTab] = useState('audio'); // audio', 'profile', 'controls'
   
@@ -1571,6 +1572,183 @@ const SpaceShooter = () => {
   const graceWarningShownRef = useRef(false); // Grace period warning shown flag
   const WAVE_GRACE_PERIOD = 10000; // 10 seconds grace period at wave start
   const waveCannonChargeRef = useRef(0);
+  
+  // ============= REPLAY SYSTEM =============
+  const [isRecording, setIsRecording] = useState(false);
+  const [isReplaying, setIsReplaying] = useState(false);
+  const [showReplayMenu, setShowReplayMenu] = useState(false);
+  const [savedReplays, setSavedReplays] = useState(() => {
+    const saved = localStorage.getItem('nebulaXReplays');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const replayDataRef = useRef({
+    frames: [],
+    metadata: {
+      startTime: 0,
+      endTime: 0,
+      score: 0,
+      wave: 0,
+      gameMode: 'campaign',
+      difficulty: 'normal'
+    }
+  });
+  const replayPlaybackRef = useRef({
+    currentFrame: 0,
+    data: null,
+    startTime: 0
+  });
+  
+  // Record a frame of gameplay
+  const recordFrame = useCallback(() => {
+    if (!isRecording || isReplaying) return;
+    
+    const frame = {
+      time: Date.now() - replayDataRef.current.metadata.startTime,
+      player: {
+        x: playerRef.current.x,
+        y: playerRef.current.y,
+        vx: playerRef.current.vx,
+        vy: playerRef.current.vy
+      },
+      input: {
+        shooting: keysRef.current.space || keysRef.current.z,
+        special: keysRef.current.x || keysRef.current.c
+      },
+      game: {
+        score: scoreRef.current,
+        lives: livesRef.current,
+        wave: waveRef.current,
+        enemyCount: enemiesRef.current.length,
+        bulletCount: bulletsRef.current.length
+      }
+    };
+    
+    replayDataRef.current.frames.push(frame);
+  }, [isRecording, isReplaying]);
+  
+  // Start recording
+  const startRecording = useCallback(() => {
+    replayDataRef.current = {
+      frames: [],
+      metadata: {
+        startTime: Date.now(),
+        endTime: 0,
+        score: 0,
+        wave: 1,
+        gameMode: gameModeRef.current,
+        difficulty: difficultyRef.current,
+        playerName: userSettingsRef.current?.playerName || 'Pilot'
+      }
+    };
+    setIsRecording(true);
+    console.log('[REPLAY] Recording started');
+  }, []);
+  
+  // Stop recording and save
+  const stopRecording = useCallback(() => {
+    if (!isRecording) return;
+    
+    replayDataRef.current.metadata.endTime = Date.now();
+    replayDataRef.current.metadata.score = scoreRef.current;
+    replayDataRef.current.metadata.wave = waveRef.current;
+    replayDataRef.current.metadata.duration = replayDataRef.current.metadata.endTime - replayDataRef.current.metadata.startTime;
+    
+    setIsRecording(false);
+    console.log('[REPLAY] Recording stopped. Frames:', replayDataRef.current.frames.length);
+    
+    // Auto-save replay
+    saveReplay();
+  }, [isRecording]);
+  
+  // Save replay to localStorage
+  const saveReplay = useCallback(() => {
+    const newReplay = {
+      id: Date.now(),
+      ...replayDataRef.current.metadata,
+      frameCount: replayDataRef.current.frames.length,
+      data: replayDataRef.current.frames
+    };
+    
+    const updated = [newReplay, ...savedReplays].slice(0, 10); // Keep last 10 replays
+    setSavedReplays(updated);
+    localStorage.setItem('nebulaXReplays', JSON.stringify(updated));
+    
+    console.log('[REPLAY] Saved replay:', newReplay.id);
+  }, [savedReplays]);
+  
+  // Load and play a replay
+  const playReplay = useCallback((replayId) => {
+    const replay = savedReplays.find(r => r.id === replayId);
+    if (!replay) return;
+    
+    replayPlaybackRef.current = {
+      currentFrame: 0,
+      data: replay.data,
+      startTime: Date.now()
+    };
+    
+    setIsReplaying(true);
+    setShowReplayMenu(false);
+    setGameState('playing');
+    
+    // Reset game state for replay
+    scoreRef.current = 0;
+    setScore(0);
+    livesRef.current = 3;
+    setLives(3);
+    waveRef.current = 1;
+    setWave(1);
+    enemiesRef.current = [];
+    bulletsRef.current = [];
+    explosionsRef.current = [];
+    
+    console.log('[REPLAY] Playing replay:', replayId, 'Frames:', replay.frameCount);
+  }, [savedReplays]);
+  
+  // Delete a replay
+  const deleteReplay = useCallback((replayId) => {
+    const updated = savedReplays.filter(r => r.id !== replayId);
+    setSavedReplays(updated);
+    localStorage.setItem('nebulaXReplays', JSON.stringify(updated));
+  }, [savedReplays]);
+  
+  // Update replay playback each frame
+  const updateReplayPlayback = useCallback(() => {
+    if (!isReplaying || !replayPlaybackRef.current.data) return;
+    
+    const elapsed = Date.now() - replayPlaybackRef.current.startTime;
+    const frames = replayPlaybackRef.current.data;
+    
+    // Find the current frame based on elapsed time
+    while (replayPlaybackRef.current.currentFrame < frames.length) {
+      const frame = frames[replayPlaybackRef.current.currentFrame];
+      
+      if (frame.time > elapsed) break;
+      
+      // Apply frame data to game state
+      playerRef.current.x = frame.player.x;
+      playerRef.current.y = frame.player.y;
+      playerRef.current.vx = frame.player.vx;
+      playerRef.current.vy = frame.player.vy;
+      
+      scoreRef.current = frame.game.score;
+      setScore(frame.game.score);
+      livesRef.current = frame.game.lives;
+      setLives(frame.game.lives);
+      waveRef.current = frame.game.wave;
+      setWave(frame.game.wave);
+      
+      replayPlaybackRef.current.currentFrame++;
+    }
+    
+    // End replay when finished
+    if (replayPlaybackRef.current.currentFrame >= frames.length) {
+      setIsReplaying(false);
+      setGameState('menu');
+      console.log('[REPLAY] Playback finished');
+    }
+  }, [isReplaying]);
   const isChargingRef = useRef(false);
   const forceRef = useRef(null); // Force pod: { x, y, attached: 'front'|'back'|null, power, split }
   const forceLastShotRef = useRef(0);
@@ -2401,6 +2579,11 @@ const SpaceShooter = () => {
 
   // Handle game over with stats saving
   const handleGameOver = useCallback(() => {
+    // Stop recording if active
+    if (isRecording) {
+      stopRecording();
+    }
+    
     // Check for Phoenix auto-revive
     if (upgradesRef.current.phoenix) {
       upgradesRef.current.phoenix = false; // Use up Phoenix
@@ -2460,6 +2643,9 @@ const SpaceShooter = () => {
   // Handle keyboard input
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ignore input during replay playback
+      if (isReplaying) return;
+      
       keysRef.current[e.code] = true;
       
       // Brand screen - any key to continue
@@ -2652,6 +2838,9 @@ const SpaceShooter = () => {
     };
 
     const handleKeyUp = (e) => {
+      // Ignore input during replay playback
+      if (isReplaying) return;
+      
       keysRef.current[e.code] = false;
     };
 
@@ -3225,7 +3414,21 @@ const SpaceShooter = () => {
     const bossBattleReduction = bossActiveRef.current ? 0.6 : 1;
     const particleMultiplier = (perfMode ? 0.5 : 1) * bossBattleReduction;
     
-    // Always add flying debris particles for visual enhancement
+    // Add shockwave for large explosions
+    if (size === 'boss' || size === 'large' || size === 'heavy') {
+      pickupEffectsRef.current.push({
+        x,
+        y,
+        radius: 0,
+        maxRadius: size === 'boss' ? 150 : size === 'heavy' ? 80 : 60,
+        color: size === 'boss' ? '#ff00ff' : '#ff8800',
+        lifetime: size === 'boss' ? 25 : 20,
+        type: 'shockwave',
+        speed: size === 'boss' ? 8 : 6
+      });
+    }
+    
+    // Always add flying debris particles with rotation
     let debrisCount = size === 'boss' ? 20 : size === 'heavy' ? 12 : size === 'large' ? 10 : size === 'small' ? 4 : 8;
     debrisCount = Math.ceil(debrisCount * particleMultiplier);
     const debrisColors = ['#ffff00', '#ff8800', '#ff4400', '#ffffff', '#ffcc00'];
@@ -3243,13 +3446,16 @@ const SpaceShooter = () => {
         color: debrisColors[Math.floor(Math.random() * debrisColors.length)],
         size: debrisSize,
         lifetime: 20 + Math.floor(Math.random() * 20),
+        maxLifetime: 40,
         type: 'debris',
-        gravity: 0.1 + Math.random() * 0.1, // Slight downward pull
-        spin: (Math.random() - 0.5) * 0.3
+        gravity: 0.1 + Math.random() * 0.1,
+        spin: (Math.random() - 0.5) * 0.3,
+        rotation: Math.random() * Math.PI * 2,
+        angularVelocity: (Math.random() - 0.5) * 0.4
       });
     }
     
-    // Add spark trails
+    // Add spark trails with enhanced effects
     let sparkCount = size === 'boss' ? 15 : size === 'heavy' ? 8 : size === 'large' ? 6 : size === 'small' ? 2 : 5;
     sparkCount = Math.ceil(sparkCount * particleMultiplier);
     for (let i = 0; i < sparkCount; i++) {
@@ -3262,11 +3468,59 @@ const SpaceShooter = () => {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         color: '#ffffff',
+        color2: ['#ffff00', '#ff8800', '#ffaa00'][Math.floor(Math.random() * 3)],
         size: 1 + Math.random() * 2,
         lifetime: 15 + Math.floor(Math.random() * 15),
+        maxLifetime: 30,
         type: 'spark',
-        trail: [] // Will store previous positions for trail effect
+        trail: []
       });
+    }
+    
+    // Add smoke particles for larger explosions
+    if (size !== 'small') {
+      let smokeCount = size === 'boss' ? 12 : size === 'heavy' ? 6 : 4;
+      smokeCount = Math.ceil(smokeCount * particleMultiplier);
+      for (let i = 0; i < smokeCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.5 + Math.random() * 1.5;
+        
+        pickupEffectsRef.current.push({
+          x: x + (Math.random() - 0.5) * 20,
+          y: y + (Math.random() - 0.5) * 20,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 0.5, // Slight upward drift
+          color: '#666666',
+          size: (size === 'boss' ? 8 : 4) + Math.random() * 6,
+          lifetime: 30 + Math.floor(Math.random() * 20),
+          maxLifetime: 50,
+          type: 'smoke',
+          expansion: 0.1 + Math.random() * 0.05
+        });
+      }
+    }
+    
+    // Add embers for extra flair
+    if (size === 'boss' || size === 'heavy' || size === 'large') {
+      let emberCount = size === 'boss' ? 20 : size === 'heavy' ? 10 : 6;
+      emberCount = Math.ceil(emberCount * particleMultiplier);
+      for (let i = 0; i < emberCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (Math.random() * 2) + 1;
+        
+        pickupEffectsRef.current.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: ['#ff4400', '#ff6600', '#ff8800', '#ffaa00'][Math.floor(Math.random() * 4)],
+          size: 1 + Math.random() * 2,
+          lifetime: 25 + Math.floor(Math.random() * 15),
+          maxLifetime: 40,
+          type: 'ember',
+          flicker: Math.random() * Math.PI
+        });
+      }
     }
     
     if (shouldUseSprite) {
@@ -4297,6 +4551,13 @@ const SpaceShooter = () => {
       if (Math.random() < 0.01) { // Log 1% of frames to avoid spam
       }
       
+      // Clear canvas FIRST before any transformations
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any transforms
+      ctx.fillStyle = '#0a0a20';
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+      ctx.restore();
+      
       // Apply screen shake
       ctx.save();
       if (screenShakeRef.current.duration > 0) {
@@ -4307,10 +4568,6 @@ const SpaceShooter = () => {
         shake.duration--;
         shake.intensity *= 0.9; // Decay intensity
       }
-      
-      // Clear canvas
-      ctx.fillStyle = '#0a0a20';
-      ctx.fillRect(-10, -10, GAME_WIDTH + 20, GAME_HEIGHT + 20);
 
       // Draw parallax stars (layered) - optimized
       const perfMode = userSettingsRef.current?.performanceMode;
@@ -4833,13 +5090,30 @@ const SpaceShooter = () => {
 
       // Draw pickup effects
       pickupEffectsRef.current.forEach(effect => {
-        ctx.globalAlpha = effect.lifetime / 25;
+        // Calculate alpha based on lifetime with smooth fade
+        const lifetimeFraction = effect.maxLifetime ? effect.lifetime / effect.maxLifetime : effect.lifetime / 25;
+        ctx.globalAlpha = Math.min(1, lifetimeFraction);
         
         if (effect.type === 'flash') {
           // Screen flash effect for legendary pickups
           ctx.globalAlpha = effect.lifetime / 10 * 0.3;
           ctx.fillStyle = effect.color;
           ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        } else if (effect.type === 'shockwave') {
+          // Expanding shockwave with gradient
+          const gradient = ctx.createRadialGradient(effect.x, effect.y, effect.radius * 0.8, effect.x, effect.y, effect.radius);
+          gradient.addColorStop(0, effect.color + '00');
+          gradient.addColorStop(0.5, effect.color);
+          gradient.addColorStop(1, effect.color + '00');
+          
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 4;
+          ctx.shadowColor = effect.color;
+          ctx.shadowBlur = 15;
+          ctx.beginPath();
+          ctx.arc(effect.x, effect.y, effect.radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
         } else if (effect.type === 'ring') {
           // Expanding ring
           ctx.strokeStyle = effect.color;
@@ -4850,6 +5124,20 @@ const SpaceShooter = () => {
           ctx.arc(effect.x, effect.y, effect.radius, 0, Math.PI * 2);
           ctx.stroke();
           ctx.shadowBlur = 0;
+        } else if (effect.type === 'smoke') {
+          // Smoke particles with gradient fill
+          const smokeAlpha = (effect.lifetime / (effect.maxLifetime || 50)) * 0.6;
+          ctx.globalAlpha = smokeAlpha;
+          
+          const gradient = ctx.createRadialGradient(effect.x, effect.y, 0, effect.x, effect.y, effect.size);
+          gradient.addColorStop(0, effect.color + 'aa');
+          gradient.addColorStop(0.5, effect.color + '44');
+          gradient.addColorStop(1, effect.color + '00');
+          
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(effect.x, effect.y, effect.size, 0, Math.PI * 2);
+          ctx.fill();
         } else if (effect.type === 'sparkle') {
           // Sparkle particles
           ctx.fillStyle = effect.color;
@@ -4870,13 +5158,20 @@ const SpaceShooter = () => {
           ctx.restore();
           ctx.shadowBlur = 0;
         } else if (effect.type === 'debris') {
-          // Flying debris particles
+          // Flying debris particles with rotation
           ctx.save();
           ctx.translate(effect.x, effect.y);
           ctx.rotate(effect.rotation || 0);
-          ctx.fillStyle = effect.color;
+          
+          // Color gradient from center to edge
+          const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, effect.size);
+          gradient.addColorStop(0, '#ffffff');
+          gradient.addColorStop(0.4, effect.color);
+          gradient.addColorStop(1, effect.color + '88');
+          
+          ctx.fillStyle = gradient;
           ctx.shadowColor = effect.color;
-          ctx.shadowBlur = 5;
+          ctx.shadowBlur = 8;
           
           // Draw irregular debris shape
           ctx.beginPath();
@@ -4891,15 +5186,17 @@ const SpaceShooter = () => {
           ctx.shadowBlur = 0;
           ctx.restore();
         } else if (effect.type === 'spark') {
-          // Spark particles with trail
+          // Spark particles with trail and color transition
+          const colorMix = effect.maxLifetime ? 1 - (effect.lifetime / effect.maxLifetime) : 0;
           ctx.strokeStyle = effect.color;
           ctx.lineWidth = effect.size;
           ctx.lineCap = 'round';
-          ctx.shadowColor = '#ffff88';
-          ctx.shadowBlur = 8;
+          ctx.shadowColor = effect.color2 || '#ffff88';
+          ctx.shadowBlur = 12;
           
-          // Draw trail
+          // Draw trail with gradient
           if (effect.trail && effect.trail.length > 1) {
+            ctx.globalAlpha = lifetimeFraction * 0.6;
             ctx.beginPath();
             ctx.moveTo(effect.trail[0].x, effect.trail[0].y);
             for (let i = 1; i < effect.trail.length; i++) {
@@ -4909,8 +5206,28 @@ const SpaceShooter = () => {
             ctx.stroke();
           }
           
-          // Draw spark head
+          // Draw spark head with glow
+          ctx.globalAlpha = lifetimeFraction;
           ctx.fillStyle = '#ffffff';
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = effect.color2 || '#ffff88';
+          ctx.beginPath();
+          ctx.arc(effect.x, effect.y, effect.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        } else if (effect.type === 'ember') {
+          // Ember particles with flicker effect
+          const flicker = Math.sin(effect.flicker || 0) * 0.3 + 0.7;
+          ctx.globalAlpha = lifetimeFraction * flicker;
+          
+          const gradient = ctx.createRadialGradient(effect.x, effect.y, 0, effect.x, effect.y, effect.size);
+          gradient.addColorStop(0, '#ffffff');
+          gradient.addColorStop(0.3, effect.color);
+          gradient.addColorStop(1, effect.color + '00');
+          
+          ctx.fillStyle = gradient;
+          ctx.shadowColor = effect.color;
+          ctx.shadowBlur = 10;
           ctx.beginPath();
           ctx.arc(effect.x, effect.y, effect.size, 0, Math.PI * 2);
           ctx.fill();
@@ -4928,7 +5245,10 @@ const SpaceShooter = () => {
           ctx.shadowBlur = 0;
         }
       });
+      // Reset all canvas states
       ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.globalCompositeOperation = 'source-over';
 
       // Draw floating texts
       floatingTextsRef.current.forEach(text => {
@@ -13138,6 +13458,13 @@ const SpaceShooter = () => {
         playerHistoryRef.current.pop();
       }
       
+      // === REPLAY SYSTEM ===
+      // Record frame if recording
+      recordFrame();
+      
+      // Update replay playback if replaying
+      updateReplayPlayback();
+      
       // Spawn engine trail particles
       const trailOpt = TRAIL_OPTIONS[shipPartsRef.current?.trail || 0] || TRAIL_OPTIONS[0];
       if (trailOpt.enabled && !playerInvincibleRef.current) {
@@ -16940,16 +17267,16 @@ const SpaceShooter = () => {
         effect.lifetime--;
         
         if (effect.type === 'debris') {
-          // Flying debris particles with gravity
+          // Flying debris particles with gravity and rotation
           effect.x += effect.vx;
           effect.y += effect.vy;
-          effect.vy += effect.gravity || 0.1; // Apply gravity
+          effect.vy += effect.gravity || 0.1;
           effect.vx *= 0.98;
           effect.vy *= 0.98;
           effect.size *= 0.97;
-          effect.rotation = (effect.rotation || 0) + (effect.spin || 0);
+          effect.rotation = (effect.rotation || 0) + (effect.angularVelocity || 0);
         } else if (effect.type === 'spark') {
-          // Spark particles with trail
+          // Spark particles with trail and color fade
           if (effect.trail) {
             effect.trail.push({ x: effect.x, y: effect.y });
             if (effect.trail.length > 5) effect.trail.shift();
@@ -16960,12 +17287,22 @@ const SpaceShooter = () => {
           effect.vy *= 0.95;
           effect.size *= 0.96;
         } else if (effect.type === 'ember') {
-          // Floating ember particles
+          // Floating ember particles with flicker
           effect.x += effect.vx + Math.sin(effect.flicker) * 0.3;
           effect.y += effect.vy;
-          effect.flicker += 0.2;
+          effect.flicker = (effect.flicker || 0) + 0.2;
           effect.vx *= 0.99;
           effect.size *= 0.98;
+        } else if (effect.type === 'smoke') {
+          // Smoke particles that expand and rise
+          effect.x += effect.vx;
+          effect.y += effect.vy;
+          effect.vx *= 0.97;
+          effect.vy *= 0.97;
+          effect.size += effect.expansion || 0.1;
+        } else if (effect.type === 'shockwave') {
+          // Expanding shockwave
+          effect.radius += effect.speed || 5;
         } else if (effect.type === 'ring') {
           // Expanding ring
           effect.radius += (effect.maxRadius - effect.radius) * 0.2;
@@ -18461,6 +18798,38 @@ const SpaceShooter = () => {
           className="game-canvas"
         />
         
+        {/* Recording Indicator */}
+        {(isRecording || isReplaying) && (
+          <div className="recording-indicator" style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            padding: '10px 20px',
+            background: isRecording ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 136, 255, 0.8)',
+            border: `2px solid ${isRecording ? '#ff0000' : '#0088ff'}`,
+            borderRadius: '8px',
+            fontFamily: '"Press Start 2P", monospace',
+            fontSize: '12px',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            animation: 'pulse 1.5s ease-in-out infinite',
+            zIndex: 1000,
+            boxShadow: `0 0 20px ${isRecording ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 136, 255, 0.5)'}`
+          }}>
+            <span style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              background: isRecording ? '#ff0000' : '#0088ff',
+              boxShadow: `0 0 10px ${isRecording ? '#ff0000' : '#0088ff'}`,
+              animation: isRecording ? 'blink 1s ease-in-out infinite' : 'none'
+            }}></span>
+            {isRecording ? '⏺️ RECORDING' : '▶️ REPLAY'}
+          </div>
+        )}
+        
         {/* Brand Screen */}
         {gameState === 'brand' && (
           <div 
@@ -18792,13 +19161,7 @@ const SpaceShooter = () => {
               {/* Menu buttons */}
               <div className="menu-buttons split-buttons">
                 <button 
-                  onClick={() => {
-                    const selectSound = new Audio(asset('mixkit-arcade-player-select-2036.mp3'));
-                    selectSound.volume = 0.6;
-                    selectSound.play().catch(() => {});
-                    setGameMode('campaign');
-                    startGame();
-                  }} 
+                  onClick={() => { soundSystem.playUISparkle(); setShowMissionMenu(true); }} 
                   className={`start-button ${menuSelection === 0 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(0)}
                 >
@@ -18833,16 +19196,9 @@ const SpaceShooter = () => {
                   <span className="btn-icon">🛸</span> CUSTOMIZE
                 </button>
                 <button 
-                  onClick={() => { soundSystem.playUISparkle(); setShowPracticeMode(true); }} 
-                  className={`settings-button practice-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2)) ? 'gamepad-selected' : ''}`}
-                  onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2))}
-                >
-                  <span className="btn-icon">🎯</span> PRACTICE
-                </button>
-                <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowSettings(true); }} 
-                  className={`settings-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 5 : 4) : (gameBeaten ? 4 : 3)) ? 'gamepad-selected' : ''}`}
-                  onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 5 : 4) : (gameBeaten ? 4 : 3))}
+                  className={`settings-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2)) ? 'gamepad-selected' : ''}`}
+                  onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2))}
                 >
                   <span className="btn-icon">⚙️</span> SETTINGS
                 </button>
@@ -18861,6 +19217,77 @@ const SpaceShooter = () => {
 
           {/* Vertical divider between panels */}
           <div className="split-divider"></div>
+            
+            {/* Mission Select Modal */}
+            {showMissionMenu && (
+              <div className="challenge-modal-overlay">
+                <div className="challenge-modal mission-select-modal">
+                  <h2>🚀 MISSION SELECT</h2>
+                  <p className="challenge-subtitle">Choose your mission type</p>
+                  
+                  <div className="challenge-options">
+                    <button 
+                      className="challenge-option campaign-mode"
+                      onClick={() => {
+                        soundSystem.playUISparkle();
+                        const selectSound = new Audio(asset('mixkit-arcade-player-select-2036.mp3'));
+                        selectSound.volume = 0.6;
+                        selectSound.play().catch(() => {});
+                        setGameMode('campaign');
+                        setShowMissionMenu(false);
+                        startGame();
+                      }}
+                    >
+                      <div className="challenge-icon">🎮</div>
+                      <div className="challenge-info">
+                        <h3>CAMPAIGN</h3>
+                        <p>Play through the main story missions</p>
+                        <span className="challenge-detail">Progressive difficulty • Save progress • Unlock upgrades</span>
+                      </div>
+                    </button>
+                    
+                    <button 
+                      className="challenge-option practice-mode"
+                      onClick={() => {
+                        soundSystem.playUISparkle();
+                        setShowMissionMenu(false);
+                        setShowPracticeMode(true);
+                      }}
+                    >
+                      <div className="challenge-icon">🎯</div>
+                      <div className="challenge-info">
+                        <h3>PRACTICE MODE</h3>
+                        <p>Train your skills with custom settings</p>
+                        <span className="challenge-detail">Custom wave • Infinite lives • No scoring</span>
+                      </div>
+                    </button>
+                    
+                    <button 
+                      className="challenge-option replay-mode"
+                      onClick={() => {
+                        soundSystem.playUISparkle();
+                        setShowMissionMenu(false);
+                        setShowReplayMenu(true);
+                      }}
+                    >
+                      <div className="challenge-icon">📹</div>
+                      <div className="challenge-info">
+                        <h3>REPLAYS</h3>
+                        <p>Watch and share your best runs</p>
+                        <span className="challenge-detail">Record gameplay • Playback • Share victories</span>
+                      </div>
+                    </button>
+                  </div>
+                  
+                  <button 
+                    className="challenge-back"
+                    onClick={() => setShowMissionMenu(false)}
+                  >
+                    ◀ BACK TO MENU
+                  </button>
+                </div>
+              </div>
+            )}
             
             {/* Challenge Modes Modal */}
             {showChallenges && (
@@ -19045,6 +19472,94 @@ const SpaceShooter = () => {
                   </button>
                   
                   <p className="practice-note">Practice mode scores are not saved</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Replay Menu Modal */}
+            {showReplayMenu && (
+              <div className="challenge-modal-overlay">
+                <div className="challenge-modal replay-modal">
+                  <h2>📹 REPLAY SYSTEM</h2>
+                  <p className="challenge-subtitle">Watch and share your best runs!</p>
+                  
+                  <div className="replay-controls">
+                    <button 
+                      className={`replay-btn ${isRecording ? 'recording' : ''}`}
+                      onClick={() => {
+                        soundSystem.playUISparkle();
+                        if (isRecording) {
+                          stopRecording();
+                        } else {
+                          startRecording();
+                          setShowReplayMenu(false);
+                          setGameMode('campaign');
+                          startGame();
+                        }
+                      }}
+                    >
+                      <span className="btn-icon">{isRecording ? '⏺️' : '🎬'}</span>
+                      {isRecording ? 'STOP RECORDING' : 'START NEW RECORDING'}
+                    </button>
+                  </div>
+                  
+                  <div className="replay-list">
+                    <h3>Saved Replays ({savedReplays.length}/10)</h3>
+                    {savedReplays.length === 0 ? (
+                      <p className="no-replays">No replays saved yet. Start recording to create one!</p>
+                    ) : (
+                      savedReplays.map(replay => (
+                        <div key={replay.id} className="replay-item">
+                          <div className="replay-info">
+                            <div className="replay-header">
+                              <span className="replay-name">{replay.playerName}</span>
+                              <span className="replay-mode">{replay.gameMode.toUpperCase()}</span>
+                            </div>
+                            <div className="replay-stats">
+                              <span>🏆 {replay.score.toLocaleString()}</span>
+                              <span>🌊 Wave {replay.wave}</span>
+                              <span>⏱️ {Math.floor(replay.duration / 1000)}s</span>
+                              <span>📊 {replay.frameCount} frames</span>
+                            </div>
+                            <span className="replay-date">
+                              {new Date(replay.id).toLocaleDateString()} {new Date(replay.id).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <div className="replay-actions">
+                            <button 
+                              className="replay-play-btn"
+                              onClick={() => {
+                                soundSystem.playUISparkle();
+                                playReplay(replay.id);
+                              }}
+                            >
+                              ▶️ PLAY
+                            </button>
+                            <button 
+                              className="replay-delete-btn"
+                              onClick={() => {
+                                soundSystem.playUISparkle();
+                                if (confirm('Delete this replay?')) {
+                                  deleteReplay(replay.id);
+                                }
+                              }}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  <button 
+                    className="challenge-back"
+                    onClick={() => setShowReplayMenu(false)}
+                  >
+                    ◀ BACK TO MENU
+                  </button>
+                  
+                  <p className="practice-note">Replays are stored locally and limited to 10 most recent</p>
                 </div>
               </div>
             )}
