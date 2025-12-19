@@ -1,12 +1,12 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# JavaScript/TypeScript
-*.js text eol=lf
-*.jsx text eol=lf
-*.ts text eol=lf
-*.tsx text eol=lf
-*.json text eol=lf
+# JavaScript/TypeScript - Force UTF-8 encoding to preserve emojis
+*.js text eol=lf encoding=UTF-8
+*.jsx text eol=lf encoding=UTF-8
+*.ts text eol=lf encoding=UTF-8
+*.tsx text eol=lf encoding=UTF-8
+*.json text eol=lf encoding=UTF-8
 
 # CSS
 *.css text eol=lf

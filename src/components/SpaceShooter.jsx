@@ -909,31 +909,31 @@ const DASH_DURATION = 8; // Frames of invincibility during dash
 // Power-up types with rarity system
 const POWERUP_TYPES = {
   // Common power-ups (55% of drops)
-  RAPID_FIRE: { color: '#ffff00', icon: 'â¡', name: 'Rapid Fire', rarity: 'common', glowColor: '#ffaa00', description: 'Increases fire rate' },
-  MISSILES: { color: '#ff6600', icon: 'ð', name: 'Missiles', rarity: 'common', glowColor: '#ff3300', description: 'Homing missiles' },
-  SHIELD: { color: '#00ffff', icon: 'ð¡ï¸', name: 'Shield', rarity: 'common', glowColor: '#0088ff', description: '+3 shield hits' },
-  REPAIR: { color: '#00ff00', icon: 'ð©¹', name: 'Repair', rarity: 'common', glowColor: '#00cc00', description: 'Restore 1 life' },
-  SCORE_BONUS: { color: '#ffd700', icon: 'â­', name: 'Score Bonus', rarity: 'common', glowColor: '#ffaa00', description: '+500 points' },
+  RAPID_FIRE: { color: '#ffff00', icon: '⚡', name: 'Rapid Fire', rarity: 'common', glowColor: '#ffaa00', description: 'Increases fire rate' },
+  MISSILES: { color: '#ff6600', icon: '🚀', name: 'Missiles', rarity: 'common', glowColor: '#ff3300', description: 'Homing missiles' },
+  SHIELD: { color: '#00ffff', icon: '🛡️', name: 'Shield', rarity: 'common', glowColor: '#0088ff', description: '+3 shield hits' },
+  REPAIR: { color: '#00ff00', icon: '🩹', name: 'Repair', rarity: 'common', glowColor: '#00cc00', description: 'Restore 1 life' },
+  SCORE_BONUS: { color: '#ffd700', icon: '⭐', name: 'Score Bonus', rarity: 'common', glowColor: '#ffaa00', description: '+500 points' },
   // Rare power-ups (25% of drops)
-  FORCE: { color: '#ff00ff', icon: 'ð®', name: 'Force Pod', rarity: 'rare', glowColor: '#aa00ff', description: 'Attach Force Pod' },
-  OPTION: { color: '#00ff88', icon: 'ð¸', name: 'Option', rarity: 'rare', glowColor: '#00aa44', description: 'Add satellite drone' },
-  SPEED: { color: '#00ffaa', icon: 'â¡', name: 'Speed Boost', rarity: 'rare', glowColor: '#00ddff', description: '+25% speed' },
+  FORCE: { color: '#ff00ff', icon: '🔮', name: 'Force Pod', rarity: 'rare', glowColor: '#aa00ff', description: 'Attach Force Pod' },
+  OPTION: { color: '#00ff88', icon: '🛸', name: 'Option', rarity: 'rare', glowColor: '#00aa44', description: 'Add satellite drone' },
+  SPEED: { color: '#00ffaa', icon: '⚡', name: 'Speed Boost', rarity: 'rare', glowColor: '#00ddff', description: '+25% speed' },
   PIERCING: { color: '#ff8800', icon: 'â', name: 'Piercing', rarity: 'rare', glowColor: '#ff6600', description: 'Bullets pierce enemies' },
-  DOUBLE_SCORE: { color: '#ffff88', icon: 'Ã2', name: 'Double Score', rarity: 'rare', glowColor: '#ffee00', description: '2x score for 20s' },
-  RICOCHET: { color: '#88ffff', icon: 'â©ï¸', name: 'Ricochet', rarity: 'rare', glowColor: '#44ddff', description: 'Bullets bounce' },
+  DOUBLE_SCORE: { color: '#ffff88', icon: '×2', name: 'Double Score', rarity: 'rare', glowColor: '#ffee00', description: '2x score for 20s' },
+  RICOCHET: { color: '#88ffff', icon: '↩️', name: 'Ricochet', rarity: 'rare', glowColor: '#44ddff', description: 'Bullets bounce' },
   // Legendary power-ups (15% of drops)
-  SPREAD: { color: '#ff0066', icon: 'â³ï¸', name: 'Spread Shot', rarity: 'legendary', glowColor: '#ff0044', description: 'Multi-directional fire' },
-  MAGNET: { color: '#ffff00', icon: 'ð§²', name: 'Magnet', rarity: 'legendary', glowColor: '#ffcc00', description: 'Attract power-ups' },
-  MEGA_BOMB: { color: '#ff4400', icon: 'ð£', name: 'Mega Bomb', rarity: 'legendary', glowColor: '#ff2200', description: 'Clear all enemies' },
-  INVINCIBILITY: { color: '#ffffff', icon: 'â¨', name: 'Invincibility', rarity: 'legendary', glowColor: '#ffffaa', description: 'Immune for 8 seconds' },
+  SPREAD: { color: '#ff0066', icon: '✳️', name: 'Spread Shot', rarity: 'legendary', glowColor: '#ff0044', description: 'Multi-directional fire' },
+  MAGNET: { color: '#ffff00', icon: '🧲', name: 'Magnet', rarity: 'legendary', glowColor: '#ffcc00', description: 'Attract power-ups' },
+  MEGA_BOMB: { color: '#ff4400', icon: '💣', name: 'Mega Bomb', rarity: 'legendary', glowColor: '#ff2200', description: 'Clear all enemies' },
+  INVINCIBILITY: { color: '#ffffff', icon: '✨', name: 'Invincibility', rarity: 'legendary', glowColor: '#ffffaa', description: 'Immune for 8 seconds' },
   LASER_BEAM: { color: '#ff00aa', icon: 'â', name: 'Laser Beam', rarity: 'legendary', glowColor: '#ff0088', description: 'Powerful beam attack' },
-  CHAIN_LIGHTNING: { color: '#00aaff', icon: 'â¡', name: 'Chain Lightning', rarity: 'legendary', glowColor: '#0088ff', description: 'Lightning chains enemies' },
+  CHAIN_LIGHTNING: { color: '#00aaff', icon: '⚡', name: 'Chain Lightning', rarity: 'legendary', glowColor: '#0088ff', description: 'Lightning chains enemies' },
   // Ultra power-ups (5% of drops - very rare!)
   BLACK_HOLE: { color: '#4400aa', icon: 'â«', name: 'Black Hole', rarity: 'ultra', glowColor: '#6600ff', description: 'Sucks in all enemies' },
-  TIME_WARP: { color: '#8800ff', icon: 'â°', name: 'Time Warp', rarity: 'ultra', glowColor: '#aa00ff', description: 'Slow motion for 10s' },
-  CLONE: { color: '#00ffff', icon: 'ð¥', name: 'Clone', rarity: 'ultra', glowColor: '#00ddff', description: 'Shadow clone mimics you' },
-  NUCLEAR: { color: '#ff0000', icon: 'â¢ï¸', name: 'Nuclear', rarity: 'ultra', glowColor: '#ff4400', description: 'Devastating explosion' },
-  PHOENIX: { color: '#ff8800', icon: 'ð¥', name: 'Phoenix', rarity: 'ultra', glowColor: '#ffaa00', description: 'Auto-revive on death' }
+  TIME_WARP: { color: '#8800ff', icon: '⏰', name: 'Time Warp', rarity: 'ultra', glowColor: '#aa00ff', description: 'Slow motion for 10s' },
+  CLONE: { color: '#00ffff', icon: '👥', name: 'Clone', rarity: 'ultra', glowColor: '#00ddff', description: 'Shadow clone mimics you' },
+  NUCLEAR: { color: '#ff0000', icon: '☢️', name: 'Nuclear', rarity: 'ultra', glowColor: '#ff4400', description: 'Devastating explosion' },
+  PHOENIX: { color: '#ff8800', icon: '🔥', name: 'Phoenix', rarity: 'ultra', glowColor: '#ffaa00', description: 'Auto-revive on death' }
 };
 
 const SpaceShooter = () => {
@@ -3920,7 +3920,7 @@ const SpaceShooter = () => {
     }
     
     // Floating text - with rarity indicator
-    const rarityPrefix = isUltra ? 'â­ ULTRA â­' : isLegendary ? 'âï¸ LEGENDARY' : isRare ? 'â¨ RARE' : '';
+    const rarityPrefix = isUltra ? '⭐ ULTRA ⭐' : isLegendary ? '⚙️ LEGENDARY' : isRare ? '✨ RARE' : '';
     floatingTextsRef.current.push({
       x,
       y,
@@ -11900,7 +11900,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#00ffaa';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`â¡ SPEED`, upgradeX, upgradeY);
+        ctx.fillText(`⚡ SPEED`, upgradeX, upgradeY);
         // Level pips
         for (let i = 0; i < 3; i++) {
           ctx.fillStyle = i < speedLevel ? '#00ffaa' : '#333333';
@@ -12772,7 +12772,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: GAME_WIDTH / 2,
               y: GAME_HEIGHT / 2 - 50,
-              text: '🚀 LEVEL 🚀' + transition.level + ' ÃÂ°ÃÂÃÂÃÂ',
+              text: '🚀 LEVEL 🚀' + transition.level + ' 🌟',
               color: '#00ffff',
               lifetime: 120,
               vy: 0,
@@ -15822,7 +15822,7 @@ const SpaceShooter = () => {
         
         return true;
       } catch (error) {
-        console.error('ÃÂ¢ÃÂÃÂ ERROR in enemy collision update:', error);
+        console.error('❌ ERROR in enemy collision update:', error);
         return true;
       }
     });
@@ -18358,7 +18358,7 @@ const SpaceShooter = () => {
           return enemy.x > -ENEMY_WIDTH;
         }
       } catch (error) {
-        console.error('ÃÂ¢ÃÂÃÂ ERROR in enemy update:', error);
+        console.error('❌ ERROR in enemy update:', error);
         console.error('Enemy that caused error:', enemy);
         return true; // Keep enemy to avoid cascade failures
       }
@@ -19024,7 +19024,7 @@ const SpaceShooter = () => {
               boxShadow: `0 0 10px ${isRecording ? '#ff0000' : '#0088ff'}`,
               animation: isRecording ? 'blink 1s ease-in-out infinite' : 'none'
             }}></span>
-            {isRecording ? 'ÃÂ¢ÃÂÃÂºÃÂ¯ÃÂ¸ÃÂ RECORDING' : 'ÃÂ¢ÃÂÃÂ¶ÃÂ¯ÃÂ¸ÃÂ REPLAY'}
+            {isRecording ? '⏺️ RECORDING' : '▶️ REPLAY'}
           </div>
         )}
         
@@ -19183,12 +19183,12 @@ const SpaceShooter = () => {
                 <span className="blink">PRESS ANY BUTTON TO START</span>
               </div>
               <div className="splash-hints">
-                <span>ÃÂ°ÃÂÃÂÃÂ® Controller Supported</span>
-                <span>ÃÂ¢ÃÂÃÂ¨ÃÂ¯ÃÂ¸ÃÂ Keyboard Ready</span>
+                <span>🎮 Controller Supported</span>
+                <span>⌨️ Keyboard Ready</span>
               </div>
             </div>
             <div className="splash-footer">
-              <span>ÃÂÃÂÃÂÃÂ© 2024 NEBULA X</span>
+              <span>ÃÂÃÂÃÂ© 2024 NEBULA X</span>
               <span>R-TYPE INSPIRED</span>
             </div>
           </div>
@@ -19234,7 +19234,7 @@ const SpaceShooter = () => {
                           return `drop-shadow(0 0 20px ${colorObj?.glow || 'rgba(0, 255, 136, 0.8)'})`;
                         })()
                       }}
-                    >{AVATAR_OPTIONS[userSettings.avatar]?.icon || 'ÃÂ°ÃÂÃÂÃÂ'}</span>
+                    >{AVATAR_OPTIONS[userSettings.avatar]?.icon || '🚀'}</span>
                   </div>
                   <div className="ship-showcase-particles">
                     {[...Array(8)].map((_, i) => (
@@ -19301,7 +19301,7 @@ const SpaceShooter = () => {
                         return `drop-shadow(0 0 8px ${colorObj?.glow || 'rgba(0, 255, 136, 0.6)'})`;
                       })()
                     }}
-                  >{AVATAR_OPTIONS[userSettings.avatar]?.icon || 'ÃÂ°ÃÂÃÂÃÂ'}</span>
+                  >{AVATAR_OPTIONS[userSettings.avatar]?.icon || '🚀'}</span>
                 </div>
                 <div className="profile-info">
                   <span 
@@ -19322,22 +19322,22 @@ const SpaceShooter = () => {
               
               <div className="menu-stats split-stats">
                 <div className="stat-box">
-                  <span className="stat-icon">ð</span>
+                  <span className="stat-icon">🏆</span>
                   <span className="stat-label">HIGH SCORE</span>
                   <span className="stat-value">{highScore.toLocaleString()}</span>
                 </div>
                 <div className="stat-box">
-                  <span className="stat-icon">ð</span>
+                  <span className="stat-icon">🌊</span>
                   <span className="stat-label">BEST WAVE</span>
                   <span className="stat-value">{Math.max(1, Math.floor(highScore / 500))}</span>
                 </div>
                 <div className="stat-box">
-                  <span className="stat-icon">ð°</span>
+                  <span className="stat-icon">💰</span>
                   <span className="stat-label">CREDITS</span>
                   <span className="stat-value">{(highScore * 10).toLocaleString()}</span>
                 </div>
                 <div className="stat-box">
-                  <span className="stat-icon">â±ï¸</span>
+                  <span className="stat-icon">⏱️</span>
                   <span className="stat-label">PLAYTIME</span>
                   <span className="stat-value">{Math.floor(highScore / 100)}h</span>
                 </div>
@@ -19363,7 +19363,7 @@ const SpaceShooter = () => {
                   className={`start-button ${menuSelection === 0 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(0)}
                 >
-                  <span className="btn-icon">ð</span> NEW MISSION
+                  <span className="btn-icon">🚀</span> NEW MISSION
                   <span className="btn-shine"></span>
                 </button>
                 {hasSaveGame() && (
@@ -19372,7 +19372,7 @@ const SpaceShooter = () => {
                     className={`start-button continue-button ${menuSelection === 1 ? 'gamepad-selected' : ''}`}
                     onMouseEnter={() => setMenuSelection(1)}
                   >
-                    <span className="btn-icon">â¶ï¸</span> CONTINUE
+                    <span className="btn-icon">▶️</span> CONTINUE
                   </button>
                 )}
                 {gameBeaten && (
@@ -19381,7 +19381,7 @@ const SpaceShooter = () => {
                     className={`start-button challenge-button ${menuSelection === (hasSaveGame() ? 2 : 1) ? 'gamepad-selected' : ''}`}
                     onMouseEnter={() => setMenuSelection(hasSaveGame() ? 2 : 1)}
                   >
-                    <span className="btn-icon">â­</span> CHALLENGE MODES
+                    <span className="btn-icon">⭐</span> CHALLENGE MODES
                   </button>
                 )}
                 <button 
@@ -19389,23 +19389,23 @@ const SpaceShooter = () => {
                   className={`settings-button customize-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 3 : 2) : (gameBeaten ? 2 : 1)) ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 3 : 2) : (gameBeaten ? 2 : 1))}
                 >
-                  <span className="btn-icon">ð¨</span> CUSTOMIZE
+                  <span className="btn-icon">🎨</span> CUSTOMIZE
                 </button>
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowSettings(true); }} 
                   className={`settings-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2)) ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2))}
                 >
-                  <span className="btn-icon">âï¸</span> SETTINGS
+                  <span className="btn-icon">⚙️</span> SETTINGS
                 </button>
               </div>
               
-              <p className="start-hint split-hint">ð® D-Pad to navigate â¢ to select â¢ ENTER to start</p>
+              <p className="start-hint split-hint">🎮 D-Pad to navigate • to select • ENTER to start</p>
               
               {/* Decorative bottom */}
               <div className="menu-footer split-footer">
                 <span className="version">v1.0</span>
-                <span className="divider">â¢</span>
+                <span className="divider">•</span>
                 <span className="credit">R-TYPE INSPIRED</span>
               </div>
             </div>
@@ -19418,7 +19418,7 @@ const SpaceShooter = () => {
             {showMissionMenu && (
               <div className="challenge-modal-overlay">
                 <div className="challenge-modal mission-select-modal">
-                  <h2>ð MISSION SELECT</h2>
+                  <h2>🚀 MISSION SELECT</h2>
                   <p className="challenge-subtitle">Choose your mission type</p>
                   
                   <div className="challenge-options">
@@ -19434,7 +19434,7 @@ const SpaceShooter = () => {
                         startGame();
                       }}
                     >
-                      <div className="challenge-icon">ÃÂ°ÃÂÃÂÃÂ®</div>
+                      <div className="challenge-icon">🎮</div>
                       <div className="challenge-info">
                         <h3>CAMPAIGN</h3>
                         <p>Play through the main story missions</p>
@@ -19454,7 +19454,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>PRACTICE MODE</h3>
                         <p>Train your skills with custom settings</p>
-                        <span className="challenge-detail">Custom wave â¢ Infinite lives â¢ No scoring</span>
+                        <span className="challenge-detail">Custom wave • Infinite lives • No scoring</span>
                       </div>
                     </button>
                     
@@ -19470,7 +19470,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>REPLAYS</h3>
                         <p>Watch and share your best runs</p>
-                        <span className="challenge-detail">Record gameplay â¢ Playback â¢ Share victories</span>
+                        <span className="challenge-detail">Record gameplay • Playback • Share victories</span>
                       </div>
                     </button>
                   </div>
@@ -19479,7 +19479,7 @@ const SpaceShooter = () => {
                     className="challenge-back"
                     onClick={() => setShowMissionMenu(false)}
                   >
-                    ÃÂ¢ÃÂÃÂ BACK TO MENU
+                    ◀ BACK TO MENU
                   </button>
                 </div>
               </div>
@@ -19506,7 +19506,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>SURVIVAL MODE</h3>
                         <p>Endless waves with 1 life. How long can you survive?</p>
-                        <span className="challenge-detail">Starts at Wave 5 ÃÂ¢ÃÂÃÂ© No continues</span>
+                        <span className="challenge-detail">Starts at Wave 5 ↩ No continues</span>
                       </div>
                     </button>
                     
@@ -19523,7 +19523,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>BOSS RUSH</h3>
                         <p>Face all bosses back-to-back. No mercy!</p>
-                        <span className="challenge-detail">Bosses only ÃÂ¢ÃÂÃÂ© Limited healing</span>
+                        <span className="challenge-detail">Bosses only ↩ Limited healing</span>
                       </div>
                     </button>
                     
@@ -19540,7 +19540,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>TIME ATTACK</h3>
                         <p>Complete 10 waves as fast as possible!</p>
-                        <span className="challenge-detail">Race against the clock ÃÂ¢ÃÂÃÂ© Leaderboard ready</span>
+                        <span className="challenge-detail">Race against the clock ↩ Leaderboard ready</span>
                       </div>
                     </button>
                   </div>
@@ -19549,7 +19549,7 @@ const SpaceShooter = () => {
                     className="challenge-back"
                     onClick={() => setShowChallenges(false)}
                   >
-                    ÃÂ¢ÃÂÃÂ BACK TO MENU
+                    ◀ BACK TO MENU
                   </button>
                 </div>
               </div>
@@ -19712,7 +19712,7 @@ const SpaceShooter = () => {
                               <span className="replay-mode">{replay.gameMode.toUpperCase()}</span>
                             </div>
                             <div className="replay-stats">
-                              <span>ÃÂ°ÃÂÃÂÃÂ {replay.score.toLocaleString()}</span>
+                              <span>🏆 {replay.score.toLocaleString()}</span>
                               <span>ÃÂ°ÃÂÃÂÃÂ Wave {replay.wave}</span>
                               <span>ÃÂ¢ÃÂÃÂ±ÃÂ¯ÃÂ¸ÃÂ {Math.floor(replay.duration / 1000)}s</span>
                               <span>ÃÂ°ÃÂÃÂÃÂ {replay.frameCount} frames</span>
@@ -19729,7 +19729,7 @@ const SpaceShooter = () => {
                                 playReplay(replay.id);
                               }}
                             >
-                              ÃÂ¢ÃÂÃÂ¶ÃÂ¯ÃÂ¸ÃÂ PLAY
+                              ▶️ PLAY
                             </button>
                             <button 
                               className="replay-delete-btn"
@@ -19752,7 +19752,7 @@ const SpaceShooter = () => {
                     className="challenge-back"
                     onClick={() => setShowReplayMenu(false)}
                   >
-                    ÃÂ¢ÃÂÃÂ BACK TO MENU
+                    ◀ BACK TO MENU
                   </button>
                   
                   <p className="practice-note">Replays are stored locally and limited to 10 most recent</p>
@@ -19764,7 +19764,7 @@ const SpaceShooter = () => {
         
         {gameState === 'menu' && showSettings && (
           <div className="overlay settings-overlay">
-            <h2>ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ SETTINGS</h2>
+            <h2>⚙️ SETTINGS</h2>
             
             {/* Settings Tabs */}
             <div className="settings-tabs">
@@ -19772,25 +19772,25 @@ const SpaceShooter = () => {
                 className={`settings-tab ${settingsTab === 'audio' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('audio')}
               >
-                ÃÂÃÂÃÂÃÂ  Audio
+                🔊 Audio
               </button>
               <button 
                 className={`settings-tab ${settingsTab === 'profile' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('profile')}
               >
-                ÃÂ°ÃÂÃÂÃÂ¤ Profile
+                👤 Profile
               </button>
               <button 
                 className={`settings-tab ${settingsTab === 'controls' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('controls')}
               >
-                ÃÂ°ÃÂÃÂÃÂ® Controls
+                🎮 Controls
               </button>
               <button 
                 className={`settings-tab ${settingsTab === 'achievements' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('achievements')}
               >
-                ÃÂ°ÃÂÃÂÃÂ Achievements
+                🏆 Achievements
               </button>
             </div>
             
@@ -19799,7 +19799,7 @@ const SpaceShooter = () => {
               {settingsTab === 'audio' && (
                 <div className="settings-audio">
                   <div className="volume-control">
-                    <label>ÃÂÃÂÃÂÃÂ  Master Volume</label>
+                    <label>🔊 Master Volume</label>
                     <div className="slider-row">
                       <input 
                         type="range" 
@@ -19813,7 +19813,7 @@ const SpaceShooter = () => {
                     </div>
                   </div>
                   <div className="volume-control">
-                    <label>ÃÂ°ÃÂÃÂÃÂµ Music Volume</label>
+                    <label>🎵 Music Volume</label>
                     <div className="slider-row">
                       <input 
                         type="range" 
@@ -19848,10 +19848,10 @@ const SpaceShooter = () => {
                   </button>
                   
                   <div className="performance-section">
-                    <h4 style={{ marginTop: '20px', marginBottom: '10px', color: '#00ffff' }}>ÃÂ¢ÃÂÃÂ¡ PERFORMANCE</h4>
+                    <h4 style={{ marginTop: '20px', marginBottom: '10px', color: '#00ffff' }}>⚡ PERFORMANCE</h4>
                     <div className="toggle-option">
                       <label className="toggle-label">
-                        <span>ÃÂ¢ÃÂÃÂ¡ Performance Mode</span>
+                        <span>⚡ Performance Mode</span>
                         <span className="toggle-desc">Reduce visual effects for smoother gameplay</span>
                       </label>
                       <button 
@@ -19881,7 +19881,7 @@ const SpaceShooter = () => {
               {settingsTab === 'profile' && (
                 <div className="settings-profile">
                   <div className="profile-name-section">
-                    <label>ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Pilot Name</label>
+                    <label>✏️ Pilot Name</label>
                     <input 
                       type="text" 
                       value={userSettings.playerName}
@@ -19892,7 +19892,7 @@ const SpaceShooter = () => {
                     />
                   </div>
                   <div className="avatar-section">
-                    <label>ÃÂ°ÃÂÃÂÃÂ Avatar</label>
+                    <label>🚀 Avatar</label>
                     <div className="avatar-grid">
                       {AVATAR_OPTIONS.map(avatar => (
                         <button
@@ -19910,15 +19910,15 @@ const SpaceShooter = () => {
                       ))}
                     </div>
                     <div className="rarity-legend">
-                      <span className="legend-item common">? Common</span>
-                      <span className="legend-item uncommon">? Uncommon</span>
-                      <span className="legend-item rare">? Rare</span>
-                      <span className="legend-item epic">? Epic</span>
-                      <span className="legend-item legendary">? Legendary</span>
+                      <span className="legend-item common">⚫ Common</span>
+                      <span className="legend-item uncommon">⚫ Uncommon</span>
+                      <span className="legend-item rare">⚫ Rare</span>
+                      <span className="legend-item epic">⚫ Epic</span>
+                      <span className="legend-item legendary">⚫ Legendary</span>
                     </div>
                   </div>
                   <div className="avatar-color-section">
-                    <label>? Avatar Color</label>
+                    <label>🎨 Avatar Color</label>
                     <div className="color-grid">
                       {AVATAR_COLORS.map(colorOption => (
                         <button
@@ -19932,7 +19932,7 @@ const SpaceShooter = () => {
                             boxShadow: userSettings.avatarColor === colorOption.color && colorOption.glow ? `0 0 12px ${colorOption.glow}` : 'none'
                           }}
                         >
-                          {userSettings.avatarColor === colorOption.color && <span className="color-check">ÃÂ¢ÃÂÃÂ</span>}
+                          {userSettings.avatarColor === colorOption.color && <span className="color-check">✓</span>}
                         </button>
                       ))}
                     </div>
@@ -20082,7 +20082,7 @@ const SpaceShooter = () => {
                   
                   <div className="controls-note">
                     <p> Click any key button to remap it</p>
-                    <p>ÃÂ°ÃÂÃÂÃÂ® Gamepad controls are automatic and cannot be remapped</p>
+                    <p>🎮 Gamepad controls are automatic and cannot be remapped</p>
                   </div>
                 </div>
               )}
@@ -20091,7 +20091,7 @@ const SpaceShooter = () => {
               {settingsTab === 'achievements' && (
                 <div className="achievements-section">
                   <div className="achievements-header">
-                    <span>ÃÂ°ÃÂÃÂÃÂ {unlockedAchievements.length} / {ACHIEVEMENTS.length} Unlocked</span>
+                    <span>🏆 {unlockedAchievements.length} / {ACHIEVEMENTS.length} Unlocked</span>
                   </div>
                   <div className="achievements-grid">
                     {ACHIEVEMENTS.map(achievement => {
@@ -20102,7 +20102,7 @@ const SpaceShooter = () => {
                           className={`achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`}
                         >
                           <div className="achievement-card-icon">
-                            {isUnlocked ? 'ÃÂ°ÃÂÃÂÃÂ' : ''}
+                            {isUnlocked ? '🏆' : ''}
                           </div>
                           <div className="achievement-card-info">
                             <div className="achievement-card-name">
@@ -20121,10 +20121,10 @@ const SpaceShooter = () => {
             </div>
             <div className="settings-buttons-row">
               <button onClick={() => setShowSettings(false)} className="back-button">
-                ÃÂ¢ÃÂÃÂ BACK
+                ◀ BACK
               </button>
               <button onClick={() => { soundSystem.playUISparkle(); setShowSettings(false); }} className="settings-ok-button">
-                ÃÂ¢ÃÂÃÂ OK
+                ✓ OK
               </button>
             </div>
             <p className="start-hint">{'\ud83c\udfae'} Press {'\u274c'} or {'\ud83d\udd19'} to go back</p>
@@ -20393,25 +20393,25 @@ const SpaceShooter = () => {
                 
                 <div className="ship-stats">
                   <div className="stat-row">
-                    <span className="stat-label">â¡ SPEED</span>
+                    <span className="stat-label">⚡ SPEED</span>
                     <div className="stat-bar-container">
                       <div className="stat-bar" style={{ width: `${SHIP_DESIGNS[selectedShip].stats.speed * 20}%`, backgroundColor: '#00ffff' }}></div>
                     </div>
                   </div>
                   <div className="stat-row">
-                    <span className="stat-label">ð¥ POWER</span>
+                    <span className="stat-label">🔥 POWER</span>
                     <div className="stat-bar-container">
                       <div className="stat-bar" style={{ width: `${SHIP_DESIGNS[selectedShip].stats.firepower * 20}%`, backgroundColor: '#ff4444' }}></div>
                     </div>
                   </div>
                   <div className="stat-row">
-                    <span className="stat-label">ð¡ï¸ ARMOR</span>
+                    <span className="stat-label">🛡️ ARMOR</span>
                     <div className="stat-bar-container">
                       <div className="stat-bar" style={{ width: `${SHIP_DESIGNS[selectedShip].stats.defense * 20}%`, backgroundColor: '#44ff44' }}></div>
                     </div>
                   </div>
                   <div className="stat-row">
-                    <span className="stat-label">â¨ SPECIAL</span>
+                    <span className="stat-label">✨ SPECIAL</span>
                     <div className="stat-bar-container">
                       <div className="stat-bar" style={{ width: `${SHIP_DESIGNS[selectedShip].stats.special * 20}%`, backgroundColor: '#ff44ff' }}></div>
                     </div>
@@ -20425,12 +20425,12 @@ const SpaceShooter = () => {
             {/* Parts Customization */}
             <div className="parts-section">
               <div className="part-selector">
-                <span className="part-label">ð¥ BOOSTER</span>
+                <span className="part-label">🔥 BOOSTER</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, booster: (p.booster - 1 + BOOSTER_OPTIONS.length) % BOOSTER_OPTIONS.length }))}
-                  >ÃÂ¢ÃÂÃÂ</button>
+                  >◀</button>
                   <div className="part-info">
                     <span className="part-name">{BOOSTER_OPTIONS[shipParts.booster].name}</span>
                     <span className="part-desc">{BOOSTER_OPTIONS[shipParts.booster].description}</span>
@@ -20438,16 +20438,16 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, booster: (p.booster + 1) % BOOSTER_OPTIONS.length }))}
-                  >ÃÂ¢ÃÂÃÂ¶</button>
+                  >▶</button>
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ WINGS</span>
+                <span className="part-label">✈️ WINGS</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, wings: (p.wings - 1 + WING_OPTIONS.length) % WING_OPTIONS.length }))}
-                  >ÃÂ¢ÃÂÃÂ</button>
+                  >◀</button>
                   <div className="part-info">
                     <span className="part-name">{WING_OPTIONS[shipParts.wings].name}</span>
                     <span className="part-desc">{WING_OPTIONS[shipParts.wings].description}</span>
@@ -20455,16 +20455,16 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, wings: (p.wings + 1) % WING_OPTIONS.length }))}
-                  >ÃÂ¢ÃÂÃÂ¶</button>
+                  >▶</button>
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">ð¡ï¸ SHIELD</span>
+                <span className="part-label">🛡️ SHIELD</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, shield: ((p.shield || 0) - 1 + SHIELD_OPTIONS.length) % SHIELD_OPTIONS.length }))}
-                  >ÃÂ¢ÃÂÃÂ</button>
+                  >◀</button>
                   <div className="part-info">
                     <span className="part-name" style={{ color: SHIELD_OPTIONS[shipParts.shield || 0].color }}>{SHIELD_OPTIONS[shipParts.shield || 0].name}</span>
                     <span className="part-desc">{SHIELD_OPTIONS[shipParts.shield || 0].description}</span>
@@ -20472,16 +20472,16 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, shield: ((p.shield || 0) + 1) % SHIELD_OPTIONS.length }))}
-                  >ÃÂ¢ÃÂÃÂ¶</button>
+                  >▶</button>
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">â¨ TRAIL</span>
+                <span className="part-label">✨ TRAIL</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, trail: ((p.trail || 0) - 1 + TRAIL_OPTIONS.length) % TRAIL_OPTIONS.length }))}
-                  >ÃÂ¢ÃÂÃÂ</button>
+                  >◀</button>
                   <div className="part-info">
                     <span className="part-name" style={{ color: TRAIL_OPTIONS[shipParts.trail || 0].color === 'rainbow' ? '#ff88ff' : TRAIL_OPTIONS[shipParts.trail || 0].color }}>{TRAIL_OPTIONS[shipParts.trail || 0].name}</span>
                     <span className="part-desc">{TRAIL_OPTIONS[shipParts.trail || 0].description}</span>
@@ -20489,7 +20489,7 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, trail: ((p.trail || 0) + 1) % TRAIL_OPTIONS.length }))}
-                  >ÃÂ¢ÃÂÃÂ¶</button>
+                  >▶</button>
                 </div>
               </div>
               
@@ -20513,13 +20513,13 @@ const SpaceShooter = () => {
             
             <div className="customize-buttons">
               <button onClick={() => setShowCustomize(false)} className="back-button">
-                ÃÂ¢ÃÂÃÂ BACK
+                ◀ BACK
               </button>
               <button onClick={() => setShowCustomize(false)} className="confirm-button">
-                â SELECT SHIP
+                ✓ SELECT SHIP
               </button>
             </div>
-            <p className="start-hint">ÃÂ°ÃÂÃÂÃÂ® ÃÂ¢ÃÂÃÂ ÃÂ¢ÃÂÃÂ¶ to browse ÃÂ¢ÃÂÃÂ© ÃÂ¢ÃÂÃÂ© to confirm</p>
+            <p className="start-hint">🎮 ◀ ▶ to browse ↩ ↩ to confirm</p>
           </div>
         )}
         
@@ -20532,7 +20532,7 @@ const SpaceShooter = () => {
                 className={`start-button ${pauseSelection === 0 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(0)}
               >
-                <span className="btn-icon">ÃÂ¢ÃÂÃÂ¶ÃÂ¯ÃÂ¸ÃÂ</span> RESUME
+                <span className="btn-icon">▶️</span> RESUME
               </button>
               <button 
                 onClick={() => { startGame(); setGameState('playing'); setPauseSelection(0); }} 
@@ -20546,7 +20546,7 @@ const SpaceShooter = () => {
                 className={`settings-button ${pauseSelection === 2 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(2)}
               >
-                <span className="btn-icon">ÃÂ°ÃÂÃÂÃÂ®</span> CONTROLS
+                <span className="btn-icon">🎮</span> CONTROLS
               </button>
               <button 
                 onClick={() => { soundSystem.stopMusic(); setGameState('menu'); setShowPauseControls(false); setPauseSelection(0); }} 
@@ -20556,24 +20556,24 @@ const SpaceShooter = () => {
                 <span className="btn-icon">ÃÂ°ÃÂÃÂÃÂ</span> MAIN MENU
               </button>
             </div>
-            <p className="start-hint">ÃÂ°ÃÂÃÂÃÂ® D-Pad to navigate ÃÂ¢ÃÂÃÂ© ÃÂ¢ÃÂÃÂ© to select ÃÂ¢ÃÂÃÂ© ESC to resume</p>
+            <p className="start-hint">🎮 D-Pad to navigate ↩ ↩ to select ↩ ESC to resume</p>
           </div>
         )}
         
         {gameState === 'paused' && showPauseControls && (
           <div className="overlay settings-overlay">
-            <h2>ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ CONTROLS</h2>
+            <h2>⚙️ CONTROLS</h2>
             <div className="settings-content">
               <div className="controls-section">
-                <h3>ÃÂ¢ÃÂÃÂ¨ÃÂ¯ÃÂ¸ÃÂ Keyboard</h3>
+                <h3>⌨️ Keyboard</h3>
                 <div className="controls-info">
-                  <p>ÃÂ¢ÃÂÃÂ©ÃÂÃÂ ÃÂÃÂÃÂ¢ÃÂÃÂ©ÃÂÃÂ ÃÂ¢ÃÂÃÂ©ÃÂÃÂ ÃÂ¢ÃÂÃÂ©ÃÂÃÂ  / WASD - Move</p>
+                  <p>↩ÃÂÃÂ ÃÂÃÂ↩ÃÂÃÂ ↩ÃÂÃÂ ↩ÃÂÃÂ  / WASD - Move</p>
                   <p>SPACE - Shoot</p>
                   <p>Q - Dash (while moving)</p>
                   <p>B - Bomb (screen clear)</p>
                   <p>C - Toggle Polarity</p>
                   <p>SHIFT - Wave Cannon</p>
-                  <p>L - Laser Beam (ÃÂ¢ÃÂÃÂ©ÃÂÃÂ°ÃÂ°ÃÂÃÂÃÂ¥3 Rapid)</p>
+                  <p>L - Laser Beam (↩ÃÂÃÂ°ÃÂ°ÃÂÃÂÃÂ¥3 Rapid)</p>
                   <p>M - Missile</p>
                   <p>F - Force Toggle</p>
                   <p>G - Force Shield (Lv4+)</p>
@@ -20582,7 +20582,7 @@ const SpaceShooter = () => {
                 </div>
               </div>
               <div className="controls-section">
-                <h3>ÃÂ°ÃÂÃÂÃÂ® Xbox Controller</h3>
+                <h3>🎮 Xbox Controller</h3>
                 <div className="controls-info">
                   <p>Left Stick / D-Pad - Move</p>
                   <p>A / RB / RT - Shoot</p>
@@ -20597,7 +20597,7 @@ const SpaceShooter = () => {
                 </div>
               </div>
               <div className="controls-section">
-                <h3>ÃÂ°ÃÂÃÂÃÂ® PlayStation</h3>
+                <h3>🎮 PlayStation</h3>
                 <div className="controls-info">
                   <p>Left Stick / D-Pad - Move</p>
                   <p>ÃÂ¢ÃÂÃÂ / R1 / R2 - Shoot</p>
@@ -20615,7 +20615,7 @@ const SpaceShooter = () => {
             <button onClick={() => setShowPauseControls(false)} className="back-button">
               ? BACK
             </button>
-            <p className="start-hint">ÃÂ°ÃÂÃÂÃÂ® Press ÃÂ¢ÃÂÃÂ©ÃÂÃÂÃÂÃÂ or ÃÂ¢ÃÂÃÂ© to go back</p>
+            <p className="start-hint">🎮 Press ↩ÃÂÃÂÃÂÃÂ or ↩ to go back</p>
           </div>
         )}
         
@@ -20692,21 +20692,21 @@ const SpaceShooter = () => {
                   className={`start-button ${checkpointSelection === 0 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(0)}
                 >
-                  <span className="btn-icon">ÃÂ¢ÃÂÃÂ¶ÃÂ¯ÃÂ¸ÃÂ</span> CONTINUE MISSION
+                  <span className="btn-icon">▶️</span> CONTINUE MISSION
                 </button>
                 <button 
                   onClick={() => saveGame()}
                   className={`save-button ${checkpointSelection === 1 ? 'gamepad-selected' : ''} ${saveFeedback ? 'save-success' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(1)}
                 >
-                  <span className="btn-icon">{saveFeedback ? 'ÃÂ¢ÃÂÃÂ' : 'ÃÂÃÂÃÂÃÂ¾'}</span> {saveFeedback ? 'SAVED!' : 'SAVE PROGRESS'}
+                  <span className="btn-icon">{saveFeedback ? '✓' : 'ÃÂÃÂÃÂÃÂ¾'}</span> {saveFeedback ? 'SAVED!' : 'SAVE PROGRESS'}
                 </button>
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowCustomize(true); }}
                   className={`customize-checkpoint-button ${checkpointSelection === 2 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(2)}
                 >
-                  <span className="btn-icon">ÃÂ°ÃÂÃÂÃÂ</span> CUSTOMIZE SHIP
+                  <span className="btn-icon">🚀</span> CUSTOMIZE SHIP
                 </button>
                 <button 
                   onClick={() => { soundSystem.stopMusic(); setGameState('menu'); gameStateRef.current = 'menu'; }}
@@ -20719,7 +20719,7 @@ const SpaceShooter = () => {
               
               <p className="checkpoint-hint">Select a zone or continue to random path!</p>
             </div>
-            <p className="start-hint">ÃÂ°ÃÂÃÂÃÂ® D-Pad to navigate ÃÂ¢ÃÂÃÂ© ÃÂ¢ÃÂÃÂ© to select</p>
+            <p className="start-hint">🎮 D-Pad to navigate ↩ ↩ to select</p>
           </div>
         )}
         
@@ -20741,12 +20741,12 @@ const SpaceShooter = () => {
             <p className="wave-reached">Wave Reached: {wave}</p>
             {bossActive && <p className="boss-fight">Defeated during Boss Fight!</p>}
             {score >= highScore && score > 0 && (
-              <p className="new-high-score">ÃÂ°ÃÂÃÂÃÂ NEW HIGH SCORE! ÃÂ°ÃÂÃÂÃÂ</p>
+              <p className="new-high-score">🏆 NEW HIGH SCORE! 🏆</p>
             )}
             
             {/* Quick Settings Panel */}
             <div className="game-over-settings">
-              <p className="settings-tip">ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Adjust settings before your next attempt:</p>
+              <p className="settings-tip">⚙️ Adjust settings before your next attempt:</p>
               
               {/* Difficulty Selector */}
               <div className="difficulty-selector">
@@ -20771,7 +20771,7 @@ const SpaceShooter = () => {
               {/* Audio Quick Controls */}
               <div className="audio-quick-controls">
                 <div className="volume-row">
-                  <span className="volume-label">ÃÂÃÂÃÂÃÂ  Master</span>
+                  <span className="volume-label">🔊 Master</span>
                   <input 
                     type="range" 
                     min="0" 
@@ -20865,14 +20865,14 @@ const SpaceShooter = () => {
               {gameMode === 'campaign' ? (
                 <>
                   <div className="victory-title">
-                    <h1>ÃÂ°ÃÂÃÂÃÂ VICTORY ÃÂ°ÃÂÃÂÃÂ</h1>
+                    <h1>🏆 VICTORY 🏆</h1>
                     <h2>THE NEBULA X MISSION</h2>
                   </div>
                   
                   <div className="victory-story">
                     <div className="story-text">
                       <p className="story-paragraph">
-                        In the year 2387, humanity faced its greatest threat ÃÂ¢ÃÂÃÂ©ÃÂÃÂ¬ an advanced AI network 
+                        In the year 2387, humanity faced its greatest threat ↩ÃÂÃÂ¬ an advanced AI network 
                         known as the Nexus Collective had spread across the galaxy, consuming entire 
                         star systems and enslaving civilizations.
                       </p>
@@ -20889,7 +20889,7 @@ const SpaceShooter = () => {
                       <p className="story-paragraph">
                         In the heart of the Nexus, they destroyed the AI Core, freeing billions and 
                         ending the machine threat forever. The <span className="highlight">Nebula X</span> and 
-                        its crew became legends ÃÂ¢ÃÂÃÂ©ÃÂÃÂ¬ their names etched in the stars for eternity.
+                        its crew became legends ↩ÃÂÃÂ¬ their names etched in the stars for eternity.
                       </p>
                       <p className="story-final">
                         ? <em>They will never be forgotten.</em> ?
@@ -20905,7 +20905,7 @@ const SpaceShooter = () => {
                   </div>
                   
                   <div className="credits-section">
-                    <h3>ÃÂ¢ÃÂÃÂ©ÃÂÃÂÃÂÃÂ¦ CREDITS ÃÂ¢ÃÂÃÂ©ÃÂÃÂÃÂÃÂ¦</h3>
+                    <h3>↩ÃÂÃÂÃÂÃÂ¦ CREDITS ↩ÃÂÃÂÃÂÃÂ¦</h3>
                     <div className="credits-list">
                       <p className="credit-item"><span className="credit-role">Game Design & Development</span><br/>The Nebula X Team</p>
                       <p className="credit-item"><span className="credit-role">Programming</span><br/>React & Canvas 2D</p>
@@ -20954,7 +20954,7 @@ const SpaceShooter = () => {
                   </div>
                   
                   <div className="challenge-message">
-                    <p>ÃÂ°ÃÂÃÂÃÂ You've conquered all the Mega Bosses!</p>
+                    <p>🏆 You've conquered all the Mega Bosses!</p>
                     <p>True boss-slaying mastery achieved!</p>
                   </div>
                 </>
@@ -20975,7 +20975,7 @@ const SpaceShooter = () => {
         {achievementNotification && (
           <div className="achievement-notification">
             <div className="achievement-notification-content">
-              <div className="achievement-icon">{'ÃÂ°ÃÂÃÂÃÂ'}</div>
+              <div className="achievement-icon">{'🏆'}</div>
               <div className="achievement-details">
                 <div className="achievement-unlocked">ACHIEVEMENT UNLOCKED!</div>
                 <div className="achievement-name">{achievementNotification.name}</div>

@@ -46,7 +46,9 @@
     "start": "vite",
     "test": "vitest",
     "prepare-github": "node scripts/prepare-github.js",
-    "clean": "rm -rf build node_modules/.cache"
+    "clean": "rm -rf build node_modules/.cache",
+    "check-emojis": "node final-emoji-check.js",
+    "fix-emojis": "python master-emoji-fix.py && node final-emoji-check.js"
   },
   "eslintConfig": {
     "extends": [

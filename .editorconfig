@@ -1,0 +1,45 @@
+# EditorConfig helps maintain consistent coding styles
+# https://editorconfig.org
+
+root = true
+
+# Default settings for all files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# JavaScript/TypeScript files
+[*.{js,jsx,ts,tsx}]
+charset = utf-8
+indent_style = space
+indent_size = 2
+
+# JSON files
+[*.json]
+charset = utf-8
+indent_style = space
+indent_size = 2
+
+# CSS/SCSS files
+[*.{css,scss,less}]
+charset = utf-8
+indent_style = space
+indent_size = 2
+
+# HTML files
+[*.{html,htm}]
+charset = utf-8
+indent_style = space
+indent_size = 2
+
+# Markdown files
+[*.md]
+charset = utf-8
+trim_trailing_whitespace = false
+
+# Package files - don't modify
+[{package.json,package-lock.json,yarn.lock}]
+indent_style = space
+indent_size = 2
