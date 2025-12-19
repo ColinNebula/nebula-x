@@ -985,6 +985,16 @@ const SpaceShooter = () => {
   const [remappingControl, setRemappingControl] = useState(null); // Which control is being remapped
   const [remappingSlot, setRemappingSlot] = useState(0); // Which key slot (0 or 1) is being remapped
 
+  // Mobile touch controls
+  const [showMobileControls, setShowMobileControls] = useState(false);
+  const touchJoystickRef = useRef({ active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 });
+  const touchButtonsRef = useRef({
+    shoot: false,
+    dash: false,
+    bomb: false,
+    special: false
+  });
+
   // Default user settings
   const DEFAULT_USER_SETTINGS = {
     masterVolume: 50,
@@ -2527,6 +2537,32 @@ const SpaceShooter = () => {
       return () => clearTimeout(timer);
     }
   }, [achievementNotification]);
+
+  // Detect mobile device and show touch controls
+  useEffect(() => {
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      || ('ontouchstart' in window)
+      || (navigator.maxTouchPoints > 0);
+
+    setShowMobileControls(isMobileDevice);
+
+    // Also check for landscape orientation on mobile
+    const handleOrientationChange = () => {
+      if (isMobileDevice && window.innerHeight < window.innerWidth) {
+        // Landscape mode - optimal for game
+        console.log('Landscape mode detected');
+      }
+    };
+
+    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener('resize', handleOrientationChange);
+    handleOrientationChange();
+
+    return () => {
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      window.removeEventListener('resize', handleOrientationChange);
+    };
+  }, []);
 
   // Check and unlock achievements
   const checkAchievements = useCallback((currentScore, currentWave, currentShield, currentRapidLevel) => {
@@ -13716,6 +13752,19 @@ const SpaceShooter = () => {
       if (Math.abs(gpMoveX) > 0.1) inputX = gpMoveX;
       if (Math.abs(gpMoveY) > 0.1) inputY = gpMoveY;
 
+      // Apply touch joystick input (overrides keyboard)
+      if (touchJoystickRef.current.active) {
+        const deltaX = touchJoystickRef.current.currentX - touchJoystickRef.current.startX;
+        const deltaY = touchJoystickRef.current.currentY - touchJoystickRef.current.startY;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const maxDistance = 50; // Max joystick radius
+
+        if (distance > 5) { // Dead zone
+          inputX = Math.max(-1, Math.min(1, deltaX / maxDistance));
+          inputY = Math.max(-1, Math.min(1, deltaY / maxDistance));
+        }
+      }
+
       // Track movement direction for force pod
       if (inputX > 0.1) movingRight = true;
       if (inputX < -0.1) movingLeft = true;
@@ -14278,7 +14327,7 @@ const SpaceShooter = () => {
 
       // Normal shooting (X button / Space - TAP TO FIRE, not hold)
       // Only fire when button is newly pressed (not held from previous frame)
-      const spacePressed = keysRef.current['Space'];
+      const spacePressed = keysRef.current['Space'] || touchButtonsRef.current.shoot;
       const spacePrevPressed = prevKeysRef.current['Space'];
       const gpShootPrevPressed = gamepadButtonsRef.current.shoot;
       const isNewShot = (spacePressed && !spacePrevPressed) || (gpShoot && !gpShootPrevPressed);
@@ -21657,6 +21706,83 @@ const SpaceShooter = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Mobile Touch Controls */}
+        {showMobileControls && gameState === 'playing' && (
+          <>
+            {/* Virtual Joystick */}
+            <div
+              className="touch-joystick"
+              onTouchStart={(e) => {
+                const touch = e.touches[0];
+                const rect = e.currentTarget.getBoundingClientRect();
+                touchJoystickRef.current = {
+                  active: true,
+                  startX: touch.clientX - rect.left,
+                  startY: touch.clientY - rect.top,
+                  currentX: touch.clientX - rect.left,
+                  currentY: touch.clientY - rect.top
+                };
+              }}
+              onTouchMove={(e) => {
+                if (touchJoystickRef.current.active) {
+                  const touch = e.touches[0];
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  touchJoystickRef.current.currentX = touch.clientX - rect.left;
+                  touchJoystickRef.current.currentY = touch.clientY - rect.top;
+                }
+              }}
+              onTouchEnd={() => {
+                touchJoystickRef.current.active = false;
+              }}
+            >
+              {touchJoystickRef.current.active && (
+                <>
+                  <div className="joystick-base" style={{
+                    left: touchJoystickRef.current.startX,
+                    top: touchJoystickRef.current.startY
+                  }} />
+                  <div className="joystick-stick" style={{
+                    left: touchJoystickRef.current.currentX,
+                    top: touchJoystickRef.current.currentY
+                  }} />
+                </>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="touch-buttons">
+              <button
+                className="touch-btn touch-btn-shoot"
+                onTouchStart={() => { touchButtonsRef.current.shoot = true; }}
+                onTouchEnd={() => { touchButtonsRef.current.shoot = false; }}
+              >
+                FIRE
+              </button>
+              <button
+                className="touch-btn touch-btn-dash"
+                onTouchStart={() => { touchButtonsRef.current.dash = true; }}
+                onTouchEnd={() => { touchButtonsRef.current.dash = false; }}
+              >
+                DASH
+              </button>
+              <button
+                className="touch-btn touch-btn-bomb"
+                onTouchStart={() => { touchButtonsRef.current.bomb = true; }}
+                onTouchEnd={() => { touchButtonsRef.current.bomb = false; }}
+              >
+                BOMB
+              </button>
+              <button
+                className="touch-btn touch-btn-special"
+                onTouchStart={() => { touchButtonsRef.current.special = true; }}
+                onTouchEnd={() => { touchButtonsRef.current.special = false; }}
+              >
+                SPEC
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
