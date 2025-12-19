@@ -1,0 +1,15 @@
+{
+  "short_name": "Nebula X",
+  "name": "Nebula X - Space Shooter",
+  "icons": [
+    {
+      "src": "nebula-x-logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
