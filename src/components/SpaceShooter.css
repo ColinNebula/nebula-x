@@ -5211,29 +5211,29 @@
   .game-container {
     padding: 5px;
   }
-  
+
   .game-title {
     font-size: 1.2rem;
     margin: 5px 0;
   }
-  
+
   .game-wrapper {
     max-width: 95vw;
   }
-  
+
   .touch-joystick {
     width: 120px;
     height: 120px;
     bottom: 10px;
     left: 10px;
   }
-  
+
   .touch-buttons {
     bottom: 10px;
     right: 10px;
     gap: 8px;
   }
-  
+
   .touch-btn {
     width: 50px;
     height: 50px;
@@ -5246,7 +5246,7 @@
     transform: scale(0.8);
     transform-origin: top center;
   }
-  
+
   .touch-btn {
     width: 55px;
     height: 55px;
@@ -5257,12 +5257,12 @@
   .game-container {
     padding: 2px;
   }
-  
+
   .game-title {
     font-size: 1rem;
     margin: 3px 0;
   }
-  
+
   .game-wrapper {
     transform: scale(0.65);
     transform-origin: top center;
