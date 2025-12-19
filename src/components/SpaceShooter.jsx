@@ -13581,12 +13581,14 @@ const SpaceShooter = () => {
         const dirX = inputX / magnitude;
         const dirY = inputY / magnitude;
 
-        dashRef.current = {
-          active: true,
-          cooldown: DASH_COOLDOWN,
-          direction: { x: dirX, y: dirY },
-          timer: DASH_DURATION
-        };
+        // Update dash state instead of replacing entire object
+        dashRef.current.active = true;
+        dashRef.current.cooldown = dashRef.current.maxCooldown;
+        dashRef.current.duration = dashRef.current.maxDuration;
+        dashRef.current.direction = { x: dirX, y: dirY };
+        dashRef.current.speed = 18;
+        dashRef.current.invincible = true;
+        dashRef.current.afterimages = [];
 
         // Instant velocity in dash direction
         player.vx = dirX * DASH_DISTANCE / DASH_DURATION;
