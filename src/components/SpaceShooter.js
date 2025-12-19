@@ -915,31 +915,31 @@ const DASH_DURATION = 8; // Frames of invincibility during dash
 // Power-up types with rarity system
 const POWERUP_TYPES = {
   // Common power-ups (55% of drops)
-  RAPID_FIRE: { color: '#ffff00', icon: '?', name: 'Rapid Fire', rarity: 'common', glowColor: '#ffaa00', description: 'Increases fire rate' },
-  MISSILES: { color: '#ff6600', icon: '??', name: 'Missiles', rarity: 'common', glowColor: '#ff3300', description: 'Homing missiles' },
-  SHIELD: { color: '#00ffff', icon: '???', name: 'Shield', rarity: 'common', glowColor: '#0088ff', description: '+3 shield hits' },
-  REPAIR: { color: '#00ff00', icon: '??', name: 'Repair', rarity: 'common', glowColor: '#00cc00', description: 'Restore 1 life' },
-  SCORE_BONUS: { color: '#ffd700', icon: '??', name: 'Score Bonus', rarity: 'common', glowColor: '#ffaa00', description: '+500 points' },
+  RAPID_FIRE: { color: '#ffff00', icon: '⚡', name: 'Rapid Fire', rarity: 'common', glowColor: '#ffaa00', description: 'Increases fire rate' },
+  MISSILES: { color: '#ff6600', icon: '🚀', name: 'Missiles', rarity: 'common', glowColor: '#ff3300', description: 'Homing missiles' },
+  SHIELD: { color: '#00ffff', icon: '🛡️', name: 'Shield', rarity: 'common', glowColor: '#0088ff', description: '+3 shield hits' },
+  REPAIR: { color: '#00ff00', icon: '🩹', name: 'Repair', rarity: 'common', glowColor: '#00cc00', description: 'Restore 1 life' },
+  SCORE_BONUS: { color: '#ffd700', icon: '⭐', name: 'Score Bonus', rarity: 'common', glowColor: '#ffaa00', description: '+500 points' },
   // Rare power-ups (25% of drops)
-  FORCE: { color: '#ff00ff', icon: '??', name: 'Force Pod', rarity: 'rare', glowColor: '#aa00ff', description: 'Attach Force Pod' },
-  OPTION: { color: '#00ff88', icon: '??', name: 'Option', rarity: 'rare', glowColor: '#00aa44', description: 'Add satellite drone' },
-  SPEED: { color: '#00ffaa', icon: '??', name: 'Speed Boost', rarity: 'rare', glowColor: '#00ddff', description: '+25% speed' },
-  PIERCING: { color: '#ff8800', icon: '???', name: 'Piercing', rarity: 'rare', glowColor: '#ff6600', description: 'Bullets pierce enemies' },
-  DOUBLE_SCORE: { color: '#ffff88', icon: '??', name: 'Double Score', rarity: 'rare', glowColor: '#ffee00', description: '2x score for 20s' },
-  RICOCHET: { color: '#88ffff', icon: '??', name: 'Ricochet', rarity: 'rare', glowColor: '#44ddff', description: 'Bullets bounce' },
+  FORCE: { color: '#ff00ff', icon: '💮', name: 'Force Pod', rarity: 'rare', glowColor: '#aa00ff', description: 'Attach Force Pod' },
+  OPTION: { color: '#00ff88', icon: '📸', name: 'Option', rarity: 'rare', glowColor: '#00aa44', description: 'Add satellite drone' },
+  SPEED: { color: '#00ffaa', icon: '⚡', name: 'Speed Boost', rarity: 'rare', glowColor: '#00ddff', description: '+25% speed' },
+  PIERCING: { color: '#ff8800', icon: '➜', name: 'Piercing', rarity: 'rare', glowColor: '#ff6600', description: 'Bullets pierce enemies' },
+  DOUBLE_SCORE: { color: '#ffff88', icon: '×2', name: 'Double Score', rarity: 'rare', glowColor: '#ffee00', description: '2x score for 20s' },
+  RICOCHET: { color: '#88ffff', icon: '⇄', name: 'Ricochet', rarity: 'rare', glowColor: '#44ddff', description: 'Bullets bounce' },
   // Legendary power-ups (15% of drops)
-  SPREAD: { color: '#ff0066', icon: '?', name: 'Spread Shot', rarity: 'legendary', glowColor: '#ff0044', description: 'Multi-directional fire' },
-  MAGNET: { color: '#ffff00', icon: '??', name: 'Magnet', rarity: 'legendary', glowColor: '#ffcc00', description: 'Attract power-ups' },
-  MEGA_BOMB: { color: '#ff4400', icon: '??', name: 'Mega Bomb', rarity: 'legendary', glowColor: '#ff2200', description: 'Clear all enemies' },
-  INVINCIBILITY: { color: '#ffffff', icon: '?', name: 'Invincibility', rarity: 'legendary', glowColor: '#ffffaa', description: 'Immune for 8 seconds' },
-  LASER_BEAM: { color: '#ff00aa', icon: '??', name: 'Laser Beam', rarity: 'legendary', glowColor: '#ff0088', description: 'Powerful beam attack' },
-  CHAIN_LIGHTNING: { color: '#00aaff', icon: '??', name: 'Chain Lightning', rarity: 'legendary', glowColor: '#0088ff', description: 'Lightning chains enemies' },
+  SPREAD: { color: '#ff0066', icon: '✳', name: 'Spread Shot', rarity: 'legendary', glowColor: '#ff0044', description: 'Multi-directional fire' },
+  MAGNET: { color: '#ffff00', icon: '🧲', name: 'Magnet', rarity: 'legendary', glowColor: '#ffcc00', description: 'Attract power-ups' },
+  MEGA_BOMB: { color: '#ff4400', icon: '💣', name: 'Mega Bomb', rarity: 'legendary', glowColor: '#ff2200', description: 'Clear all enemies' },
+  INVINCIBILITY: { color: '#ffffff', icon: '✨', name: 'Invincibility', rarity: 'legendary', glowColor: '#ffffaa', description: 'Immune for 8 seconds' },
+  LASER_BEAM: { color: '#ff00aa', icon: '➜', name: 'Laser Beam', rarity: 'legendary', glowColor: '#ff0088', description: 'Powerful beam attack' },
+  CHAIN_LIGHTNING: { color: '#00aaff', icon: '⚡', name: 'Chain Lightning', rarity: 'legendary', glowColor: '#0088ff', description: 'Lightning chains enemies' },
   // Ultra power-ups (5% of drops - very rare!)
-  BLACK_HOLE: { color: '#4400aa', icon: '??', name: 'Black Hole', rarity: 'ultra', glowColor: '#6600ff', description: 'Sucks in all enemies' },
-  TIME_WARP: { color: '#8800ff', icon: '?', name: 'Time Warp', rarity: 'ultra', glowColor: '#aa00ff', description: 'Slow motion for 10s' },
-  CLONE: { color: '#00ffff', icon: '??', name: 'Clone', rarity: 'ultra', glowColor: '#00ddff', description: 'Shadow clone mimics you' },
-  NUCLEAR: { color: '#ff0000', icon: '??', name: 'Nuclear', rarity: 'ultra', glowColor: '#ff4400', description: 'Devastating explosion' },
-  PHOENIX: { color: '#ff8800', icon: '??', name: 'Phoenix', rarity: 'ultra', glowColor: '#ffaa00', description: 'Auto-revive on death' }
+  BLACK_HOLE: { color: '#4400aa', icon: '⚫', name: 'Black Hole', rarity: 'ultra', glowColor: '#6600ff', description: 'Sucks in all enemies' },
+  TIME_WARP: { color: '#8800ff', icon: '⏰', name: 'Time Warp', rarity: 'ultra', glowColor: '#aa00ff', description: 'Slow motion for 10s' },
+  CLONE: { color: '#00ffff', icon: '👥', name: 'Clone', rarity: 'ultra', glowColor: '#00ddff', description: 'Shadow clone mimics you' },
+  NUCLEAR: { color: '#ff0000', icon: '☢', name: 'Nuclear', rarity: 'ultra', glowColor: '#ff4400', description: 'Devastating explosion' },
+  PHOENIX: { color: '#ff8800', icon: '🔥', name: 'Phoenix', rarity: 'ultra', glowColor: '#ffaa00', description: 'Auto-revive on death' }
 };
 
 const SpaceShooter = () => {
@@ -1040,61 +1040,61 @@ const SpaceShooter = () => {
   // Avatar options with rarity tiers
   const AVATAR_OPTIONS = [
     // Common (8)
-    { id: 0, icon: '?????', name: 'Astronaut', rarity: 'common' },
-    { id: 1, icon: '?????', name: 'Commander', rarity: 'common' },
-    { id: 2, icon: '??', name: 'Gamer', rarity: 'common' },
-    { id: 3, icon: '?�', name: 'Star', rarity: 'common' },
-    { id: 4, icon: '??', name: 'Rocket', rarity: 'common' },
-    { id: 5, icon: '??', name: 'UFO', rarity: 'common' },
-    { id: 6, icon: '??', name: 'Target', rarity: 'common' },
-    { id: 7, icon: '??', name: 'Spark', rarity: 'common' },
+    { id: 0, icon: '🧑‍🚀', name: 'Astronaut', rarity: 'common' },
+    { id: 1, icon: '🫂', name: 'Commander', rarity: 'common' },
+    { id: 2, icon: '🎮', name: 'Gamer', rarity: 'common' },
+    { id: 3, icon: '⭐', name: 'Star', rarity: 'common' },
+    { id: 4, icon: '🚀', name: 'Rocket', rarity: 'common' },
+    { id: 5, icon: '🛸', name: 'UFO', rarity: 'common' },
+    { id: 6, icon: '🎯', name: 'Target', rarity: 'common' },
+    { id: 7, icon: '✨', name: 'Spark', rarity: 'common' },
     // Uncommon (8)
-    { id: 8, icon: '??', name: 'Android', rarity: 'uncommon' },
-    { id: 9, icon: '??', name: 'Fox', rarity: 'uncommon' },
-    { id: 10, icon: '??', name: 'Wolf', rarity: 'uncommon' },
-    { id: 11, icon: '??', name: 'Eagle', rarity: 'uncommon' },
-    { id: 12, icon: '??', name: 'Cat', rarity: 'uncommon' },
-    { id: 13, icon: '??�', name: 'Lion', rarity: 'uncommon' },
-    { id: 14, icon: '??', name: 'Tiger', rarity: 'uncommon' },
-    { id: 15, icon: '??', name: 'Bat', rarity: 'uncommon' },
+    { id: 8, icon: '🤖', name: 'Android', rarity: 'uncommon' },
+    { id: 9, icon: '🦊', name: 'Fox', rarity: 'uncommon' },
+    { id: 10, icon: '🐺', name: 'Wolf', rarity: 'uncommon' },
+    { id: 11, icon: '🦅', name: 'Eagle', rarity: 'uncommon' },
+    { id: 12, icon: '🐱', name: 'Cat', rarity: 'uncommon' },
+    { id: 13, icon: '🦁', name: 'Lion', rarity: 'uncommon' },
+    { id: 14, icon: '🐯', name: 'Tiger', rarity: 'uncommon' },
+    { id: 15, icon: '🦇', name: 'Bat', rarity: 'uncommon' },
     // Rare (8)
-    { id: 16, icon: '??', name: 'Alien', rarity: 'rare' },
-    { id: 17, icon: '??', name: 'Invader', rarity: 'rare' },
-    { id: 18, icon: '??', name: 'Dragon', rarity: 'rare' },
-    { id: 19, icon: '??', name: 'Inferno', rarity: 'rare' },
-    { id: 20, icon: '??', name: 'Frost', rarity: 'rare' },
-    { id: 21, icon: '??', name: 'Wave', rarity: 'rare' },
-    { id: 22, icon: '??', name: 'Phantom', rarity: 'rare' },
-    { id: 23, icon: '??', name: 'Unicorn', rarity: 'rare' },
+    { id: 16, icon: '👽', name: 'Alien', rarity: 'rare' },
+    { id: 17, icon: '👾', name: 'Invader', rarity: 'rare' },
+    { id: 18, icon: '🐉', name: 'Dragon', rarity: 'rare' },
+    { id: 19, icon: '🔥', name: 'Inferno', rarity: 'rare' },
+    { id: 20, icon: '❄️', name: 'Frost', rarity: 'rare' },
+    { id: 21, icon: '🌊', name: 'Wave', rarity: 'rare' },
+    { id: 22, icon: '👻', name: 'Phantom', rarity: 'rare' },
+    { id: 23, icon: '🦄', name: 'Unicorn', rarity: 'rare' },
     // Epic (8)
-    { id: 24, icon: '??', name: 'Reaper', rarity: 'epic' },
-    { id: 25, icon: '??', name: 'Demon', rarity: 'epic' },
-    { id: 26, icon: '??', name: 'Cyborg', rarity: 'epic' },
-    { id: 27, icon: '?', name: 'Thunder', rarity: 'epic' },
-    { id: 28, icon: '???�', name: 'Cyclone', rarity: 'epic' },
-    { id: 29, icon: '??', name: 'Skull', rarity: 'epic' },
-    { id: 30, icon: '??', name: 'Pumpkin', rarity: 'epic' },
-    { id: 31, icon: '??', name: 'Rex', rarity: 'epic' },
+    { id: 24, icon: '☠️', name: 'Reaper', rarity: 'epic' },
+    { id: 25, icon: '👿', name: 'Demon', rarity: 'epic' },
+    { id: 26, icon: '🤖', name: 'Cyborg', rarity: 'epic' },
+    { id: 27, icon: '⚡', name: 'Thunder', rarity: 'epic' },
+    { id: 28, icon: '🌀', name: 'Cyclone', rarity: 'epic' },
+    { id: 29, icon: '💀', name: 'Skull', rarity: 'epic' },
+    { id: 30, icon: '🎃', name: 'Pumpkin', rarity: 'epic' },
+    { id: 31, icon: '🦖', name: 'Rex', rarity: 'epic' },
     // Legendary (8)
-    { id: 32, icon: '??', name: 'Nova', rarity: 'legendary' },
-    { id: 33, icon: '??', name: 'Cosmos', rarity: 'legendary' },
-    { id: 34, icon: '??', name: 'Poseidon', rarity: 'legendary' },
-    { id: 35, icon: '??', name: 'Overlord', rarity: 'legendary' },
-    { id: 36, icon: '??', name: 'Diamond', rarity: 'legendary' },
-    { id: 37, icon: '??', name: 'Prism', rarity: 'legendary' },
-    { id: 38, icon: '??', name: 'Oracle', rarity: 'legendary' },
-    { id: 39, icon: '??', name: 'Royalty', rarity: 'legendary' },
-    { id: 40, icon: '??', name: 'Serpent', rarity: 'legendary' },
-    { id: 41, icon: '??', name: 'Phoenix', rarity: 'legendary' },
-    { id: 42, icon: '??', name: 'Celestial', rarity: 'legendary' },
-    { id: 43, icon: '?', name: 'Stardust', rarity: 'legendary' },
+    { id: 32, icon: '🌠', name: 'Nova', rarity: 'legendary' },
+    { id: 33, icon: '🌌', name: 'Cosmos', rarity: 'legendary' },
+    { id: 34, icon: '🔱', name: 'Poseidon', rarity: 'legendary' },
+    { id: 35, icon: '👑', name: 'Overlord', rarity: 'legendary' },
+    { id: 36, icon: '💎', name: 'Diamond', rarity: 'legendary' },
+    { id: 37, icon: '🔶', name: 'Prism', rarity: 'legendary' },
+    { id: 38, icon: '🔮', name: 'Oracle', rarity: 'legendary' },
+    { id: 39, icon: '👑', name: 'Royalty', rarity: 'legendary' },
+    { id: 40, icon: '🐍', name: 'Serpent', rarity: 'legendary' },
+    { id: 41, icon: '🔥', name: 'Phoenix', rarity: 'legendary' },
+    { id: 42, icon: '✨', name: 'Celestial', rarity: 'legendary' },
+    { id: 43, icon: '⭐', name: 'Stardust', rarity: 'legendary' },
     // Mythic - Ultra Rare (6)
-    { id: 44, icon: '???', name: 'Void', rarity: 'mythic' },
-    { id: 45, icon: '?', name: 'Eternal', rarity: 'mythic' },
-    { id: 46, icon: '??', name: 'Omniscient', rarity: 'mythic' },
-    { id: 47, icon: '??', name: 'Infinite', rarity: 'mythic' },
-    { id: 48, icon: '??', name: 'Radiant', rarity: 'mythic' },
-    { id: 49, icon: '??', name: 'Transcendent', rarity: 'mythic' }
+    { id: 44, icon: '⚫', name: 'Void', rarity: 'mythic' },
+    { id: 45, icon: '♾️', name: 'Eternal', rarity: 'mythic' },
+    { id: 46, icon: '👁️', name: 'Omniscient', rarity: 'mythic' },
+    { id: 47, icon: '♾️', name: 'Infinite', rarity: 'mythic' },
+    { id: 48, icon: '💫', name: 'Radiant', rarity: 'mythic' },
+    { id: 49, icon: '🌟', name: 'Transcendent', rarity: 'mythic' }
   ];
 
   // Avatar color options - expanded with more variety
@@ -1124,52 +1124,52 @@ const SpaceShooter = () => {
   
   // Rank titles based on high score
   const getRankTitle = (score) => {
-    if (score >= 100000) return { title: 'LEGENDARY ACE', color: '#ffaa00', icon: '??' };
-    if (score >= 50000) return { title: 'ELITE PILOT', color: '#aa44ff', icon: '??' };
-    if (score >= 25000) return { title: 'VETERAN', color: '#4488ff', icon: '???�' };
-    if (score >= 10000) return { title: 'COMMANDER', color: '#00ff88', icon: '?�' };
-    if (score >= 5000) return { title: 'CAPTAIN', color: '#00ffff', icon: '??' };
-    if (score >= 1000) return { title: 'PILOT', color: '#88ff88', icon: '??' };
-    return { title: 'CADET', color: '#888888', icon: '?' };
+    if (score >= 100000) return { title: 'LEGENDARY ACE', color: '#ffaa00', icon: '🏆' };
+    if (score >= 50000) return { title: 'ELITE PILOT', color: '#aa44ff', icon: '🌟' };
+    if (score >= 25000) return { title: 'VETERAN', color: '#4488ff', icon: '🎖️' };
+    if (score >= 10000) return { title: 'COMMANDER', color: '#00ff88', icon: '⭐' };
+    if (score >= 5000) return { title: 'CAPTAIN', color: '#00ffff', icon: '👨‍✈️' };
+    if (score >= 1000) return { title: 'PILOT', color: '#88ff88', icon: '🚀' };
+    return { title: 'CADET', color: '#888888', icon: '🎯' };
   };
   
   // Achievements system
   const ACHIEVEMENTS = [
     // Score achievements
-    { id: 'score_1k', name: 'FIRST BLOOD', description: 'Score 1,000 points', icon: '??', category: 'score', requirement: 1000, type: 'score' },
-    { id: 'score_5k', name: 'SHARPSHOOTER', description: 'Score 5,000 points', icon: '??', category: 'score', requirement: 5000, type: 'score' },
-    { id: 'score_10k', name: 'ACE PILOT', description: 'Score 10,000 points', icon: '??�', category: 'score', requirement: 10000, type: 'score' },
-    { id: 'score_25k', name: 'VETERAN', description: 'Score 25,000 points', icon: '???�', category: 'score', requirement: 25000, type: 'score' },
-    { id: 'score_50k', name: 'ELITE', description: 'Score 50,000 points', icon: '??', category: 'score', requirement: 50000, type: 'score' },
-    { id: 'score_100k', name: 'LEGENDARY', description: 'Score 100,000 points', icon: '??', category: 'score', requirement: 100000, type: 'score' },
+    { id: 'score_1k', name: 'FIRST BLOOD', description: 'Score 1,000 points', icon: '🎯', category: 'score', requirement: 1000, type: 'score' },
+    { id: 'score_5k', name: 'SHARPSHOOTER', description: 'Score 5,000 points', icon: '🎯', category: 'score', requirement: 5000, type: 'score' },
+    { id: 'score_10k', name: 'ACE PILOT', description: 'Score 10,000 points', icon: '⭐', category: 'score', requirement: 10000, type: 'score' },
+    { id: 'score_25k', name: 'VETERAN', description: 'Score 25,000 points', icon: '🎖️', category: 'score', requirement: 25000, type: 'score' },
+    { id: 'score_50k', name: 'ELITE', description: 'Score 50,000 points', icon: '🌟', category: 'score', requirement: 50000, type: 'score' },
+    { id: 'score_100k', name: 'LEGENDARY', description: 'Score 100,000 points', icon: '🏆', category: 'score', requirement: 100000, type: 'score' },
     
     // Kill achievements
-    { id: 'kills_10', name: 'HUNTER', description: 'Destroy 10 enemies', icon: '??', category: 'combat', requirement: 10, type: 'kills' },
-    { id: 'kills_50', name: 'DESTROYER', description: 'Destroy 50 enemies', icon: '??', category: 'combat', requirement: 50, type: 'kills' },
-    { id: 'kills_100', name: 'ANNIHILATOR', description: 'Destroy 100 enemies', icon: '??�', category: 'combat', requirement: 100, type: 'kills' },
-    { id: 'kills_500', name: 'EXTERMINATOR', description: 'Destroy 500 enemies', icon: '??', category: 'combat', requirement: 500, type: 'kills' },
-    { id: 'kills_1000', name: 'GENOCIDE', description: 'Destroy 1,000 enemies', icon: '??�', category: 'combat', requirement: 1000, type: 'kills' },
+    { id: 'kills_10', name: 'HUNTER', description: 'Destroy 10 enemies', icon: '🎯', category: 'combat', requirement: 10, type: 'kills' },
+    { id: 'kills_50', name: 'DESTROYER', description: 'Destroy 50 enemies', icon: '💥', category: 'combat', requirement: 50, type: 'kills' },
+    { id: 'kills_100', name: 'ANNIHILATOR', description: 'Destroy 100 enemies', icon: '🔥', category: 'combat', requirement: 100, type: 'kills' },
+    { id: 'kills_500', name: 'EXTERMINATOR', description: 'Destroy 500 enemies', icon: '☠️', category: 'combat', requirement: 500, type: 'kills' },
+    { id: 'kills_1000', name: 'GENOCIDE', description: 'Destroy 1,000 enemies', icon: '💀', category: 'combat', requirement: 1000, type: 'kills' },
     
     // Boss achievements
-    { id: 'boss_1', name: 'BOSS SLAYER', description: 'Defeat your first boss', icon: '??', category: 'combat', requirement: 1, type: 'bosses' },
-    { id: 'boss_5', name: 'BOSS HUNTER', description: 'Defeat 5 bosses', icon: '??�', category: 'combat', requirement: 5, type: 'bosses' },
-    { id: 'boss_10', name: 'BOSS MASTER', description: 'Defeat 10 bosses', icon: '??', category: 'combat', requirement: 10, type: 'bosses' },
+    { id: 'boss_1', name: 'BOSS SLAYER', description: 'Defeat your first boss', icon: '⚔️', category: 'combat', requirement: 1, type: 'bosses' },
+    { id: 'boss_5', name: 'BOSS HUNTER', description: 'Defeat 5 bosses', icon: '👑', category: 'combat', requirement: 5, type: 'bosses' },
+    { id: 'boss_10', name: 'BOSS MASTER', description: 'Defeat 10 bosses', icon: '🏆', category: 'combat', requirement: 10, type: 'bosses' },
     
     // Wave achievements
-    { id: 'wave_5', name: 'SURVIVOR', description: 'Reach wave 5', icon: '??', category: 'progress', requirement: 5, type: 'wave' },
-    { id: 'wave_10', name: 'ENDURANCE', description: 'Reach wave 10', icon: '???', category: 'progress', requirement: 10, type: 'wave' },
-    { id: 'wave_20', name: 'UNSTOPPABLE', description: 'Reach wave 20', icon: '?', category: 'progress', requirement: 20, type: 'wave' },
+    { id: 'wave_5', name: 'SURVIVOR', description: 'Reach wave 5', icon: '🛡️', category: 'progress', requirement: 5, type: 'wave' },
+    { id: 'wave_10', name: 'ENDURANCE', description: 'Reach wave 10', icon: '💪', category: 'progress', requirement: 10, type: 'wave' },
+    { id: 'wave_20', name: 'UNSTOPPABLE', description: 'Reach wave 20', icon: '⚡', category: 'progress', requirement: 20, type: 'wave' },
     
     // Powerup achievements
-    { id: 'powerups_10', name: 'COLLECTOR', description: 'Collect 10 power-ups', icon: '??', category: 'items', requirement: 10, type: 'powerups' },
-    { id: 'powerups_50', name: 'HOARDER', description: 'Collect 50 power-ups', icon: '??�', category: 'items', requirement: 50, type: 'powerups' },
-    { id: 'powerups_100', name: 'POWER JUNKIE', description: 'Collect 100 power-ups', icon: '?', category: 'items', requirement: 100, type: 'powerups' },
+    { id: 'powerups_10', name: 'COLLECTOR', description: 'Collect 10 power-ups', icon: '⭐', category: 'items', requirement: 10, type: 'powerups' },
+    { id: 'powerups_50', name: 'HOARDER', description: 'Collect 50 power-ups', icon: '💫', category: 'items', requirement: 50, type: 'powerups' },
+    { id: 'powerups_100', name: 'POWER JUNKIE', description: 'Collect 100 power-ups', icon: '⚡', category: 'items', requirement: 100, type: 'powerups' },
     
     // Special achievements
-    { id: 'shield_max', name: 'FORTRESS', description: 'Get max shields (9)', icon: '???�', category: 'special', requirement: 9, type: 'maxShield' },
-    { id: 'laser_unlock', name: 'LASER MASTER', description: 'Unlock laser beam (�3 rapid)', icon: '??', category: 'special', requirement: 3, type: 'rapidLevel' },
-    { id: 'games_10', name: 'DEDICATED', description: 'Play 10 games', icon: '??', category: 'special', requirement: 10, type: 'gamesPlayed' },
-    { id: 'games_50', name: 'ADDICTED', description: 'Play 50 games', icon: '???�', category: 'special', requirement: 50, type: 'gamesPlayed' },
+    { id: 'shield_max', name: 'FORTRESS', description: 'Get max shields (9)', icon: '🛡️', category: 'special', requirement: 9, type: 'maxShield' },
+    { id: 'laser_unlock', name: 'LASER MASTER', description: 'Unlock laser beam (×3 rapid)', icon: '⚡', category: 'special', requirement: 3, type: 'rapidLevel' },
+    { id: 'games_10', name: 'DEDICATED', description: 'Play 10 games', icon: '🎮', category: 'special', requirement: 10, type: 'gamesPlayed' },
+    { id: 'games_50', name: 'ADDICTED', description: 'Play 50 games', icon: '🏆', category: 'special', requirement: 50, type: 'gamesPlayed' },
   ];
   
   // Game statistics for achievements
@@ -16177,7 +16177,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ff6600';
         ctx.shadowBlur = 5;
         ctx.font = '9px "Press Start 2P", monospace';
-        ctx.fillText(`?? MISSILE`, upgradeX, upgradeY);
+        ctx.fillText(`🚀 MISSILE`, upgradeX, upgradeY);
         ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillStyle = '#888888';
         ctx.fillText('[M]', upgradeX + 95, upgradeY);
@@ -16192,7 +16192,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = shieldColor;
         ctx.shadowBlur = 5;
         ctx.font = '9px "Press Start 2P", monospace';
-        ctx.fillText(`???� SHIELD`, upgradeX, upgradeY);
+        ctx.fillText(`🛡️ SHIELD`, upgradeX, upgradeY);
         // Shield pips
         for (let i = 0; i < 9; i++) {
           ctx.fillStyle = i < shieldHits ? shieldColor : '#222222';
@@ -16209,7 +16209,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#00ffaa';
         ctx.shadowBlur = 5;
         ctx.font = '9px "Press Start 2P", monospace';
-        ctx.fillText(`?? SPEED`, upgradeX, upgradeY);
+        ctx.fillText(`⚡ SPEED`, upgradeX, upgradeY);
         // Level pips
         for (let i = 0; i < 3; i++) {
           ctx.fillStyle = i < speedLevel ? '#00ffaa' : '#333333';
@@ -16240,7 +16240,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ffff00';
         ctx.shadowBlur = 5;
         ctx.font = '9px "Press Start 2P", monospace';
-        ctx.fillText(`?? MAGNET`, upgradeX, upgradeY);
+        ctx.fillText(`🧲 MAGNET`, upgradeX, upgradeY);
         // Timer display
         ctx.fillStyle = magnetTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = '7px "Press Start 2P", monospace';
@@ -16256,7 +16256,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ff8800';
         ctx.shadowBlur = 5;
         ctx.font = '9px "Press Start 2P", monospace';
-        ctx.fillText(`??? PIERCE`, upgradeX, upgradeY);
+        ctx.fillText(`➜ PIERCE`, upgradeX, upgradeY);
         ctx.fillStyle = piercingTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${piercingTime}s`, upgradeX + 90, upgradeY);
@@ -16270,7 +16270,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ffff00';
         ctx.shadowBlur = 5;
         ctx.font = '9px "Press Start 2P", monospace';
-        ctx.fillText(`?? 2X SCORE`, upgradeX, upgradeY);
+        ctx.fillText(`×2 2X SCORE`, upgradeX, upgradeY);
         ctx.fillStyle = scoreTime <= 5 ? '#ff4444' : '#ffffff';
         ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${scoreTime}s`, upgradeX + 98, upgradeY);
@@ -16284,7 +16284,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 5;
         ctx.font = '9px "Press Start 2P", monospace';
-        ctx.fillText(`?? BOUNCE`, upgradeX, upgradeY);
+        ctx.fillText(`⇄ BOUNCE`, upgradeX, upgradeY);
         ctx.fillStyle = ricochetTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${ricochetTime}s`, upgradeX + 90, upgradeY);
@@ -16313,7 +16313,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ff00aa';
         ctx.shadowBlur = 5;
         ctx.font = '9px "Press Start 2P", monospace';
-        ctx.fillText(`?? LASER`, upgradeX, upgradeY);
+        ctx.fillText(`➜ LASER`, upgradeX, upgradeY);
         ctx.fillStyle = laserTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${laserTime}s`, upgradeX + 85, upgradeY);
@@ -16327,7 +16327,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#00aaff';
         ctx.shadowBlur = 5;
         ctx.font = '9px "Press Start 2P", monospace';
-        ctx.fillText(`?? CHAIN`, upgradeX, upgradeY);
+        ctx.fillText(`⚡ CHAIN`, upgradeX, upgradeY);
         ctx.fillStyle = chainTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${chainTime}s`, upgradeX + 80, upgradeY);
@@ -16370,7 +16370,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 5;
         ctx.font = '9px "Press Start 2P", monospace';
-        ctx.fillText(`?? CLONE`, upgradeX, upgradeY);
+        ctx.fillText(`👥 CLONE`, upgradeX, upgradeY);
         ctx.fillStyle = cloneTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = '7px "Press Start 2P", monospace';
         ctx.fillText(`${cloneTime}s`, upgradeX + 85, upgradeY);
@@ -16411,7 +16411,7 @@ const SpaceShooter = () => {
           ctx.shadowColor = levelData.color;
           ctx.shadowBlur = 5;
           ctx.font = '9px "Press Start 2P", monospace';
-          ctx.fillText(`?? FORCE`, upgradeX, upgradeY);
+          ctx.fillText(`💮 FORCE`, upgradeX, upgradeY);
           // Power bar
           ctx.fillStyle = '#333333';
           ctx.fillRect(upgradeX + 75, upgradeY - 7, 40, 8);
@@ -16874,7 +16874,7 @@ const SpaceShooter = () => {
 
   return (
     <div className="game-container">
-      <h1 className="game-title">?? NEBULA X</h1>
+      <h1 className="game-title">🌌 NEBULA X</h1>
       <div className="game-wrapper">
         <canvas
           ref={canvasRef}
@@ -17004,12 +17004,12 @@ const SpaceShooter = () => {
                 <span className="blink">PRESS ANY BUTTON TO START</span>
               </div>
               <div className="splash-hints">
-                <span>?? Controller Supported</span>
-                <span>??� Keyboard Ready</span>
+                <span>🎮 Controller Supported</span>
+                <span>⌨️ Keyboard Ready</span>
               </div>
             </div>
             <div className="splash-footer">
-              <span>� 2024 NEBULA X</span>
+              <span>© 2024 NEBULA X</span>
               <span>R-TYPE INSPIRED</span>
             </div>
           </div>
@@ -17083,12 +17083,12 @@ const SpaceShooter = () => {
               
               <div className="menu-stats">
                 <div className="stat-box">
-                  <span className="stat-icon">??</span>
+                  <span className="stat-icon">🎯</span>
                   <span className="stat-label">HIGH SCORE</span>
                   <span className="stat-value">{highScore.toLocaleString()}</span>
                 </div>
                 <div className="stat-box">
-                  <span className="stat-icon">??</span>
+                  <span className="stat-icon">🏆</span>
                   <span className="stat-label">BEST WAVE</span>
                   <span className="stat-value">{Math.max(1, Math.floor(highScore / 500))}</span>
                 </div>
@@ -17106,7 +17106,7 @@ const SpaceShooter = () => {
                   className={`start-button ${menuSelection === 0 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(0)}
                 >
-                  <span className="btn-icon">?</span> NEW MISSION
+                  <span className="btn-icon">🚀</span> NEW MISSION
                   <span className="btn-shine"></span>
                 </button>
                 {hasSaveGame() && (
@@ -17115,7 +17115,7 @@ const SpaceShooter = () => {
                     className={`start-button continue-button ${menuSelection === 1 ? 'gamepad-selected' : ''}`}
                     onMouseEnter={() => setMenuSelection(1)}
                   >
-                    <span className="btn-icon">?</span> CONTINUE
+                    <span className="btn-icon">▶</span> CONTINUE
                     <span className="btn-shine"></span>
                   </button>
                 )}
@@ -17125,7 +17125,7 @@ const SpaceShooter = () => {
                     className={`start-button challenge-button ${menuSelection === (hasSaveGame() ? 2 : 1) ? 'gamepad-selected' : ''}`}
                     onMouseEnter={() => setMenuSelection(hasSaveGame() ? 2 : 1)}
                   >
-                    <span className="btn-icon">??</span> CHALLENGE MODES
+                    <span className="btn-icon">🎯</span> CHALLENGE MODES
                     <span className="btn-shine"></span>
                   </button>
                 )}
@@ -17134,30 +17134,30 @@ const SpaceShooter = () => {
                   className={`settings-button customize-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 3 : 2) : (gameBeaten ? 2 : 1)) ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 3 : 2) : (gameBeaten ? 2 : 1))}
                 >
-                  <span className="btn-icon">??</span> CUSTOMIZE
+                  <span className="btn-icon">🚀</span> CUSTOMIZE
                 </button>
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowPracticeMode(true); }} 
                   className={`settings-button practice-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2)) ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2))}
                 >
-                  <span className="btn-icon">??</span> PRACTICE
+                  <span className="btn-icon">🎮</span> PRACTICE
                 </button>
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowSettings(true); }} 
                   className={`settings-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 5 : 4) : (gameBeaten ? 4 : 3)) ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 5 : 4) : (gameBeaten ? 4 : 3))}
                 >
-                  <span className="btn-icon">?</span> SETTINGS
+                  <span className="btn-icon">⚙️</span> SETTINGS
                 </button>
               </div>
               
-              <p className="start-hint">?? D-Pad to navigate � ? to select � ENTER to start</p>
+              <p className="start-hint">🎮 D-Pad to navigate · 🎯 to select · ENTER to start</p>
               
               {/* Decorative bottom */}
               <div className="menu-footer">
                 <span className="version">v1.0</span>
-                <span className="divider">�</span>
+                <span className="divider">·</span>
                 <span className="credit">R-TYPE INSPIRED</span>
               </div>
             </div>
@@ -17932,12 +17932,12 @@ const SpaceShooter = () => {
             {/* Parts Customization */}
             <div className="parts-section">
               <div className="part-selector">
-                <span className="part-label">?? BOOSTER</span>
+                <span className="part-label">🔥 BOOSTER</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, booster: (p.booster - 1 + BOOSTER_OPTIONS.length) % BOOSTER_OPTIONS.length }))}
-                  >?</button>
+                  >◀</button>
                   <div className="part-info">
                     <span className="part-name">{BOOSTER_OPTIONS[shipParts.booster].name}</span>
                     <span className="part-desc">{BOOSTER_OPTIONS[shipParts.booster].description}</span>
@@ -17945,16 +17945,16 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, booster: (p.booster + 1) % BOOSTER_OPTIONS.length }))}
-                  >?</button>
+                  >▶</button>
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">??? WINGS</span>
+                <span className="part-label">✈️ WINGS</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, wings: (p.wings - 1 + WING_OPTIONS.length) % WING_OPTIONS.length }))}
-                  >?</button>
+                  >◀</button>
                   <div className="part-info">
                     <span className="part-name">{WING_OPTIONS[shipParts.wings].name}</span>
                     <span className="part-desc">{WING_OPTIONS[shipParts.wings].description}</span>
@@ -17962,16 +17962,16 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, wings: (p.wings + 1) % WING_OPTIONS.length }))}
-                  >?</button>
+                  >▶</button>
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">???� SHIELD</span>
+                <span className="part-label">🛡️ SHIELD</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, shield: ((p.shield || 0) - 1 + SHIELD_OPTIONS.length) % SHIELD_OPTIONS.length }))}
-                  >?</button>
+                  >◀</button>
                   <div className="part-info">
                     <span className="part-name" style={{ color: SHIELD_OPTIONS[shipParts.shield || 0].color }}>{SHIELD_OPTIONS[shipParts.shield || 0].name}</span>
                     <span className="part-desc">{SHIELD_OPTIONS[shipParts.shield || 0].description}</span>
@@ -17979,16 +17979,16 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, shield: ((p.shield || 0) + 1) % SHIELD_OPTIONS.length }))}
-                  >?</button>
+                  >▶</button>
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">?? TRAIL</span>
+                <span className="part-label">✨ TRAIL</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, trail: ((p.trail || 0) - 1 + TRAIL_OPTIONS.length) % TRAIL_OPTIONS.length }))}
-                  >?</button>
+                  >◀</button>
                   <div className="part-info">
                     <span className="part-name" style={{ color: TRAIL_OPTIONS[shipParts.trail || 0].color === 'rainbow' ? '#ff88ff' : TRAIL_OPTIONS[shipParts.trail || 0].color }}>{TRAIL_OPTIONS[shipParts.trail || 0].name}</span>
                     <span className="part-desc">{TRAIL_OPTIONS[shipParts.trail || 0].description}</span>
@@ -17996,7 +17996,7 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, trail: ((p.trail || 0) + 1) % TRAIL_OPTIONS.length }))}
-                  >?</button>
+                  >▶</button>
                 </div>
               </div>
               
@@ -18014,7 +18014,7 @@ const SpaceShooter = () => {
                   });
                 }}
               >
-                ??� RANDOMIZE ALL
+                🎲 RANDOMIZE ALL
               </button>
             </div>
             

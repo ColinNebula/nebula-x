@@ -4783,3 +4783,202 @@
   border-color: #ff3333;
   transform: scale(1.05);
 }
+
+/* Control Remapping Styles */
+.settings-controls {
+  width: 100%;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.controls-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+}
+
+.controls-header h3 {
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.8rem;
+  color: #00ff88;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+  margin: 0;
+}
+
+.reset-controls-button {
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.5rem;
+  padding: 8px 15px;
+  background: linear-gradient(180deg, #ff6b6b 0%, #ff4757 100%);
+  border: 2px solid #ff8787;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 8px rgba(255, 71, 87, 0.3);
+}
+
+.reset-controls-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(255, 71, 87, 0.5);
+  background: linear-gradient(180deg, #ff8787 0%, #ff6b6b 100%);
+}
+
+.reset-controls-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(255, 71, 87, 0.3);
+}
+
+.remapping-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(10px);
+}
+
+.remapping-prompt {
+  background: linear-gradient(180deg, #2d3561 0%, #1a1f3a 100%);
+  border: 3px solid #00ff88;
+  border-radius: 20px;
+  padding: 40px 60px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 255, 136, 0.4);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.remapping-prompt h4 {
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.7rem;
+  color: #00ff88;
+  margin-bottom: 20px;
+  text-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
+}
+
+.remapping-prompt p {
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.9rem;
+  color: white;
+  margin: 15px 0;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.remapping-hint {
+  font-size: 0.5rem !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  margin-top: 30px !important;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 10px 40px rgba(0, 255, 136, 0.4);
+  }
+  50% {
+    box-shadow: 0 10px 60px rgba(0, 255, 136, 0.7);
+  }
+}
+
+.control-mappings {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.control-category {
+  background: linear-gradient(180deg, 
+    rgba(255, 255, 255, 0.05) 0%, 
+    rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 12px;
+  padding: 15px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.control-category h4 {
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.6rem;
+  color: #00ff88;
+  margin-bottom: 15px;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+}
+
+.control-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.control-row:hover {
+  background: rgba(0, 255, 136, 0.05);
+  border-left: 3px solid #00ff88;
+}
+
+.control-label {
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+  flex: 1;
+}
+
+.control-keys {
+  display: flex;
+  gap: 10px;
+}
+
+.key-button {
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.5rem;
+  padding: 10px 20px;
+  min-width: 80px;
+  background: linear-gradient(180deg, #667eea 0%, #5a67d8 100%);
+  border: 2px solid #7f9cf5;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.key-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.5);
+  background: linear-gradient(180deg, #7f9cf5 0%, #667eea 100%);
+  border-color: #a3bffa;
+}
+
+.key-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.controls-note {
+  margin-top: 25px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  border-left: 3px solid #00ff88;
+}
+
+.controls-note p {
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.45rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 8px 0;
+  line-height: 1.8;
+}

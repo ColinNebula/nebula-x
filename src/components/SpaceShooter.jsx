@@ -909,31 +909,31 @@ const DASH_DURATION = 8; // Frames of invincibility during dash
 // Power-up types with rarity system
 const POWERUP_TYPES = {
   // Common power-ups (55% of drops)
-  RAPID_FIRE: { color: '#ffff00', icon: '⚡', name: 'Rapid Fire', rarity: 'common', glowColor: '#ffaa00', description: 'Increases fire rate' },
-  MISSILES: { color: '#ff6600', icon: '💥', name: 'Missiles', rarity: 'common', glowColor: '#ff3300', description: 'Homing missiles' },
-  SHIELD: { color: '#00ffff', icon: '🛡️', name: 'Shield', rarity: 'common', glowColor: '#0088ff', description: '+3 shield hits' },
-  REPAIR: { color: '#00ff00', icon: '🩹', name: 'Repair', rarity: 'common', glowColor: '#00cc00', description: 'Restore 1 life' },
-  SCORE_BONUS: { color: '#ffd700', icon: '⭐', name: 'Score Bonus', rarity: 'common', glowColor: '#ffaa00', description: '+500 points' },
+  RAPID_FIRE: { color: '#ffff00', icon: 'â¡', name: 'Rapid Fire', rarity: 'common', glowColor: '#ffaa00', description: 'Increases fire rate' },
+  MISSILES: { color: '#ff6600', icon: 'ð', name: 'Missiles', rarity: 'common', glowColor: '#ff3300', description: 'Homing missiles' },
+  SHIELD: { color: '#00ffff', icon: 'ð¡ï¸', name: 'Shield', rarity: 'common', glowColor: '#0088ff', description: '+3 shield hits' },
+  REPAIR: { color: '#00ff00', icon: 'ð©¹', name: 'Repair', rarity: 'common', glowColor: '#00cc00', description: 'Restore 1 life' },
+  SCORE_BONUS: { color: '#ffd700', icon: 'â­', name: 'Score Bonus', rarity: 'common', glowColor: '#ffaa00', description: '+500 points' },
   // Rare power-ups (25% of drops)
-  FORCE: { color: '#ff00ff', icon: '🔮', name: 'Force Pod', rarity: 'rare', glowColor: '#aa00ff', description: 'Attach Force Pod' },
-  OPTION: { color: '#00ff88', icon: '🛸', name: 'Option', rarity: 'rare', glowColor: '#00aa44', description: 'Add satellite drone' },
-  SPEED: { color: '#00ffaa', icon: '⚡', name: 'Speed Boost', rarity: 'rare', glowColor: '#00ddff', description: '+25% speed' },
-  PIERCING: { color: '#ff8800', icon: '«', name: 'Piercing', rarity: 'rare', glowColor: '#ff6600', description: 'Bullets pierce enemies' },
-  DOUBLE_SCORE: { color: '#ffff88', icon: '×2', name: 'Double Score', rarity: 'rare', glowColor: '#ffee00', description: '2x score for 20s' },
-  RICOCHET: { color: '#88ffff', icon: '🔄', name: 'Ricochet', rarity: 'rare', glowColor: '#44ddff', description: 'Bullets bounce' },
+  FORCE: { color: '#ff00ff', icon: 'ð®', name: 'Force Pod', rarity: 'rare', glowColor: '#aa00ff', description: 'Attach Force Pod' },
+  OPTION: { color: '#00ff88', icon: 'ð¸', name: 'Option', rarity: 'rare', glowColor: '#00aa44', description: 'Add satellite drone' },
+  SPEED: { color: '#00ffaa', icon: 'â¡', name: 'Speed Boost', rarity: 'rare', glowColor: '#00ddff', description: '+25% speed' },
+  PIERCING: { color: '#ff8800', icon: 'â', name: 'Piercing', rarity: 'rare', glowColor: '#ff6600', description: 'Bullets pierce enemies' },
+  DOUBLE_SCORE: { color: '#ffff88', icon: 'Ã2', name: 'Double Score', rarity: 'rare', glowColor: '#ffee00', description: '2x score for 20s' },
+  RICOCHET: { color: '#88ffff', icon: 'â©ï¸', name: 'Ricochet', rarity: 'rare', glowColor: '#44ddff', description: 'Bullets bounce' },
   // Legendary power-ups (15% of drops)
-  SPREAD: { color: '#ff0066', icon: '✳', name: 'Spread Shot', rarity: 'legendary', glowColor: '#ff0044', description: 'Multi-directional fire' },
-  MAGNET: { color: '#ffff00', icon: '🧲', name: 'Magnet', rarity: 'legendary', glowColor: '#ffcc00', description: 'Attract power-ups' },
-  MEGA_BOMB: { color: '#ff4400', icon: '💣', name: 'Mega Bomb', rarity: 'legendary', glowColor: '#ff2200', description: 'Clear all enemies' },
-  INVINCIBILITY: { color: '#ffffff', icon: '✨', name: 'Invincibility', rarity: 'legendary', glowColor: '#ffffaa', description: 'Immune for 8 seconds' },
-  LASER_BEAM: { color: '#ff00aa', icon: '«', name: 'Laser Beam', rarity: 'legendary', glowColor: '#ff0088', description: 'Powerful beam attack' },
-  CHAIN_LIGHTNING: { color: '#00aaff', icon: '⚡', name: 'Chain Lightning', rarity: 'legendary', glowColor: '#0088ff', description: 'Lightning chains enemies' },
+  SPREAD: { color: '#ff0066', icon: 'â³ï¸', name: 'Spread Shot', rarity: 'legendary', glowColor: '#ff0044', description: 'Multi-directional fire' },
+  MAGNET: { color: '#ffff00', icon: 'ð§²', name: 'Magnet', rarity: 'legendary', glowColor: '#ffcc00', description: 'Attract power-ups' },
+  MEGA_BOMB: { color: '#ff4400', icon: 'ð£', name: 'Mega Bomb', rarity: 'legendary', glowColor: '#ff2200', description: 'Clear all enemies' },
+  INVINCIBILITY: { color: '#ffffff', icon: 'â¨', name: 'Invincibility', rarity: 'legendary', glowColor: '#ffffaa', description: 'Immune for 8 seconds' },
+  LASER_BEAM: { color: '#ff00aa', icon: 'â', name: 'Laser Beam', rarity: 'legendary', glowColor: '#ff0088', description: 'Powerful beam attack' },
+  CHAIN_LIGHTNING: { color: '#00aaff', icon: 'â¡', name: 'Chain Lightning', rarity: 'legendary', glowColor: '#0088ff', description: 'Lightning chains enemies' },
   // Ultra power-ups (5% of drops - very rare!)
-  BLACK_HOLE: { color: '#4400aa', icon: '⚫', name: 'Black Hole', rarity: 'ultra', glowColor: '#6600ff', description: 'Sucks in all enemies' },
-  TIME_WARP: { color: '#8800ff', icon: '⏰', name: 'Time Warp', rarity: 'ultra', glowColor: '#aa00ff', description: 'Slow motion for 10s' },
-  CLONE: { color: '#00ffff', icon: '👥', name: 'Clone', rarity: 'ultra', glowColor: '#00ddff', description: 'Shadow clone mimics you' },
-  NUCLEAR: { color: '#ff0000', icon: '☢', name: 'Nuclear', rarity: 'ultra', glowColor: '#ff4400', description: 'Devastating explosion' },
-  PHOENIX: { color: '#ff8800', icon: '🔥', name: 'Phoenix', rarity: 'ultra', glowColor: '#ffaa00', description: 'Auto-revive on death' }
+  BLACK_HOLE: { color: '#4400aa', icon: 'â«', name: 'Black Hole', rarity: 'ultra', glowColor: '#6600ff', description: 'Sucks in all enemies' },
+  TIME_WARP: { color: '#8800ff', icon: 'â°', name: 'Time Warp', rarity: 'ultra', glowColor: '#aa00ff', description: 'Slow motion for 10s' },
+  CLONE: { color: '#00ffff', icon: 'ð¥', name: 'Clone', rarity: 'ultra', glowColor: '#00ddff', description: 'Shadow clone mimics you' },
+  NUCLEAR: { color: '#ff0000', icon: 'â¢ï¸', name: 'Nuclear', rarity: 'ultra', glowColor: '#ff4400', description: 'Devastating explosion' },
+  PHOENIX: { color: '#ff8800', icon: 'ð¥', name: 'Phoenix', rarity: 'ultra', glowColor: '#ffaa00', description: 'Auto-revive on death' }
 };
 
 const SpaceShooter = () => {
@@ -982,6 +982,8 @@ const SpaceShooter = () => {
   const [showMissionMenu, setShowMissionMenu] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [settingsTab, setSettingsTab] = useState('audio'); // audio', 'profile', 'controls'
+  const [remappingControl, setRemappingControl] = useState(null); // Which control is being remapped
+  const [remappingSlot, setRemappingSlot] = useState(0); // Which key slot (0 or 1) is being remapped
   
   // Default user settings
   const DEFAULT_USER_SETTINGS = {
@@ -993,7 +995,21 @@ const SpaceShooter = () => {
     avatarColor: '#00ff88', // Custom avatar accent color
     difficulty: 'normal', // easy, normal, hard
     performanceMode: false, // Reduced visual effects for better performance
-    showFPS: false // Display FPS counter
+    showFPS: false, // Display FPS counter
+    controls: {
+      moveUp: ['KeyW', 'ArrowUp'],
+      moveDown: ['KeyS', 'ArrowDown'],
+      moveLeft: ['KeyA', 'ArrowLeft'],
+      moveRight: ['KeyD', 'ArrowRight'],
+      shoot: ['Space', 'KeyZ'],
+      special: ['KeyX', 'KeyC'],
+      dash: ['ShiftLeft', 'ShiftRight'],
+      missile: ['KeyM'],
+      bomb: ['KeyB'],
+      togglePolarity: ['KeyC'],
+      toggleForce: ['KeyF'],
+      pause: ['Escape']
+    }
   };
   
   // User settings with localStorage persistence
@@ -1573,6 +1589,19 @@ const SpaceShooter = () => {
   const WAVE_GRACE_PERIOD = 10000; // 10 seconds grace period at wave start
   const waveCannonChargeRef = useRef(0);
   
+  // ============= DODGE ROLL/DASH SYSTEM =============
+  const dashRef = useRef({
+    active: false,          // Is currently dashing
+    cooldown: 0,            // Cooldown timer (60 frames = 1 second)
+    maxCooldown: 60,        // Max cooldown frames
+    duration: 0,            // Current dash duration
+    maxDuration: 12,        // Dash lasts 12 frames (~0.2 seconds)
+    speed: 18,              // Dash speed (3x normal movement)
+    direction: { x: 0, y: 0 }, // Dash direction vector
+    invincible: false,      // Invincibility during dash
+    afterimages: []         // Trail of afterimages
+  });
+  
   // ============= REPLAY SYSTEM =============
   const [isRecording, setIsRecording] = useState(false);
   const [isReplaying, setIsReplaying] = useState(false);
@@ -1757,7 +1786,6 @@ const SpaceShooter = () => {
   const lastElectricityRef = useRef(0);
   const playerLaserRef = useRef({ charging: false, charge: 0, firing: false, duration: 0 }); // Player laser beam
   const screenShakeRef = useRef({ intensity: 0, duration: 0 }); // Screen shake effect
-  const dashRef = useRef({ active: false, cooldown: 0, direction: { x: 0, y: 0 }, timer: 0 }); // Dash mechanic
   
   // Graze System - reward near-misses
   const grazeRef = useRef({
@@ -2640,9 +2668,35 @@ const SpaceShooter = () => {
     branchSelectionRef.current = branchSelection;
   }, [branchSelection]);
 
+  // Helper function to check if a key matches a control
+  const isKeyPressed = useCallback((controlName) => {
+    const controls = userSettingsRef.current?.controls || DEFAULT_USER_SETTINGS.controls;
+    const keys = controls[controlName] || [];
+    return keys.some(key => keysRef.current[key]);
+  }, []);
+
   // Handle keyboard input
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Control remapping mode
+      if (remappingControl) {
+        e.preventDefault();
+        
+        // ESC cancels remapping
+        if (e.code === 'Escape') {
+          setRemappingControl(null);
+          setRemappingSlot(null);
+          return;
+        }
+        
+        const newControls = { ...userSettings.controls };
+        newControls[remappingControl][remappingSlot] = e.code;
+        setUserSettings(prev => ({ ...prev, controls: newControls }));
+        setRemappingControl(null);
+        setRemappingSlot(null);
+        return;
+      }
+      
       // Ignore input during replay playback
       if (isReplaying) return;
       
@@ -2695,7 +2749,7 @@ const SpaceShooter = () => {
       }
       
       // Fire missile with M key
-      if (e.code === 'KeyM' && gameStateRef.current === 'playing' && upgradesRef.current.missiles) {
+      if (userSettings.controls.missile.includes(e.code) && gameStateRef.current === 'playing' && upgradesRef.current.missiles) {
         e.preventDefault();
         soundSystem.playMissile();
         const player = playerRef.current;
@@ -2707,7 +2761,7 @@ const SpaceShooter = () => {
       }
       
       // BOMB with B key - screen-clearing emergency attack
-      if (e.code === 'KeyB' && gameStateRef.current === 'playing') {
+      if (userSettings.controls.bomb.includes(e.code) && gameStateRef.current === 'playing') {
         e.preventDefault();
         const bomb = bombRef.current;
         if (bomb.stock > 0 && !bomb.active) {
@@ -2779,7 +2833,7 @@ const SpaceShooter = () => {
       }
       
       // Toggle Force pod attachment with F key
-      if (e.code === 'KeyF' && gameStateRef.current === 'playing' && forceRef.current) {
+      if (userSettings.controls.toggleForce.includes(e.code) && gameStateRef.current === 'playing' && forceRef.current) {
         e.preventDefault();
         const force = forceRef.current;
         if (force.attached === 'front') {
@@ -2796,7 +2850,7 @@ const SpaceShooter = () => {
       }
       
       // Toggle Polarity with C key (Ikaruga-style)
-      if (e.code === 'KeyC' && gameStateRef.current === 'playing') {
+      if (userSettings.controls.togglePolarity.includes(e.code) && gameStateRef.current === 'playing') {
         e.preventDefault();
         setPolarity(prev => prev === 'light' ? 'dark' : 'light');
       }
@@ -2811,8 +2865,63 @@ const SpaceShooter = () => {
         setSpeedSetting(prev => Math.min(4, prev + 1));
       }
       
+      // Dodge Roll/Dash with custom dash keys
+      const controls = userSettings.controls;
+      if (controls.dash.includes(e.code) && gameStateRef.current === 'playing') {
+        e.preventDefault();
+        const dash = dashRef.current;
+        const player = playerRef.current;
+        
+        // Only dash if not on cooldown and not already dashing
+        if (dash.cooldown === 0 && !dash.active) {
+          // Determine dash direction from current input
+          let dx = 0;
+          let dy = 0;
+          
+          // Check all possible move keys
+          if (controls.moveLeft.some(k => keysRef.current[k])) dx = -1;
+          if (controls.moveRight.some(k => keysRef.current[k])) dx = 1;
+          if (controls.moveUp.some(k => keysRef.current[k])) dy = -1;
+          if (controls.moveDown.some(k => keysRef.current[k])) dy = 1;
+          
+          // Default to forward dash if no direction input
+          if (dx === 0 && dy === 0) {
+            dx = 1;
+          }
+          
+          // Normalize direction
+          const mag = Math.sqrt(dx * dx + dy * dy);
+          if (mag > 0) {
+            dx /= mag;
+            dy /= mag;
+          }
+          
+          // Activate dash
+          dash.active = true;
+          dash.duration = dash.maxDuration;
+          dash.direction.x = dx;
+          dash.direction.y = dy;
+          dash.invincible = true;
+          dash.afterimages = [];
+          
+          // Play dash sound
+          soundSystem.playUISparkle();
+          
+          // Visual feedback
+          floatingTextsRef.current.push({
+            x: player.x + PLAYER_WIDTH / 2,
+            y: player.y - 20,
+            text: '⚡ DASH',
+            color: '#00ffff',
+            lifetime: 30,
+            vy: -2,
+            scale: 1.2
+          });
+        }
+      }
+      
       // Force Shield ability with G key (level 4+)
-      if (e.code === 'KeyG' && gameStateRef.current === 'playing' && forceRef.current) {
+      if (userSettings.controls.special.includes(e.code) && gameStateRef.current === 'playing' && forceRef.current) {
         e.preventDefault();
         const force = forceRef.current;
         const forceLevel = force.level || 1;
@@ -3811,7 +3920,7 @@ const SpaceShooter = () => {
     }
     
     // Floating text - with rarity indicator
-    const rarityPrefix = isUltra ? '⭐ ULTRA ⭐' : isLegendary ? '⚙' : isRare ? '✦' : '';
+    const rarityPrefix = isUltra ? 'â­ ULTRA â­' : isLegendary ? 'âï¸ LEGENDARY' : isRare ? 'â¨ RARE' : '';
     floatingTextsRef.current.push({
       x,
       y,
@@ -5739,6 +5848,27 @@ const SpaceShooter = () => {
               ctx.fill();
             }
           }
+        });
+        ctx.restore();
+      }
+
+      // === DRAW DASH AFTERIMAGES ===
+      const dashAfterimages = dashRef.current;
+      if (dashAfterimages.active && dashAfterimages.afterimages.length > 0) {
+        ctx.save();
+        dashAfterimages.afterimages.forEach(img => {
+          ctx.globalAlpha = img.alpha;
+          ctx.fillStyle = '#00ffff';
+          ctx.shadowColor = '#00ffff';
+          ctx.shadowBlur = 15;
+          
+          // Draw simplified ship silhouette
+          ctx.beginPath();
+          ctx.moveTo(img.x + PLAYER_WIDTH, img.y + PLAYER_HEIGHT / 2);
+          ctx.lineTo(img.x, img.y);
+          ctx.lineTo(img.x, img.y + PLAYER_HEIGHT);
+          ctx.closePath();
+          ctx.fill();
         });
         ctx.restore();
       }
@@ -8680,7 +8810,7 @@ const SpaceShooter = () => {
             ctx.fillStyle = '#aa44ff';
             ctx.font = '6px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('⚠️', centerX, ey - 5);
+            ctx.fillText('❤️', centerX, ey - 5);
             ctx.globalAlpha = 1;
           }
           
@@ -9250,7 +9380,7 @@ const SpaceShooter = () => {
           ctx.textAlign = 'center';
           ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 8;
-          ctx.fillText('⚡FROZEN', centerX, ey - 15);
+          ctx.fillText('❄️FROZEN', centerX, ey - 15);
           ctx.shadowBlur = 0;
           ctx.globalAlpha = 1;
         }
@@ -11738,7 +11868,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ff6600';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`💥 MISSILE`, upgradeX, upgradeY);
+        ctx.fillText(`🚀 MISSILE`, upgradeX, upgradeY);
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillStyle = '#888888';
         ctx.fillText('[M]', upgradeX + 95, upgradeY);
@@ -11770,7 +11900,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#00ffaa';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`⚡ SPEED`, upgradeX, upgradeY);
+        ctx.fillText(`â¡ SPEED`, upgradeX, upgradeY);
         // Level pips
         for (let i = 0; i < 3; i++) {
           ctx.fillStyle = i < speedLevel ? '#00ffaa' : '#333333';
@@ -11817,7 +11947,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ff8800';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`🗡️ PIERCE`, upgradeX, upgradeY);
+        ctx.fillText(`➜ PIERCE`, upgradeX, upgradeY);
         ctx.fillStyle = piercingTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${piercingTime}s`, upgradeX + 90, upgradeY);
@@ -11831,7 +11961,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ffff00';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`ÅÅ¸ 2X SCORE`, upgradeX, upgradeY);
+        ctx.fillText(`×2 2X SCORE`, upgradeX, upgradeY);
         ctx.fillStyle = scoreTime <= 5 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${scoreTime}s`, upgradeX + 98, upgradeY);
@@ -11845,7 +11975,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(` BOUNCE`, upgradeX, upgradeY);
+        ctx.fillText(`↩️ BOUNCE`, upgradeX, upgradeY);
         ctx.fillStyle = ricochetTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${ricochetTime}s`, upgradeX + 90, upgradeY);
@@ -11876,7 +12006,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = comboColor;
         ctx.shadowBlur = 8 * comboGlow;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`🎯 FORMATION`, upgradeX, upgradeY);
+        ctx.fillText(` FORMATION`, upgradeX, upgradeY);
         ctx.fillStyle = '#ffffff';
         ctx.font = "9px \"Press Start 2P\", monospace";
         ctx.fillText(`x${formationComboRef.current.toFixed(1)}`, upgradeX + 110, upgradeY);
@@ -11890,7 +12020,7 @@ const SpaceShooter = () => {
         ctx.shadowColor = '#ff00aa';
         ctx.shadowBlur = 5;
         ctx.font = "9px \"Press Start 2P\", monospace";
-        ctx.fillText(`« LASER`, upgradeX, upgradeY);
+        ctx.fillText(`➜ LASER`, upgradeX, upgradeY);
         ctx.fillStyle = laserTime <= 3 ? '#ff4444' : '#ffffff';
         ctx.font = "7px \"Press Start 2P\", monospace";
         ctx.fillText(`${laserTime}s`, upgradeX + 85, upgradeY);
@@ -12018,7 +12148,7 @@ const SpaceShooter = () => {
           if (flash) {
             ctx.fillStyle = '#00ffff';
             ctx.font = "6px \"Press Start 2P\", monospace";
-            ctx.fillText(`  [G] SHIELD`, upgradeX, upgradeY);
+            ctx.fillText(`🛡️ SHIELD`, upgradeX, upgradeY);
             upgradeY += 10;
           }
         }
@@ -12097,50 +12227,6 @@ const SpaceShooter = () => {
         
         ctx.restore();
       }
-      
-      // === DASH COOLDOWN INDICATOR ===
-      ctx.save();
-      const dashX = 180;
-      const dashY = GAME_HEIGHT - 15;
-      const dashReady = dashRef.current.cooldown <= 0;
-      const dashCooldownPercent = 1 - (dashRef.current.cooldown / DASH_COOLDOWN);
-      
-      // Dash icon/label
-      ctx.font = "8px \"Press Start 2P\", monospace";
-      ctx.textAlign = 'left';
-      ctx.fillStyle = dashReady ? '#00ffff' : '#444466';
-      ctx.fillText('DASH', dashX, dashY);
-      
-      if (dashReady) {
-        // Ready - pulsing glow
-        const pulse = Math.sin(hudTime / 80) * 0.3 + 0.7;
-        ctx.globalAlpha = pulse;
-        ctx.fillStyle = '#00ffff';
-        ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.arc(dashX + 50, dashY - 4, 6, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-        
-        // Key hint
-        ctx.font = "6px \"Press Start 2P\", monospace";
-        ctx.fillStyle = '#666666';
-        ctx.fillText('[Q]', dashX + 60, dashY);
-      } else {
-        // Cooldown bar
-        const barWidth = 40;
-        const barHeight = 6;
-        ctx.fillStyle = '#111133';
-        ctx.fillRect(dashX + 40, dashY - 8, barWidth, barHeight);
-        ctx.fillStyle = '#0088aa';
-        ctx.fillRect(dashX + 40, dashY - 8, barWidth * dashCooldownPercent, barHeight);
-        ctx.strokeStyle = '#336688';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(dashX + 40, dashY - 8, barWidth, barHeight);
-      }
-      ctx.restore();
       
       // === BOTTOM CENTER: Polarity & Speed Indicators ===
       ctx.save();
@@ -12543,6 +12629,68 @@ const SpaceShooter = () => {
         ctx.restore();
       }
       
+      // === DRAW DASH COOLDOWN INDICATOR ===
+      const dashHUD = dashRef.current;
+      const dashIndicatorX = 10;
+      const dashIndicatorY = 30;
+      const dashBarWidth = 80;
+      const dashBarHeight = 6;
+      
+      ctx.save();
+      // Background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(dashIndicatorX - 2, dashIndicatorY - 12, dashBarWidth + 4, dashBarHeight + 16);
+      
+      // Label
+      ctx.font = '8px "Press Start 2P", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#00ffff';
+      ctx.fillText('DASH', dashIndicatorX, dashIndicatorY - 2);
+      
+      // Cooldown bar background
+      ctx.fillStyle = '#222244';
+      ctx.fillRect(dashIndicatorX, dashIndicatorY, dashBarWidth, dashBarHeight);
+      
+      if (dashHUD.active) {
+        // Active - show cyan flash
+        ctx.fillStyle = '#00ffff';
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 10;
+        ctx.fillRect(dashIndicatorX, dashIndicatorY, dashBarWidth, dashBarHeight);
+        ctx.shadowBlur = 0;
+      } else if (dashHUD.cooldown > 0) {
+        // Cooling down - show red to cyan gradient
+        const cooldownPercent = 1 - (dashHUD.cooldown / dashHUD.maxCooldown);
+        const fillWidth = dashBarWidth * cooldownPercent;
+        const gradient = ctx.createLinearGradient(dashIndicatorX, 0, dashIndicatorX + dashBarWidth, 0);
+        gradient.addColorStop(0, '#ff4444');
+        gradient.addColorStop(1, '#00ffff');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(dashIndicatorX, dashIndicatorY, fillWidth, dashBarHeight);
+      } else {
+        // Ready - show full cyan with pulse
+        const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 200);
+        ctx.fillStyle = '#00ffff';
+        ctx.globalAlpha = pulse;
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 15;
+        ctx.fillRect(dashIndicatorX, dashIndicatorY, dashBarWidth, dashBarHeight);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        
+        // Ready text
+        ctx.font = '7px "Press Start 2P", monospace';
+        ctx.fillStyle = '#00ffff';
+        ctx.textAlign = 'center';
+        ctx.fillText('READY!', dashIndicatorX + dashBarWidth / 2, dashIndicatorY + dashBarHeight + 10);
+      }
+      
+      // Border
+      ctx.strokeStyle = dashHUD.cooldown === 0 ? '#00ffff' : '#666688';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(dashIndicatorX, dashIndicatorY, dashBarWidth, dashBarHeight);
+      ctx.restore();
+      
       // End screen shake transform
       ctx.restore();
     };
@@ -12624,7 +12772,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: GAME_WIDTH / 2,
               y: GAME_HEIGHT / 2 - 50,
-              text: '🌟 LEVEL ' + transition.level + ' 🌟',
+              text: '🚀 LEVEL 🚀' + transition.level + ' ÃÂ°ÃÂÃÂÃÂ',
               color: '#00ffff',
               lifetime: 120,
               vy: 0,
@@ -13184,7 +13332,7 @@ const SpaceShooter = () => {
             
             floatingTextsRef.current.push({
               x: bomb.x, y: bomb.y - 50,
-              text: '💣 BOMB!', color: '#ff4400', timer: 60, vy: -1
+              text: '💥 BOMB! 💥', color: '#ff4400', timer: 60, vy: -1
             });
           }
         }
@@ -13242,10 +13390,11 @@ const SpaceShooter = () => {
       let inputX = 0;
       let inputY = 0;
       
-      if (keysRef.current['ArrowUp'] || keysRef.current['KeyW']) inputY -= 1;
-      if (keysRef.current['ArrowDown'] || keysRef.current['KeyS']) inputY += 1;
-      if (keysRef.current['ArrowLeft'] || keysRef.current['KeyA']) inputX -= 1;
-      if (keysRef.current['ArrowRight'] || keysRef.current['KeyD']) inputX += 1;
+      const { controls } = userSettings;
+      if (controls.moveUp.some(k => keysRef.current[k])) inputY -= 1;
+      if (controls.moveDown.some(k => keysRef.current[k])) inputY += 1;
+      if (controls.moveLeft.some(k => keysRef.current[k])) inputX -= 1;
+      if (controls.moveRight.some(k => keysRef.current[k])) inputX += 1;
       
       // Apply gamepad analog input (overrides keyboard if significant)
       if (Math.abs(gpMoveX) > 0.1) inputX = gpMoveX;
@@ -13255,8 +13404,8 @@ const SpaceShooter = () => {
       if (inputX > 0.1) movingRight = true;
       if (inputX < -0.1) movingLeft = true;
       
-      // Handle dash input (Q key or L3/R3 on gamepad)
-      const dashInput = keysRef.current['KeyQ'] || gpDash;
+      // Handle dash input (custom keys or L3/R3 on gamepad)
+      const dashInput = controls.dash.some(k => keysRef.current[k]) || gpDash;
       if (dashInput && !dashRef.current.active && dashRef.current.cooldown <= 0 && (inputX !== 0 || inputY !== 0)) {
         // Trigger dash in current movement direction
         soundSystem.playDash();
@@ -13439,6 +13588,48 @@ const SpaceShooter = () => {
       // Stop completely if very slow
       if (Math.abs(player.vx) < 0.1) player.vx = 0;
       if (Math.abs(player.vy) < 0.1) player.vy = 0;
+      
+      // === DODGE ROLL/DASH SYSTEM ===
+      const dashState = dashRef.current;
+      
+      // Update dash cooldown
+      if (dashState.cooldown > 0) {
+        dashState.cooldown--;
+      }
+      
+      // Update active dash
+      if (dashState.active) {
+        dashState.duration--;
+        
+        // Create afterimage trail
+        if (dashState.duration % 2 === 0) {
+          dashState.afterimages.push({
+            x: player.x,
+            y: player.y,
+            lifetime: 15,
+            alpha: 0.6
+          });
+        }
+        
+        // Update afterimages
+        dashState.afterimages = dashState.afterimages.filter(img => {
+          img.lifetime--;
+          img.alpha = img.lifetime / 15 * 0.6;
+          return img.lifetime > 0;
+        });
+        
+        // Apply dash velocity
+        player.vx = dashState.direction.x * dashState.speed;
+        player.vy = dashState.direction.y * dashState.speed;
+        
+        // End dash when duration expires
+        if (dashState.duration <= 0) {
+          dashState.active = false;
+          dashState.invincible = false;
+          dashState.cooldown = dashState.maxCooldown;
+          dashState.afterimages = [];
+        }
+      }
       
       // Update position based on velocity
       player.x += player.vx;
@@ -13668,7 +13859,7 @@ const SpaceShooter = () => {
       // Activated by Triangle button or L key (separate from regular shooting)
       const canUseLaser = upgradesRef.current.rapidFire >= 3;
       const playerLaser = playerLaserRef.current;
-      const laserInput = keysRef.current['KeyL'] || gpLaser;
+      const laserInput = controls.special.some(k => keysRef.current[k]) || gpLaser;
       
       if (canUseLaser && laserInput && !isChargingRef.current) {
         // Charge the laser while holding fire
@@ -14481,7 +14672,7 @@ const SpaceShooter = () => {
         floatingTextsRef.current.push({
           x: GAME_WIDTH / 2,
           y: GAME_HEIGHT / 2 - 30,
-          text: '⚠️ DANGER INCOMING ⚠️',
+          text: '❤️ DANGER INCOMING ❤️',
           color: '#ff4444',
           lifetime: 120,
           vy: 0,
@@ -14867,7 +15058,7 @@ const SpaceShooter = () => {
           floatingTextsRef.current.push({
             x: mb.x + mb.width / 2,
             y: mb.y - 20,
-            text: '🔄 REGENERATING',
+            text: ' REGENERATING',
             color: '#00ff00',
             lifetime: 120,
             vy: -0.5
@@ -14973,7 +15164,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: mb.x + mb.width / 2,
               y: mb.y + mb.height + 20,
-              text: '🔄 REGENERATING...',
+              text: ' REGENERATING...',
               color: '#00ffff',
               lifetime: 60,
               vy: 1
@@ -14989,7 +15180,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: mb.x + mb.width / 2,
               y: mb.y - 20,
-              text: '✅ REGEN COMPLETE',
+              text: '❤️ REGEN COMPLETE',
               color: '#ff4400',
               lifetime: 90,
               vy: -1
@@ -15376,7 +15567,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: GAME_WIDTH / 2,
               y: 80,
-              text: '🛡️ CARRIER INCOMING!',
+              text: '🛡️ CARRIER INCOMING',
               color: '#ff6600',
               lifetime: 180,
               vy: 0
@@ -15603,7 +15794,7 @@ const SpaceShooter = () => {
         const collisionRadius = PLAYER_HITBOX_RADIUS + Math.min(ew, eh) / 3;
         
         collisionChecks++;
-        if (playerInvincibleRef.current <= 0 && distance < collisionRadius) {
+        if (playerInvincibleRef.current <= 0 && !dashRef.current.invincible && distance < collisionRadius) {
           createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, enemy.type === 'heavy' ? 'heavy' : 'normal', true);
           
           if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
@@ -15631,7 +15822,7 @@ const SpaceShooter = () => {
         
         return true;
       } catch (error) {
-        console.error('❌ ERROR in enemy collision update:', error);
+        console.error('ÃÂ¢ÃÂÃÂ ERROR in enemy collision update:', error);
         return true;
       }
     });
@@ -15739,7 +15930,7 @@ const SpaceShooter = () => {
           const distance = Math.sqrt(dx * dx + dy * dy);
           const collisionRadius = PLAYER_HITBOX_RADIUS + Math.min(boss.width, boss.height) / 3;
           
-          if (playerInvincibleRef.current <= 0 && distance < collisionRadius) {
+          if (playerInvincibleRef.current <= 0 && !dashRef.current.invincible && distance < collisionRadius) {
             if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
               upgradesRef.current.shieldHits--;
               upgradesRef.current.shieldRechargeTimer = 180;
@@ -15789,7 +15980,7 @@ const SpaceShooter = () => {
             floatingTextsRef.current.push({
               x: boss.x + boss.width / 2,
               y: boss.y - 20,
-              text: '🔄 REGENERATING',
+              text: ' REGENERATING',
               color: '#00ff00',
               lifetime: 120,
               vy: -0.5
@@ -15823,7 +16014,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: boss.x + boss.width / 2,
                 y: boss.y - 50,
-                text: '⚡ EMP PULSE!',
+                text: '⚡ EMP PULSE',
                 color: '#ff00ff',
                 lifetime: 90,
                 vy: -1
@@ -15848,7 +16039,7 @@ const SpaceShooter = () => {
                 floatingTextsRef.current.push({
                   x: playerCenterX,
                   y: playerCenterY - 20,
-                  text: '⚠️ DISABLED!',
+                  text: '❤️ DISABLED',
                   color: '#ff6600',
                   lifetime: 90,
                   vy: -1
@@ -16064,7 +16255,8 @@ const SpaceShooter = () => {
               if (player.x < boss.x && 
                   player.y + PLAYER_HEIGHT > laserY - laserHeight / 2 && 
                   player.y < laserY + laserHeight / 2 &&
-                  playerInvincibleRef.current <= 0) {
+                  playerInvincibleRef.current <= 0 &&
+                  !dashRef.current.invincible) {
                 // Player hit by laser!
                 if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
                   upgradesRef.current.shieldHits--;
@@ -16236,7 +16428,7 @@ const SpaceShooter = () => {
                   floatingTextsRef.current.push({
                     x: force.x,
                     y: force.y,
-                    text: '⚠️ DISABLED',
+                    text: '❤️ DISABLED',
                     color: '#ff0000',
                     life: 90
                   });
@@ -16380,7 +16572,7 @@ const SpaceShooter = () => {
                   floatingTextsRef.current.push({
                     x: mb.x + mb.width / 2,
                     y: mb.y - 15,
-                    text: '⚠️ SHIELD DOWN',
+                    text: '❤️ SHIELD DOWN',
                     color: '#ff6600',
                     lifetime: 45,
                     vy: -1
@@ -17005,7 +17197,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: GAME_WIDTH / 2,
                 y: GAME_HEIGHT / 3,
-                text: '☢ NUCLEAR STRIKE',
+                text: '☢️ NUCLEAR STRIKE',
                 color: '#ff0000',
                 lifetime: 150,
                 vy: -0.5,
@@ -17402,6 +17594,12 @@ const SpaceShooter = () => {
       // Update player invincibility
       if (playerInvincibleRef.current > 0) {
         playerInvincibleRef.current--;
+      }
+      
+      // Add dash invincibility to player invincibility
+      if (dashRef.current.invincible && !playerInvincibleRef.current) {
+        // Dash grants temporary invincibility without showing the normal invincibility flash
+        // Collision checks will skip during dash
       }
       
       // Update spawn glow animation
@@ -18160,7 +18358,7 @@ const SpaceShooter = () => {
           return enemy.x > -ENEMY_WIDTH;
         }
       } catch (error) {
-        console.error('❌ ERROR in enemy update:', error);
+        console.error('ÃÂ¢ÃÂÃÂ ERROR in enemy update:', error);
         console.error('Enemy that caused error:', enemy);
         return true; // Keep enemy to avoid cascade failures
       }
@@ -18430,7 +18628,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: enemy.x + ew / 2,
                 y: enemy.y - 10,
-                text: '🔄 RICOCHET',
+                text: ' RICOCHET',
                 color: '#88ffff',
                 lifetime: 40,
                 vy: -1
@@ -18575,7 +18773,7 @@ const SpaceShooter = () => {
               floatingTextsRef.current.push({
                 x: enemy.x + ew / 2,
                 y: enemy.y,
-                text: '👀 SPLIT!',
+                text: '🚀 SPLIT!',
                 color: '#ff8800',
                 lifetime: 40,
                 vy: -2
@@ -18826,7 +19024,7 @@ const SpaceShooter = () => {
               boxShadow: `0 0 10px ${isRecording ? '#ff0000' : '#0088ff'}`,
               animation: isRecording ? 'blink 1s ease-in-out infinite' : 'none'
             }}></span>
-            {isRecording ? '⏺️ RECORDING' : '▶️ REPLAY'}
+            {isRecording ? 'ÃÂ¢ÃÂÃÂºÃÂ¯ÃÂ¸ÃÂ RECORDING' : 'ÃÂ¢ÃÂÃÂ¶ÃÂ¯ÃÂ¸ÃÂ REPLAY'}
           </div>
         )}
         
@@ -18985,12 +19183,12 @@ const SpaceShooter = () => {
                 <span className="blink">PRESS ANY BUTTON TO START</span>
               </div>
               <div className="splash-hints">
-                <span>🎮 Controller Supported</span>
-                <span>⌨️ Keyboard Ready</span>
+                <span>ÃÂ°ÃÂÃÂÃÂ® Controller Supported</span>
+                <span>ÃÂ¢ÃÂÃÂ¨ÃÂ¯ÃÂ¸ÃÂ Keyboard Ready</span>
               </div>
             </div>
             <div className="splash-footer">
-              <span>Â© 2024 NEBULA X</span>
+              <span>ÃÂÃÂÃÂÃÂ© 2024 NEBULA X</span>
               <span>R-TYPE INSPIRED</span>
             </div>
           </div>
@@ -19036,7 +19234,7 @@ const SpaceShooter = () => {
                           return `drop-shadow(0 0 20px ${colorObj?.glow || 'rgba(0, 255, 136, 0.8)'})`;
                         })()
                       }}
-                    >{AVATAR_OPTIONS[userSettings.avatar]?.icon || '🚀'}</span>
+                    >{AVATAR_OPTIONS[userSettings.avatar]?.icon || 'ÃÂ°ÃÂÃÂÃÂ'}</span>
                   </div>
                   <div className="ship-showcase-particles">
                     {[...Array(8)].map((_, i) => (
@@ -19103,7 +19301,7 @@ const SpaceShooter = () => {
                         return `drop-shadow(0 0 8px ${colorObj?.glow || 'rgba(0, 255, 136, 0.6)'})`;
                       })()
                     }}
-                  >{AVATAR_OPTIONS[userSettings.avatar]?.icon || '🚀'}</span>
+                  >{AVATAR_OPTIONS[userSettings.avatar]?.icon || 'ÃÂ°ÃÂÃÂÃÂ'}</span>
                 </div>
                 <div className="profile-info">
                   <span 
@@ -19124,22 +19322,22 @@ const SpaceShooter = () => {
               
               <div className="menu-stats split-stats">
                 <div className="stat-box">
-                  <span className="stat-icon">🏆</span>
+                  <span className="stat-icon">ð</span>
                   <span className="stat-label">HIGH SCORE</span>
                   <span className="stat-value">{highScore.toLocaleString()}</span>
                 </div>
                 <div className="stat-box">
-                  <span className="stat-icon">🎯</span>
+                  <span className="stat-icon">ð</span>
                   <span className="stat-label">BEST WAVE</span>
                   <span className="stat-value">{Math.max(1, Math.floor(highScore / 500))}</span>
                 </div>
                 <div className="stat-box">
-                  <span className="stat-icon">💰</span>
+                  <span className="stat-icon">ð°</span>
                   <span className="stat-label">CREDITS</span>
                   <span className="stat-value">{(highScore * 10).toLocaleString()}</span>
                 </div>
                 <div className="stat-box">
-                  <span className="stat-icon">⚡</span>
+                  <span className="stat-icon">â±ï¸</span>
                   <span className="stat-label">PLAYTIME</span>
                   <span className="stat-value">{Math.floor(highScore / 100)}h</span>
                 </div>
@@ -19165,7 +19363,7 @@ const SpaceShooter = () => {
                   className={`start-button ${menuSelection === 0 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(0)}
                 >
-                  <span className="btn-icon">🚀</span> NEW MISSION
+                  <span className="btn-icon">ð</span> NEW MISSION
                   <span className="btn-shine"></span>
                 </button>
                 {hasSaveGame() && (
@@ -19174,8 +19372,7 @@ const SpaceShooter = () => {
                     className={`start-button continue-button ${menuSelection === 1 ? 'gamepad-selected' : ''}`}
                     onMouseEnter={() => setMenuSelection(1)}
                   >
-                    <span className="btn-icon">▶️</span> CONTINUE
-                    <span className="btn-shine"></span>
+                    <span className="btn-icon">â¶ï¸</span> CONTINUE
                   </button>
                 )}
                 {gameBeaten && (
@@ -19184,8 +19381,7 @@ const SpaceShooter = () => {
                     className={`start-button challenge-button ${menuSelection === (hasSaveGame() ? 2 : 1) ? 'gamepad-selected' : ''}`}
                     onMouseEnter={() => setMenuSelection(hasSaveGame() ? 2 : 1)}
                   >
-                    <span className="btn-icon">⭐</span> CHALLENGE MODES
-                    <span className="btn-shine"></span>
+                    <span className="btn-icon">â­</span> CHALLENGE MODES
                   </button>
                 )}
                 <button 
@@ -19193,23 +19389,23 @@ const SpaceShooter = () => {
                   className={`settings-button customize-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 3 : 2) : (gameBeaten ? 2 : 1)) ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 3 : 2) : (gameBeaten ? 2 : 1))}
                 >
-                  <span className="btn-icon">🛸</span> CUSTOMIZE
+                  <span className="btn-icon">ð¨</span> CUSTOMIZE
                 </button>
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowSettings(true); }} 
                   className={`settings-button ${menuSelection === (hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2)) ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setMenuSelection(hasSaveGame() ? (gameBeaten ? 4 : 3) : (gameBeaten ? 3 : 2))}
                 >
-                  <span className="btn-icon">⚙️</span> SETTINGS
+                  <span className="btn-icon">âï¸</span> SETTINGS
                 </button>
               </div>
               
-              <p className="start-hint split-hint">🎮 D-Pad to navigate • ✓ to select • ENTER to start</p>
+              <p className="start-hint split-hint">ð® D-Pad to navigate â¢ to select â¢ ENTER to start</p>
               
               {/* Decorative bottom */}
               <div className="menu-footer split-footer">
                 <span className="version">v1.0</span>
-                <span className="divider">•</span>
+                <span className="divider">â¢</span>
                 <span className="credit">R-TYPE INSPIRED</span>
               </div>
             </div>
@@ -19222,7 +19418,7 @@ const SpaceShooter = () => {
             {showMissionMenu && (
               <div className="challenge-modal-overlay">
                 <div className="challenge-modal mission-select-modal">
-                  <h2>🚀 MISSION SELECT</h2>
+                  <h2>ð MISSION SELECT</h2>
                   <p className="challenge-subtitle">Choose your mission type</p>
                   
                   <div className="challenge-options">
@@ -19238,11 +19434,11 @@ const SpaceShooter = () => {
                         startGame();
                       }}
                     >
-                      <div className="challenge-icon">🎮</div>
+                      <div className="challenge-icon">ÃÂ°ÃÂÃÂÃÂ®</div>
                       <div className="challenge-info">
                         <h3>CAMPAIGN</h3>
                         <p>Play through the main story missions</p>
-                        <span className="challenge-detail">Progressive difficulty • Save progress • Unlock upgrades</span>
+                        <span className="challenge-detail">Progressive difficulty  Save progress  Unlock upgrades</span>
                       </div>
                     </button>
                     
@@ -19254,11 +19450,11 @@ const SpaceShooter = () => {
                         setShowPracticeMode(true);
                       }}
                     >
-                      <div className="challenge-icon">🎯</div>
+                      <div className="challenge-icon">ð¯</div>
                       <div className="challenge-info">
                         <h3>PRACTICE MODE</h3>
                         <p>Train your skills with custom settings</p>
-                        <span className="challenge-detail">Custom wave • Infinite lives • No scoring</span>
+                        <span className="challenge-detail">Custom wave â¢ Infinite lives â¢ No scoring</span>
                       </div>
                     </button>
                     
@@ -19270,11 +19466,11 @@ const SpaceShooter = () => {
                         setShowReplayMenu(true);
                       }}
                     >
-                      <div className="challenge-icon">📹</div>
+                      <div className="challenge-icon">ð¹</div>
                       <div className="challenge-info">
                         <h3>REPLAYS</h3>
                         <p>Watch and share your best runs</p>
-                        <span className="challenge-detail">Record gameplay • Playback • Share victories</span>
+                        <span className="challenge-detail">Record gameplay â¢ Playback â¢ Share victories</span>
                       </div>
                     </button>
                   </div>
@@ -19283,7 +19479,7 @@ const SpaceShooter = () => {
                     className="challenge-back"
                     onClick={() => setShowMissionMenu(false)}
                   >
-                    ◀ BACK TO MENU
+                    ÃÂ¢ÃÂÃÂ BACK TO MENU
                   </button>
                 </div>
               </div>
@@ -19293,7 +19489,7 @@ const SpaceShooter = () => {
             {showChallenges && (
               <div className="challenge-modal-overlay">
                 <div className="challenge-modal">
-                  <h2>🎯 CHALLENGE MODES</h2>
+                  <h2> CHALLENGE MODES</h2>
                   <p className="challenge-subtitle">Unlocked for defeating the Nexus Core!</p>
                   
                   <div className="challenge-options">
@@ -19306,11 +19502,11 @@ const SpaceShooter = () => {
                         startGame();
                       }}
                     >
-                      <div className="challenge-icon">💀</div>
+                      <div className="challenge-icon">ÃÂ°ÃÂÃÂÃÂ</div>
                       <div className="challenge-info">
                         <h3>SURVIVAL MODE</h3>
                         <p>Endless waves with 1 life. How long can you survive?</p>
-                        <span className="challenge-detail">Starts at Wave 5 ↩• No continues</span>
+                        <span className="challenge-detail">Starts at Wave 5 ÃÂ¢ÃÂÃÂ© No continues</span>
                       </div>
                     </button>
                     
@@ -19323,11 +19519,11 @@ const SpaceShooter = () => {
                         startGame();
                       }}
                     >
-                      <div className="challenge-icon">⏱️</div>
+                      <div className="challenge-icon">ÃÂ¢ÃÂÃÂ±ÃÂ¯ÃÂ¸ÃÂ</div>
                       <div className="challenge-info">
                         <h3>BOSS RUSH</h3>
                         <p>Face all bosses back-to-back. No mercy!</p>
-                        <span className="challenge-detail">Bosses only ↩• Limited healing</span>
+                        <span className="challenge-detail">Bosses only ÃÂ¢ÃÂÃÂ© Limited healing</span>
                       </div>
                     </button>
                     
@@ -19340,11 +19536,11 @@ const SpaceShooter = () => {
                         startGame();
                       }}
                     >
-                      <div className="challenge-icon">⏱️</div>
+                      <div className="challenge-icon">ÃÂ¢ÃÂÃÂ±ÃÂ¯ÃÂ¸ÃÂ</div>
                       <div className="challenge-info">
                         <h3>TIME ATTACK</h3>
                         <p>Complete 10 waves as fast as possible!</p>
-                        <span className="challenge-detail">Race against the clock ↩• Leaderboard ready</span>
+                        <span className="challenge-detail">Race against the clock ÃÂ¢ÃÂÃÂ© Leaderboard ready</span>
                       </div>
                     </button>
                   </div>
@@ -19353,7 +19549,7 @@ const SpaceShooter = () => {
                     className="challenge-back"
                     onClick={() => setShowChallenges(false)}
                   >
-                    ◀ BACK TO MENU
+                    ÃÂ¢ÃÂÃÂ BACK TO MENU
                   </button>
                 </div>
               </div>
@@ -19480,7 +19676,7 @@ const SpaceShooter = () => {
             {showReplayMenu && (
               <div className="challenge-modal-overlay">
                 <div className="challenge-modal replay-modal">
-                  <h2>📹 REPLAY SYSTEM</h2>
+                  <h2> REPLAY SYSTEM</h2>
                   <p className="challenge-subtitle">Watch and share your best runs!</p>
                   
                   <div className="replay-controls">
@@ -19498,7 +19694,7 @@ const SpaceShooter = () => {
                         }
                       }}
                     >
-                      <span className="btn-icon">{isRecording ? '⏺️' : '🎬'}</span>
+                      <span className="btn-icon">{isRecording ? 'ÃÂ¢ÃÂÃÂºÃÂ¯ÃÂ¸ÃÂ' : 'ÃÂ°ÃÂÃÂÃÂ¬'}</span>
                       {isRecording ? 'STOP RECORDING' : 'START NEW RECORDING'}
                     </button>
                   </div>
@@ -19516,10 +19712,10 @@ const SpaceShooter = () => {
                               <span className="replay-mode">{replay.gameMode.toUpperCase()}</span>
                             </div>
                             <div className="replay-stats">
-                              <span>🏆 {replay.score.toLocaleString()}</span>
-                              <span>🌊 Wave {replay.wave}</span>
-                              <span>⏱️ {Math.floor(replay.duration / 1000)}s</span>
-                              <span>📊 {replay.frameCount} frames</span>
+                              <span>ÃÂ°ÃÂÃÂÃÂ {replay.score.toLocaleString()}</span>
+                              <span>ÃÂ°ÃÂÃÂÃÂ Wave {replay.wave}</span>
+                              <span>ÃÂ¢ÃÂÃÂ±ÃÂ¯ÃÂ¸ÃÂ {Math.floor(replay.duration / 1000)}s</span>
+                              <span>ÃÂ°ÃÂÃÂÃÂ {replay.frameCount} frames</span>
                             </div>
                             <span className="replay-date">
                               {new Date(replay.id).toLocaleDateString()} {new Date(replay.id).toLocaleTimeString()}
@@ -19533,7 +19729,7 @@ const SpaceShooter = () => {
                                 playReplay(replay.id);
                               }}
                             >
-                              ▶️ PLAY
+                              ÃÂ¢ÃÂÃÂ¶ÃÂ¯ÃÂ¸ÃÂ PLAY
                             </button>
                             <button 
                               className="replay-delete-btn"
@@ -19544,7 +19740,7 @@ const SpaceShooter = () => {
                                 }
                               }}
                             >
-                              🗑️
+                              ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ
                             </button>
                           </div>
                         </div>
@@ -19556,7 +19752,7 @@ const SpaceShooter = () => {
                     className="challenge-back"
                     onClick={() => setShowReplayMenu(false)}
                   >
-                    ◀ BACK TO MENU
+                    ÃÂ¢ÃÂÃÂ BACK TO MENU
                   </button>
                   
                   <p className="practice-note">Replays are stored locally and limited to 10 most recent</p>
@@ -19568,7 +19764,7 @@ const SpaceShooter = () => {
         
         {gameState === 'menu' && showSettings && (
           <div className="overlay settings-overlay">
-            <h2>⚙️ SETTINGS</h2>
+            <h2>ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ SETTINGS</h2>
             
             {/* Settings Tabs */}
             <div className="settings-tabs">
@@ -19576,25 +19772,25 @@ const SpaceShooter = () => {
                 className={`settings-tab ${settingsTab === 'audio' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('audio')}
               >
-                Å  Audio
+                ÃÂÃÂÃÂÃÂ  Audio
               </button>
               <button 
                 className={`settings-tab ${settingsTab === 'profile' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('profile')}
               >
-                👤 Profile
+                ÃÂ°ÃÂÃÂÃÂ¤ Profile
               </button>
               <button 
                 className={`settings-tab ${settingsTab === 'controls' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('controls')}
               >
-                🎮 Controls
+                ÃÂ°ÃÂÃÂÃÂ® Controls
               </button>
               <button 
                 className={`settings-tab ${settingsTab === 'achievements' ? 'active' : ''}`}
                 onClick={() => setSettingsTab('achievements')}
               >
-                🏆 Achievements
+                ÃÂ°ÃÂÃÂÃÂ Achievements
               </button>
             </div>
             
@@ -19603,7 +19799,7 @@ const SpaceShooter = () => {
               {settingsTab === 'audio' && (
                 <div className="settings-audio">
                   <div className="volume-control">
-                    <label>Å  Master Volume</label>
+                    <label>ÃÂÃÂÃÂÃÂ  Master Volume</label>
                     <div className="slider-row">
                       <input 
                         type="range" 
@@ -19617,7 +19813,7 @@ const SpaceShooter = () => {
                     </div>
                   </div>
                   <div className="volume-control">
-                    <label>🎵 Music Volume</label>
+                    <label>ÃÂ°ÃÂÃÂÃÂµ Music Volume</label>
                     <div className="slider-row">
                       <input 
                         type="range" 
@@ -19631,7 +19827,7 @@ const SpaceShooter = () => {
                     </div>
                   </div>
                   <div className="volume-control">
-                    <label>🔊 SFX Volume</label>
+                    <label>ÃÂ°ÃÂÃÂÃÂ SFX Volume</label>
                     <div className="slider-row">
                       <input 
                         type="range" 
@@ -19648,14 +19844,14 @@ const SpaceShooter = () => {
                     className="test-sound-button"
                     onClick={() => soundSystem.playShoot()}
                   >
-                    🔊 Test Sound
+                    ÃÂ°ÃÂÃÂÃÂ Test Sound
                   </button>
                   
                   <div className="performance-section">
-                    <h4 style={{ marginTop: '20px', marginBottom: '10px', color: '#00ffff' }}>⚡ PERFORMANCE</h4>
+                    <h4 style={{ marginTop: '20px', marginBottom: '10px', color: '#00ffff' }}>ÃÂ¢ÃÂÃÂ¡ PERFORMANCE</h4>
                     <div className="toggle-option">
                       <label className="toggle-label">
-                        <span>⚡ Performance Mode</span>
+                        <span>ÃÂ¢ÃÂÃÂ¡ Performance Mode</span>
                         <span className="toggle-desc">Reduce visual effects for smoother gameplay</span>
                       </label>
                       <button 
@@ -19667,7 +19863,7 @@ const SpaceShooter = () => {
                     </div>
                     <div className="toggle-option">
                       <label className="toggle-label">
-                        <span>🔊 Show FPS</span>
+                        <span>ÃÂ°ÃÂÃÂÃÂ Show FPS</span>
                         <span className="toggle-desc">Display frames per second counter</span>
                       </label>
                       <button 
@@ -19685,7 +19881,7 @@ const SpaceShooter = () => {
               {settingsTab === 'profile' && (
                 <div className="settings-profile">
                   <div className="profile-name-section">
-                    <label>✏️ Pilot Name</label>
+                    <label>ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Pilot Name</label>
                     <input 
                       type="text" 
                       value={userSettings.playerName}
@@ -19696,7 +19892,7 @@ const SpaceShooter = () => {
                     />
                   </div>
                   <div className="avatar-section">
-                    <label>🚀 Avatar</label>
+                    <label>ÃÂ°ÃÂÃÂÃÂ Avatar</label>
                     <div className="avatar-grid">
                       {AVATAR_OPTIONS.map(avatar => (
                         <button
@@ -19736,7 +19932,7 @@ const SpaceShooter = () => {
                             boxShadow: userSettings.avatarColor === colorOption.color && colorOption.glow ? `0 0 12px ${colorOption.glow}` : 'none'
                           }}
                         >
-                          {userSettings.avatarColor === colorOption.color && <span className="color-check">✓</span>}
+                          {userSettings.avatarColor === colorOption.color && <span className="color-check">ÃÂ¢ÃÂÃÂ</span>}
                         </button>
                       ))}
                     </div>
@@ -19774,83 +19970,128 @@ const SpaceShooter = () => {
               
               {/* Controls Tab */}
               {settingsTab === 'controls' && (
-                <>
-                  <div className="controls-section">
-                    <h3>⌨️ Keyboard</h3>
-                    <div className="controls-info">
-                      <p>↩ Â↩ ↩ ↩  / WASD - Move</p>
-                      <p>SPACE - Shoot</p>
-                      <p>Q - Dash (while moving)</p>
-                      <p>B - Bomb (screen clear)</p>
-                      <p>C - Toggle Polarity</p>
-                      <p>SHIFT - Wave Cannon</p>
-                      <p>L - Laser Beam (↩°👥3 Rapid)</p>
-                      <p>M - Missile</p>
-                      <p>F - Force Toggle</p>
-                      <p>G - Force Shield (Lv4+)</p>
-                      <p>[ ] - Speed Setting</p>
-                      <p>ESC - Pause</p>
+                <div className="settings-controls">
+                  <div className="controls-header">
+                    <h3> Keyboard Controls</h3>
+                    <button 
+                      className="reset-controls-button"
+                      onClick={() => setUserSettings(prev => ({ ...prev, controls: DEFAULT_USER_SETTINGS.controls }))}
+                    >
+                       Reset to Default
+                    </button>
+                  </div>
+                  
+                  {remappingControl && (
+                    <div className="remapping-overlay">
+                      <div className="remapping-prompt">
+                        <h4>Press any key for:</h4>
+                        <p>{remappingControl.replace(/([A-Z])/g, ' ').trim().toUpperCase()}</p>
+                        <p className="remapping-hint">ESC to cancel</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="control-mappings">
+                    {/* Movement Controls */}
+                    <div className="control-category">
+                      <h4>Movement</h4>
+                      {[
+                        { name: 'moveUp', label: 'Move Up' },
+                        { name: 'moveDown', label: 'Move Down' },
+                        { name: 'moveLeft', label: 'Move Left' },
+                        { name: 'moveRight', label: 'Move Right' }
+                      ].map(control => (
+                        <div key={control.name} className="control-row">
+                          <span className="control-label">{control.label}</span>
+                          <div className="control-keys">
+                            {userSettings.controls[control.name].map((key, idx) => (
+                              <button
+                                key={idx}
+                                className="key-button"
+                                onClick={() => {
+                                  setRemappingControl(control.name);
+                                  setRemappingSlot(idx);
+                                }}
+                              >
+                                {key.replace('Key', '').replace('Arrow', '').replace('Digit', '')}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Combat Controls */}
+                    <div className="control-category">
+                      <h4>Combat</h4>
+                      {[
+                        { name: 'shoot', label: 'Shoot' },
+                        { name: 'missile', label: 'Missile' },
+                        { name: 'special', label: 'Special' },
+                        { name: 'bomb', label: 'Bomb' }
+                      ].map(control => (
+                        <div key={control.name} className="control-row">
+                          <span className="control-label">{control.label}</span>
+                          <div className="control-keys">
+                            {userSettings.controls[control.name].map((key, idx) => (
+                              <button
+                                key={idx}
+                                className="key-button"
+                                onClick={() => {
+                                  setRemappingControl(control.name);
+                                  setRemappingSlot(idx);
+                                }}
+                              >
+                                {key.replace('Key', '').replace('Arrow', '').replace('Digit', '')}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* System Controls */}
+                    <div className="control-category">
+                      <h4>System</h4>
+                      {[
+                        { name: 'dash', label: 'Dash' },
+                        { name: 'togglePolarity', label: 'Toggle Polarity' },
+                        { name: 'toggleForce', label: 'Toggle Force' },
+                        { name: 'pause', label: 'Pause' }
+                      ].map(control => (
+                        <div key={control.name} className="control-row">
+                          <span className="control-label">{control.label}</span>
+                          <div className="control-keys">
+                            {userSettings.controls[control.name].map((key, idx) => (
+                              <button
+                                key={idx}
+                                className="key-button"
+                                onClick={() => {
+                                  setRemappingControl(control.name);
+                                  setRemappingSlot(idx);
+                                }}
+                              >
+                                {key.replace('Key', '').replace('Arrow', '').replace('Digit', '').replace('Shift', 'Shift').replace('Left', '').replace('Right', '')}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div className="controls-section">
-                    <h3>🎮 Xbox Controller</h3>
-                    <div className="controls-info">
-                      <p><strong>Movement:</strong></p>
-                      <p>  Left Stick / D-Pad - Move Ship</p>
-                      <p><strong>Combat:</strong></p>
-                      <p>  A / RB / RT - Shoot</p>
-                      <p>  X - Missile</p>
-                      <p>  Y - Laser Beam (Lv3+ Rapid Fire)</p>
-                      <p>  LT (Hold) - Wave Cannon Charge</p>
-                      <p>  LS / RS Click - Dash</p>
-                      <p><strong>Force Pod:</strong></p>
-                      <p>  B - Force Toggle (Front/Back/Free)</p>
-                      <p><strong>Polarity System:</strong></p>
-                      <p>  LB - Toggle Light/Dark</p>
-                      <p>  Right Stick ← → - Quick Toggle</p>
-                      <p><strong>Special:</strong></p>
-                      <p>  View Button - Bomb (Screen Clear)</p>
-                      <p>  Menu Button - Pause Game</p>
-                    </div>
+                  
+                  <div className="controls-note">
+                    <p> Click any key button to remap it</p>
+                    <p>ÃÂ°ÃÂÃÂÃÂ® Gamepad controls are automatic and cannot be remapped</p>
                   </div>
-                  <div className="controls-section">
-                    <h3>🎮 PlayStation Controller</h3>
-                    <div className="controls-info">
-                      <p><strong>Movement:</strong></p>
-                      <p>  Left Stick / D-Pad - Move Ship</p>
-                      <p><strong>Combat:</strong></p>
-                      <p>  ✕ / R1 / R2 - Shoot</p>
-                      <p>  □ - Missile</p>
-                      <p>  △ - Laser Beam (Lv3+ Rapid Fire)</p>
-                      <p>  L2 (Hold) - Wave Cannon Charge</p>
-                      <p>  L3 / R3 Click - Dash</p>
-                      <p><strong>Force Pod:</strong></p>
-                      <p>  ○ - Force Toggle (Front/Back/Free)</p>
-                      <p><strong>Polarity System:</strong></p>
-                      <p>  L1 - Toggle Light/Dark</p>
-                      <p>  Right Stick ← → - Quick Toggle</p>
-                      <p><strong>Special:</strong></p>
-                      <p>  Share Button - Bomb (Screen Clear)</p>
-                      <p>  Options Button - Pause Game</p>
-                    </div>
-                  </div>
-                  <div className="powerups-section">
-                    <h3>💎 Power-Ups</h3>
-                    <div className="powerup-info">
-                      <p>« Rapid Fire - Faster shooting (↩°👥3 = LASER!)</p>
-                      <p>💥 Missiles - Homing missiles</p>
-                      <p>{'\ud83d\udee1\ufe0f'} Shield - Block 3 hits (stacks to 9)</p>
-                      <p>Âµ Force - Follows movement!</p>
-                    </div>
-                  </div>
-                </>
+                </div>
               )}
 
               {/* Achievements Tab */}
               {settingsTab === 'achievements' && (
                 <div className="achievements-section">
                   <div className="achievements-header">
-                    <span>🏆 {unlockedAchievements.length} / {ACHIEVEMENTS.length} Unlocked</span>
+                    <span>ÃÂ°ÃÂÃÂÃÂ {unlockedAchievements.length} / {ACHIEVEMENTS.length} Unlocked</span>
                   </div>
                   <div className="achievements-grid">
                     {ACHIEVEMENTS.map(achievement => {
@@ -19861,7 +20102,7 @@ const SpaceShooter = () => {
                           className={`achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`}
                         >
                           <div className="achievement-card-icon">
-                            {isUnlocked ? '🏆' : ''}
+                            {isUnlocked ? 'ÃÂ°ÃÂÃÂÃÂ' : ''}
                           </div>
                           <div className="achievement-card-info">
                             <div className="achievement-card-name">
@@ -19880,10 +20121,10 @@ const SpaceShooter = () => {
             </div>
             <div className="settings-buttons-row">
               <button onClick={() => setShowSettings(false)} className="back-button">
-                ◀ BACK
+                ÃÂ¢ÃÂÃÂ BACK
               </button>
               <button onClick={() => { soundSystem.playUISparkle(); setShowSettings(false); }} className="settings-ok-button">
-                ✓ OK
+                ÃÂ¢ÃÂÃÂ OK
               </button>
             </div>
             <p className="start-hint">{'\ud83c\udfae'} Press {'\u274c'} or {'\ud83d\udd19'} to go back</p>
@@ -19892,7 +20133,7 @@ const SpaceShooter = () => {
         
         {(gameState === 'menu' || gameState === 'checkpoint') && showCustomize && (
           <div className="overlay customize-overlay">
-            <h2>🚀 SHIP HANGAR</h2>
+            <h2>ð SHIP HANGAR</h2>
             <div className="customize-layout">
               {/* Ship Preview Section */}
               <div className="customize-preview-section">
@@ -20117,7 +20358,7 @@ const SpaceShooter = () => {
                     className="ship-nav-btn"
                     onClick={() => { soundSystem.playUISparkle(); setSelectedShip((prev) => (prev - 1 + SHIP_DESIGNS.length) % SHIP_DESIGNS.length); }}
                   >
-                    ◀
+                    
                   </button>
                   <div className="ship-dots">
                     {SHIP_DESIGNS.map((_, i) => (
@@ -20134,7 +20375,7 @@ const SpaceShooter = () => {
                     className="ship-nav-btn"
                     onClick={() => { soundSystem.playUISparkle(); setSelectedShip((prev) => (prev + 1) % SHIP_DESIGNS.length); }}
                   >
-                    ▶
+                    
                   </button>
                 </div>
               </div>
@@ -20152,25 +20393,25 @@ const SpaceShooter = () => {
                 
                 <div className="ship-stats">
                   <div className="stat-row">
-                    <span className="stat-label">⚡ SPEED</span>
+                    <span className="stat-label">â¡ SPEED</span>
                     <div className="stat-bar-container">
                       <div className="stat-bar" style={{ width: `${SHIP_DESIGNS[selectedShip].stats.speed * 20}%`, backgroundColor: '#00ffff' }}></div>
                     </div>
                   </div>
                   <div className="stat-row">
-                    <span className="stat-label">💥 POWER</span>
+                    <span className="stat-label">ð¥ POWER</span>
                     <div className="stat-bar-container">
                       <div className="stat-bar" style={{ width: `${SHIP_DESIGNS[selectedShip].stats.firepower * 20}%`, backgroundColor: '#ff4444' }}></div>
                     </div>
                   </div>
                   <div className="stat-row">
-                    <span className="stat-label">{'🛡️'} ARMOR</span>
+                    <span className="stat-label">ð¡ï¸ ARMOR</span>
                     <div className="stat-bar-container">
                       <div className="stat-bar" style={{ width: `${SHIP_DESIGNS[selectedShip].stats.defense * 20}%`, backgroundColor: '#44ff44' }}></div>
                     </div>
                   </div>
                   <div className="stat-row">
-                    <span className="stat-label">✨ SPECIAL</span>
+                    <span className="stat-label">â¨ SPECIAL</span>
                     <div className="stat-bar-container">
                       <div className="stat-bar" style={{ width: `${SHIP_DESIGNS[selectedShip].stats.special * 20}%`, backgroundColor: '#ff44ff' }}></div>
                     </div>
@@ -20184,12 +20425,12 @@ const SpaceShooter = () => {
             {/* Parts Customization */}
             <div className="parts-section">
               <div className="part-selector">
-                <span className="part-label">🔥 BOOSTER</span>
+                <span className="part-label">ð¥ BOOSTER</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, booster: (p.booster - 1 + BOOSTER_OPTIONS.length) % BOOSTER_OPTIONS.length }))}
-                  >◀</button>
+                  >ÃÂ¢ÃÂÃÂ</button>
                   <div className="part-info">
                     <span className="part-name">{BOOSTER_OPTIONS[shipParts.booster].name}</span>
                     <span className="part-desc">{BOOSTER_OPTIONS[shipParts.booster].description}</span>
@@ -20197,16 +20438,16 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, booster: (p.booster + 1) % BOOSTER_OPTIONS.length }))}
-                  >▶</button>
+                  >ÃÂ¢ÃÂÃÂ¶</button>
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">✈️ WINGS</span>
+                <span className="part-label">ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ WINGS</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, wings: (p.wings - 1 + WING_OPTIONS.length) % WING_OPTIONS.length }))}
-                  >◀</button>
+                  >ÃÂ¢ÃÂÃÂ</button>
                   <div className="part-info">
                     <span className="part-name">{WING_OPTIONS[shipParts.wings].name}</span>
                     <span className="part-desc">{WING_OPTIONS[shipParts.wings].description}</span>
@@ -20214,16 +20455,16 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, wings: (p.wings + 1) % WING_OPTIONS.length }))}
-                  >▶</button>
+                  >ÃÂ¢ÃÂÃÂ¶</button>
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">{'🛡️'} SHIELD</span>
+                <span className="part-label">ð¡ï¸ SHIELD</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, shield: ((p.shield || 0) - 1 + SHIELD_OPTIONS.length) % SHIELD_OPTIONS.length }))}
-                  >◀</button>
+                  >ÃÂ¢ÃÂÃÂ</button>
                   <div className="part-info">
                     <span className="part-name" style={{ color: SHIELD_OPTIONS[shipParts.shield || 0].color }}>{SHIELD_OPTIONS[shipParts.shield || 0].name}</span>
                     <span className="part-desc">{SHIELD_OPTIONS[shipParts.shield || 0].description}</span>
@@ -20231,16 +20472,16 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, shield: ((p.shield || 0) + 1) % SHIELD_OPTIONS.length }))}
-                  >▶</button>
+                  >ÃÂ¢ÃÂÃÂ¶</button>
                 </div>
               </div>
               <div className="part-selector">
-                <span className="part-label">✨ TRAIL</span>
+                <span className="part-label">â¨ TRAIL</span>
                 <div className="part-options">
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, trail: ((p.trail || 0) - 1 + TRAIL_OPTIONS.length) % TRAIL_OPTIONS.length }))}
-                  >◀</button>
+                  >ÃÂ¢ÃÂÃÂ</button>
                   <div className="part-info">
                     <span className="part-name" style={{ color: TRAIL_OPTIONS[shipParts.trail || 0].color === 'rainbow' ? '#ff88ff' : TRAIL_OPTIONS[shipParts.trail || 0].color }}>{TRAIL_OPTIONS[shipParts.trail || 0].name}</span>
                     <span className="part-desc">{TRAIL_OPTIONS[shipParts.trail || 0].description}</span>
@@ -20248,7 +20489,7 @@ const SpaceShooter = () => {
                   <button 
                     className="part-nav-btn"
                     onClick={() => setShipParts(p => ({ ...p, trail: ((p.trail || 0) + 1) % TRAIL_OPTIONS.length }))}
-                  >▶</button>
+                  >ÃÂ¢ÃÂÃÂ¶</button>
                 </div>
               </div>
               
@@ -20266,19 +20507,19 @@ const SpaceShooter = () => {
                   });
                 }}
               >
-                🎲 RANDOMIZE ALL
+                ð² RANDOMIZE ALL
               </button>
             </div>
             
             <div className="customize-buttons">
               <button onClick={() => setShowCustomize(false)} className="back-button">
-                ◀ BACK
+                ÃÂ¢ÃÂÃÂ BACK
               </button>
               <button onClick={() => setShowCustomize(false)} className="confirm-button">
-                ✓ SELECT SHIP
+                â SELECT SHIP
               </button>
             </div>
-            <p className="start-hint">🎮 ◀ ▶ to browse ↩• ↩ to confirm</p>
+            <p className="start-hint">ÃÂ°ÃÂÃÂÃÂ® ÃÂ¢ÃÂÃÂ ÃÂ¢ÃÂÃÂ¶ to browse ÃÂ¢ÃÂÃÂ© ÃÂ¢ÃÂÃÂ© to confirm</p>
           </div>
         )}
         
@@ -20291,48 +20532,48 @@ const SpaceShooter = () => {
                 className={`start-button ${pauseSelection === 0 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(0)}
               >
-                <span className="btn-icon">▶️</span> RESUME
+                <span className="btn-icon">ÃÂ¢ÃÂÃÂ¶ÃÂ¯ÃÂ¸ÃÂ</span> RESUME
               </button>
               <button 
                 onClick={() => { startGame(); setGameState('playing'); setPauseSelection(0); }} 
                 className={`restart-button ${pauseSelection === 1 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(1)}
               >
-                <span className="btn-icon">🔄</span> RESTART
+                <span className="btn-icon"></span> RESTART
               </button>
               <button 
                 onClick={() => setShowPauseControls(true)} 
                 className={`settings-button ${pauseSelection === 2 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(2)}
               >
-                <span className="btn-icon">🎮</span> CONTROLS
+                <span className="btn-icon">ÃÂ°ÃÂÃÂÃÂ®</span> CONTROLS
               </button>
               <button 
                 onClick={() => { soundSystem.stopMusic(); setGameState('menu'); setShowPauseControls(false); setPauseSelection(0); }} 
                 className={`menu-button ${pauseSelection === 3 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(3)}
               >
-                <span className="btn-icon">🏀</span> MAIN MENU
+                <span className="btn-icon">ÃÂ°ÃÂÃÂÃÂ</span> MAIN MENU
               </button>
             </div>
-            <p className="start-hint">🎮 D-Pad to navigate ↩• ↩ to select ↩• ESC to resume</p>
+            <p className="start-hint">ÃÂ°ÃÂÃÂÃÂ® D-Pad to navigate ÃÂ¢ÃÂÃÂ© ÃÂ¢ÃÂÃÂ© to select ÃÂ¢ÃÂÃÂ© ESC to resume</p>
           </div>
         )}
         
         {gameState === 'paused' && showPauseControls && (
           <div className="overlay settings-overlay">
-            <h2>⚙️ CONTROLS</h2>
+            <h2>ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ CONTROLS</h2>
             <div className="settings-content">
               <div className="controls-section">
-                <h3>⌨️ Keyboard</h3>
+                <h3>ÃÂ¢ÃÂÃÂ¨ÃÂ¯ÃÂ¸ÃÂ Keyboard</h3>
                 <div className="controls-info">
-                  <p>↩ Â↩ ↩ ↩  / WASD - Move</p>
+                  <p>ÃÂ¢ÃÂÃÂ©ÃÂÃÂ ÃÂÃÂÃÂ¢ÃÂÃÂ©ÃÂÃÂ ÃÂ¢ÃÂÃÂ©ÃÂÃÂ ÃÂ¢ÃÂÃÂ©ÃÂÃÂ  / WASD - Move</p>
                   <p>SPACE - Shoot</p>
                   <p>Q - Dash (while moving)</p>
                   <p>B - Bomb (screen clear)</p>
                   <p>C - Toggle Polarity</p>
                   <p>SHIFT - Wave Cannon</p>
-                  <p>L - Laser Beam (↩°👥3 Rapid)</p>
+                  <p>L - Laser Beam (ÃÂ¢ÃÂÃÂ©ÃÂÃÂ°ÃÂ°ÃÂÃÂÃÂ¥3 Rapid)</p>
                   <p>M - Missile</p>
                   <p>F - Force Toggle</p>
                   <p>G - Force Shield (Lv4+)</p>
@@ -20341,7 +20582,7 @@ const SpaceShooter = () => {
                 </div>
               </div>
               <div className="controls-section">
-                <h3>🎮 Xbox Controller</h3>
+                <h3>ÃÂ°ÃÂÃÂÃÂ® Xbox Controller</h3>
                 <div className="controls-info">
                   <p>Left Stick / D-Pad - Move</p>
                   <p>A / RB / RT - Shoot</p>
@@ -20356,15 +20597,15 @@ const SpaceShooter = () => {
                 </div>
               </div>
               <div className="controls-section">
-                <h3>🎮 PlayStation</h3>
+                <h3>ÃÂ°ÃÂÃÂÃÂ® PlayStation</h3>
                 <div className="controls-info">
                   <p>Left Stick / D-Pad - Move</p>
-                  <p>✕ / R1 / R2 - Shoot</p>
+                  <p>ÃÂ¢ÃÂÃÂ / R1 / R2 - Shoot</p>
                   <p>L3 / R3 Click - Dash</p>
-                  <p>△ - Laser Beam (Lv3+)</p>
+                  <p>ÃÂ¢ÃÂÃÂ³ - Laser Beam (Lv3+)</p>
                   <p>L2 (Hold) - Wave Cannon</p>
-                  <p>□ - Missile</p>
-                  <p>○ - Force Toggle</p>
+                  <p>ÃÂ¢ÃÂÃÂ¡ - Missile</p>
+                  <p>ÃÂ¢ÃÂÃÂ - Force Toggle</p>
                   <p>L1 - Polarity Toggle</p>
                   <p>Share - Bomb</p>
                   <p>Options - Pause</p>
@@ -20374,13 +20615,13 @@ const SpaceShooter = () => {
             <button onClick={() => setShowPauseControls(false)} className="back-button">
               ? BACK
             </button>
-            <p className="start-hint">🎮 Press ↩ÂÅ or ↩ to go back</p>
+            <p className="start-hint">ÃÂ°ÃÂÃÂÃÂ® Press ÃÂ¢ÃÂÃÂ©ÃÂÃÂÃÂÃÂ or ÃÂ¢ÃÂÃÂ© to go back</p>
           </div>
         )}
         
         {gameState === 'checkpoint' && !showCustomize && (
           <div className="overlay checkpoint-overlay">
-            <h2>ÂÂ CHECKPOINT REACHED</h2>
+            <h2>ÃÂÃÂÃÂÃÂ CHECKPOINT REACHED</h2>
             <div className="checkpoint-content">
               <div className="checkpoint-wave">
                 <span className="checkpoint-label">MISSION</span>
@@ -20451,34 +20692,34 @@ const SpaceShooter = () => {
                   className={`start-button ${checkpointSelection === 0 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(0)}
                 >
-                  <span className="btn-icon">▶️</span> CONTINUE MISSION
+                  <span className="btn-icon">ÃÂ¢ÃÂÃÂ¶ÃÂ¯ÃÂ¸ÃÂ</span> CONTINUE MISSION
                 </button>
                 <button 
                   onClick={() => saveGame()}
                   className={`save-button ${checkpointSelection === 1 ? 'gamepad-selected' : ''} ${saveFeedback ? 'save-success' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(1)}
                 >
-                  <span className="btn-icon">{saveFeedback ? '✓' : 'Â¾'}</span> {saveFeedback ? 'SAVED!' : 'SAVE PROGRESS'}
+                  <span className="btn-icon">{saveFeedback ? 'ÃÂ¢ÃÂÃÂ' : 'ÃÂÃÂÃÂÃÂ¾'}</span> {saveFeedback ? 'SAVED!' : 'SAVE PROGRESS'}
                 </button>
                 <button 
                   onClick={() => { soundSystem.playUISparkle(); setShowCustomize(true); }}
                   className={`customize-checkpoint-button ${checkpointSelection === 2 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(2)}
                 >
-                  <span className="btn-icon">🚀</span> CUSTOMIZE SHIP
+                  <span className="btn-icon">ÃÂ°ÃÂÃÂÃÂ</span> CUSTOMIZE SHIP
                 </button>
                 <button 
                   onClick={() => { soundSystem.stopMusic(); setGameState('menu'); gameStateRef.current = 'menu'; }}
                   className={`quit-button ${checkpointSelection === 3 ? 'gamepad-selected' : ''}`}
                   onMouseEnter={() => setCheckpointSelection(3)}
                 >
-                  <span className="btn-icon">🏀</span> QUIT TO MENU
+                  <span className="btn-icon">ÃÂ°ÃÂÃÂÃÂ</span> QUIT TO MENU
                 </button>
               </div>
               
               <p className="checkpoint-hint">Select a zone or continue to random path!</p>
             </div>
-            <p className="start-hint">🎮 D-Pad to navigate ↩• ↩ to select</p>
+            <p className="start-hint">ÃÂ°ÃÂÃÂÃÂ® D-Pad to navigate ÃÂ¢ÃÂÃÂ© ÃÂ¢ÃÂÃÂ© to select</p>
           </div>
         )}
         
@@ -20500,12 +20741,12 @@ const SpaceShooter = () => {
             <p className="wave-reached">Wave Reached: {wave}</p>
             {bossActive && <p className="boss-fight">Defeated during Boss Fight!</p>}
             {score >= highScore && score > 0 && (
-              <p className="new-high-score">🏆 NEW HIGH SCORE! 🏆</p>
+              <p className="new-high-score">ÃÂ°ÃÂÃÂÃÂ NEW HIGH SCORE! ÃÂ°ÃÂÃÂÃÂ</p>
             )}
             
             {/* Quick Settings Panel */}
             <div className="game-over-settings">
-              <p className="settings-tip">⚙️ Adjust settings before your next attempt:</p>
+              <p className="settings-tip">ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Adjust settings before your next attempt:</p>
               
               {/* Difficulty Selector */}
               <div className="difficulty-selector">
@@ -20530,7 +20771,7 @@ const SpaceShooter = () => {
               {/* Audio Quick Controls */}
               <div className="audio-quick-controls">
                 <div className="volume-row">
-                  <span className="volume-label">Å  Master</span>
+                  <span className="volume-label">ÃÂÃÂÃÂÃÂ  Master</span>
                   <input 
                     type="range" 
                     min="0" 
@@ -20542,7 +20783,7 @@ const SpaceShooter = () => {
                   <span className="volume-val">{userSettings.masterVolume}%</span>
                 </div>
                 <div className="volume-row">
-                  <span className="volume-label">{'Å½Âµ'} Music</span>
+                  <span className="volume-label">{'ÃÂÃÂÃÂÃÂ½ÃÂÃÂÃÂÃÂµ'} Music</span>
                   <input 
                     type="range" 
                     min="0" 
@@ -20554,7 +20795,7 @@ const SpaceShooter = () => {
                   <span className="volume-val">{userSettings.musicVolume}%</span>
                 </div>
                 <div className="volume-row">
-                  <span className="volume-label">🔊 SFX</span>
+                  <span className="volume-label">ÃÂ°ÃÂÃÂÃÂ SFX</span>
                   <input 
                     type="range" 
                     min="0" 
@@ -20585,7 +20826,7 @@ const SpaceShooter = () => {
             {showQuitConfirm && (
               <div className="quit-confirm-overlay">
                 <div className="quit-confirm-modal">
-                  <h3>⚠️ QUIT GAME?</h3>
+                  <h3>ÃÂ¢ÃÂÃÂ ÃÂ¯ÃÂ¸ÃÂ QUIT GAME?</h3>
                   <p>Are you sure you want to quit?</p>
                   <p className="quit-warning">You will return to the main menu.</p>
                   <div className="quit-confirm-buttons">
@@ -20624,14 +20865,14 @@ const SpaceShooter = () => {
               {gameMode === 'campaign' ? (
                 <>
                   <div className="victory-title">
-                    <h1>🏆 VICTORY 🏆</h1>
+                    <h1>ÃÂ°ÃÂÃÂÃÂ VICTORY ÃÂ°ÃÂÃÂÃÂ</h1>
                     <h2>THE NEBULA X MISSION</h2>
                   </div>
                   
                   <div className="victory-story">
                     <div className="story-text">
                       <p className="story-paragraph">
-                        In the year 2387, humanity faced its greatest threat ↩¬ an advanced AI network 
+                        In the year 2387, humanity faced its greatest threat ÃÂ¢ÃÂÃÂ©ÃÂÃÂ¬ an advanced AI network 
                         known as the Nexus Collective had spread across the galaxy, consuming entire 
                         star systems and enslaving civilizations.
                       </p>
@@ -20648,7 +20889,7 @@ const SpaceShooter = () => {
                       <p className="story-paragraph">
                         In the heart of the Nexus, they destroyed the AI Core, freeing billions and 
                         ending the machine threat forever. The <span className="highlight">Nebula X</span> and 
-                        its crew became legends ↩¬ their names etched in the stars for eternity.
+                        its crew became legends ÃÂ¢ÃÂÃÂ©ÃÂÃÂ¬ their names etched in the stars for eternity.
                       </p>
                       <p className="story-final">
                         ? <em>They will never be forgotten.</em> ?
@@ -20664,7 +20905,7 @@ const SpaceShooter = () => {
                   </div>
                   
                   <div className="credits-section">
-                    <h3>↩Ë¦ CREDITS ↩Ë¦</h3>
+                    <h3>ÃÂ¢ÃÂÃÂ©ÃÂÃÂÃÂÃÂ¦ CREDITS ÃÂ¢ÃÂÃÂ©ÃÂÃÂÃÂÃÂ¦</h3>
                     <div className="credits-list">
                       <p className="credit-item"><span className="credit-role">Game Design & Development</span><br/>The Nebula X Team</p>
                       <p className="credit-item"><span className="credit-role">Programming</span><br/>React & Canvas 2D</p>
@@ -20694,14 +20935,14 @@ const SpaceShooter = () => {
                   </div>
                   
                   <div className="challenge-message">
-                    <p>🎯 You've completed the Time Attack challenge!</p>
+                    <p> You've completed the Time Attack challenge!</p>
                     <p>Can you beat your time?</p>
                   </div>
                 </>
               ) : gameMode === 'bossRush' ? (
                 <>
                   <div className="victory-title boss-rush-title">
-                    <h1>¬ BOSS SLAYER ¬</h1>
+                    <h1>ÃÂÃÂ¬ BOSS SLAYER ÃÂÃÂ¬</h1>
                     <h2>ALL BOSSES DEFEATED!</h2>
                   </div>
                   
@@ -20713,7 +20954,7 @@ const SpaceShooter = () => {
                   </div>
                   
                   <div className="challenge-message">
-                    <p>🏆 You've conquered all the Mega Bosses!</p>
+                    <p>ÃÂ°ÃÂÃÂÃÂ You've conquered all the Mega Bosses!</p>
                     <p>True boss-slaying mastery achieved!</p>
                   </div>
                 </>
@@ -20721,7 +20962,7 @@ const SpaceShooter = () => {
               
               <div className="victory-buttons">
                 <button onClick={() => setGameState('menu')} className="start-button victory-button">
-                  🏀 RETURN TO BASE
+                  ÃÂ°ÃÂÃÂÃÂ RETURN TO BASE
                 </button>
               </div>
               
@@ -20734,7 +20975,7 @@ const SpaceShooter = () => {
         {achievementNotification && (
           <div className="achievement-notification">
             <div className="achievement-notification-content">
-              <div className="achievement-icon">{'🏆'}</div>
+              <div className="achievement-icon">{'ÃÂ°ÃÂÃÂÃÂ'}</div>
               <div className="achievement-details">
                 <div className="achievement-unlocked">ACHIEVEMENT UNLOCKED!</div>
                 <div className="achievement-name">{achievementNotification.name}</div>
