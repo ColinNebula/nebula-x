@@ -888,8 +888,8 @@ const MISSILE_WIDTH = 20;
 const MISSILE_HEIGHT = 8;
 const ENEMY_WIDTH = 40;
 const ENEMY_HEIGHT = 30;
-const BOSS_WIDTH = 120;
-const BOSS_HEIGHT = 80;
+const BOSS_WIDTH = 180;
+const BOSS_HEIGHT = 120;
 const POWERUP_SIZE = 25;
 const FORCE_SIZE = 20;
 const PLAYER_SPEED = 6;
@@ -10083,18 +10083,71 @@ const SpaceShooter = () => {
         const centerY = by + bossH / 2;
         const pulsePhase = Date.now() / 200;
 
-        // Dark boss color scheme (waves 5, 10, 15, 20)
-        const isDark = boss.isDarkBoss;
-        const accentColor = isDark ? '#ff0000' : '#00ffff';
-        const accentColorDim = isDark ? '#880000' : '#00aaff';
-        const hullDark = isDark ? '#110000' : '#001122';
-        const hullMid = isDark ? '#220000' : '#003344';
-        const hullLight = isDark ? '#330000' : '#005566';
+        // Zone-specific boss color schemes
+        let accentColor, accentColorDim, hullDark, hullMid, hullLight, eyeColor, glowColor;
+        const zonePattern = boss.zonePattern || 'standard';
+
+        if (zonePattern === 'slow_tank') {
+          // Moon - Purple/Blue lunar guardian
+          accentColor = '#8888ff';
+          accentColorDim = '#5555cc';
+          hullDark = '#110022';
+          hullMid = '#220044';
+          hullLight = '#330066';
+          eyeColor = '#aaaaff';
+          glowColor = '#8888ff';
+        } else if (zonePattern === 'heavy_artillery') {
+          // Mars - Red/Orange devastator
+          accentColor = '#ff4422';
+          accentColorDim = '#cc2211';
+          hullDark = '#220000';
+          hullMid = '#440000';
+          hullLight = '#661100';
+          eyeColor = '#ff6633';
+          glowColor = '#ff4422';
+        } else if (zonePattern === 'erratic_storm') {
+          // Jupiter - Orange/Yellow storm tyrant
+          accentColor = '#ff8844';
+          accentColorDim = '#dd6622';
+          hullDark = '#221100';
+          hullMid = '#442200';
+          hullLight = '#663300';
+          eyeColor = '#ffaa55';
+          glowColor = '#ff8844';
+        } else if (zonePattern === 'defensive_ring') {
+          // Saturn - Golden ring commander
+          accentColor = '#ffdd88';
+          accentColorDim = '#ddbb66';
+          hullDark = '#222211';
+          hullMid = '#444422';
+          hullLight = '#666633';
+          eyeColor = '#ffffaa';
+          glowColor = '#ffdd88';
+        } else if (zonePattern === 'ice_fortress') {
+          // Uranus - Cyan/Ice frozen colossus
+          accentColor = '#88ddff';
+          accentColorDim = '#66bbdd';
+          hullDark = '#001122';
+          hullMid = '#002244';
+          hullLight = '#003366';
+          eyeColor = '#aaeeff';
+          glowColor = '#88ddff';
+        } else {
+          // Default fallback
+          const isDark = boss.isDarkBoss;
+          accentColor = isDark ? '#ff0000' : '#00ffff';
+          accentColorDim = isDark ? '#880000' : '#00aaff';
+          hullDark = isDark ? '#110000' : '#001122';
+          hullMid = isDark ? '#220000' : '#003344';
+          hullLight = isDark ? '#330000' : '#005566';
+          eyeColor = '#ff0000';
+          glowColor = accentColor;
+        }
 
         if (boss.isSuperBoss) {
           // ========== SUPER BOSS - THE OVERLORD (Wave 10, 20, 30...) ==========
           // Massive multi-engine array
-          ctx.shadowColor = accentColor;
+          ctx.shadowColor = glowColor;
           ctx.shadowBlur = 40;
           for (let i = 0; i < 6; i++) {
             const engineY = by + bossH * (0.1 + i * 0.15);
@@ -10102,33 +10155,81 @@ const SpaceShooter = () => {
             ctx.beginPath();
             ctx.ellipse(bx + bossW + 20, engineY, 25, 10, 0, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = isDark ? '#ffaaaa' : '#ffffff';
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.ellipse(bx + bossW + 15, engineY, 12, 5, 0, 0, Math.PI * 2);
             ctx.fill();
           }
           ctx.shadowBlur = 0;
 
-          // Main hull - dark with accent colors
+          // Main hull - zone-specific gradient
           const superGrad = ctx.createLinearGradient(bx, by, bx, by + bossH);
-          superGrad.addColorStop(0, isDark ? '#000000' : '#001122');
-          superGrad.addColorStop(0.2, isDark ? '#110000' : '#003344');
-          superGrad.addColorStop(0.5, isDark ? '#220000' : '#005566');
-          superGrad.addColorStop(0.8, isDark ? '#110000' : '#003344');
-          superGrad.addColorStop(1, isDark ? '#000000' : '#001122');
+          superGrad.addColorStop(0, '#000000');
+          superGrad.addColorStop(0.2, hullDark);
+          superGrad.addColorStop(0.5, hullMid);
+          superGrad.addColorStop(0.8, hullDark);
+          superGrad.addColorStop(1, '#000000');
           ctx.fillStyle = superGrad;
 
-          // Massive armored body with angular design
+          // Zone-specific body shape
           ctx.beginPath();
-          ctx.moveTo(bx + 20, centerY);
-          ctx.lineTo(bx + bossW * 0.15, by + 5);
-          ctx.lineTo(bx + bossW * 0.5, by);
-          ctx.lineTo(bx + bossW * 0.8, by + 10);
-          ctx.lineTo(bx + bossW, by + bossH * 0.1);
-          ctx.lineTo(bx + bossW, by + bossH * 0.9);
-          ctx.lineTo(bx + bossW * 0.8, by + bossH - 10);
-          ctx.lineTo(bx + bossW * 0.5, by + bossH);
-          ctx.lineTo(bx + bossW * 0.15, by + bossH - 5);
+          if (zonePattern === 'slow_tank') {
+            // Moon - Heavy, blocky tank design
+            ctx.moveTo(bx + 25, centerY);
+            ctx.lineTo(bx + bossW * 0.2, by);
+            ctx.lineTo(bx + bossW * 0.6, by);
+            ctx.lineTo(bx + bossW, by + bossH * 0.2);
+            ctx.lineTo(bx + bossW, by + bossH * 0.8);
+            ctx.lineTo(bx + bossW * 0.6, by + bossH);
+            ctx.lineTo(bx + bossW * 0.2, by + bossH);
+          } else if (zonePattern === 'heavy_artillery') {
+            // Mars - Aggressive wedge shape
+            ctx.moveTo(bx, centerY);
+            ctx.lineTo(bx + bossW * 0.3, by + 5);
+            ctx.lineTo(bx + bossW * 0.7, by);
+            ctx.lineTo(bx + bossW, by + bossH * 0.15);
+            ctx.lineTo(bx + bossW, by + bossH * 0.85);
+            ctx.lineTo(bx + bossW * 0.7, by + bossH);
+            ctx.lineTo(bx + bossW * 0.3, by + bossH - 5);
+          } else if (zonePattern === 'erratic_storm') {
+            // Jupiter - Chaotic, jagged design
+            ctx.moveTo(bx + 15, centerY);
+            ctx.lineTo(bx + bossW * 0.2, by + 10);
+            ctx.lineTo(bx + bossW * 0.4, by);
+            ctx.lineTo(bx + bossW * 0.6, by + 15);
+            ctx.lineTo(bx + bossW * 0.85, by + 5);
+            ctx.lineTo(bx + bossW, by + bossH * 0.3);
+            ctx.lineTo(bx + bossW, by + bossH * 0.7);
+            ctx.lineTo(bx + bossW * 0.85, by + bossH - 5);
+            ctx.lineTo(bx + bossW * 0.6, by + bossH - 15);
+            ctx.lineTo(bx + bossW * 0.4, by + bossH);
+            ctx.lineTo(bx + bossW * 0.2, by + bossH - 10);
+          } else if (zonePattern === 'defensive_ring') {
+            // Saturn - Symmetrical, ringed design
+            ctx.arc(bx + bossW * 0.6, centerY, bossH * 0.5, 0, Math.PI * 2);
+          } else if (zonePattern === 'ice_fortress') {
+            // Uranus - Crystalline fortress
+            ctx.moveTo(bx + 20, centerY);
+            ctx.lineTo(bx + bossW * 0.15, by + 5);
+            ctx.lineTo(bx + bossW * 0.5, by);
+            ctx.lineTo(bx + bossW * 0.8, by + 10);
+            ctx.lineTo(bx + bossW, by + bossH * 0.1);
+            ctx.lineTo(bx + bossW, by + bossH * 0.9);
+            ctx.lineTo(bx + bossW * 0.8, by + bossH - 10);
+            ctx.lineTo(bx + bossW * 0.5, by + bossH);
+            ctx.lineTo(bx + bossW * 0.15, by + bossH - 5);
+          } else {
+            // Default angular design
+            ctx.moveTo(bx + 20, centerY);
+            ctx.lineTo(bx + bossW * 0.15, by + 5);
+            ctx.lineTo(bx + bossW * 0.5, by);
+            ctx.lineTo(bx + bossW * 0.8, by + 10);
+            ctx.lineTo(bx + bossW, by + bossH * 0.1);
+            ctx.lineTo(bx + bossW, by + bossH * 0.9);
+            ctx.lineTo(bx + bossW * 0.8, by + bossH - 10);
+            ctx.lineTo(bx + bossW * 0.5, by + bossH);
+            ctx.lineTo(bx + bossW * 0.15, by + bossH - 5);
+          }
           ctx.closePath();
           ctx.fill();
 
@@ -10146,45 +10247,62 @@ const SpaceShooter = () => {
           ctx.stroke();
           ctx.globalAlpha = 1;
 
-          // Massive top wing structure
-          ctx.fillStyle = isDark ? '#110000' : '#002233';
-          ctx.beginPath();
-          ctx.moveTo(bx + bossW * 0.2, by + 5);
-          ctx.lineTo(bx + bossW * 0.25, by - 50);
-          ctx.lineTo(bx + bossW * 0.4, by - 70);
-          ctx.lineTo(bx + bossW * 0.55, by - 60);
-          ctx.lineTo(bx + bossW * 0.7, by - 65);
-          ctx.lineTo(bx + bossW * 0.8, by + 10);
-          ctx.closePath();
-          ctx.fill();
+          // Zone-specific wing structures
+          ctx.fillStyle = hullLight;
+          if (zonePattern === 'defensive_ring') {
+            // Saturn - Distinctive rings
+            ctx.save();
+            ctx.globalAlpha = 0.7;
+            ctx.strokeStyle = accentColor;
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.ellipse(bx + bossW * 0.6, centerY, bossH * 0.7, bossH * 0.25, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.ellipse(bx + bossW * 0.6, centerY, bossH * 0.85, bossH * 0.3, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          } else {
+            // Top wing structure
+            ctx.beginPath();
+            ctx.moveTo(bx + bossW * 0.2, by + 5);
+            ctx.lineTo(bx + bossW * 0.25, by - 50);
+            ctx.lineTo(bx + bossW * 0.4, by - 70);
+            ctx.lineTo(bx + bossW * 0.55, by - 60);
+            ctx.lineTo(bx + bossW * 0.7, by - 65);
+            ctx.lineTo(bx + bossW * 0.8, by + 10);
+            ctx.closePath();
+            ctx.fill();
 
-          // Bottom wing structure
-          ctx.beginPath();
-          ctx.moveTo(bx + bossW * 0.2, by + bossH - 5);
-          ctx.lineTo(bx + bossW * 0.25, by + bossH + 50);
-          ctx.lineTo(bx + bossW * 0.4, by + bossH + 70);
-          ctx.lineTo(bx + bossW * 0.55, by + bossH + 60);
-          ctx.lineTo(bx + bossW * 0.7, by + bossH + 65);
-          ctx.lineTo(bx + bossW * 0.8, by + bossH - 10);
-          ctx.closePath();
-          ctx.fill();
+            // Bottom wing structure
+            ctx.beginPath();
+            ctx.moveTo(bx + bossW * 0.2, by + bossH - 5);
+            ctx.lineTo(bx + bossW * 0.25, by + bossH + 50);
+            ctx.lineTo(bx + bossW * 0.4, by + bossH + 70);
+            ctx.lineTo(bx + bossW * 0.55, by + bossH + 60);
+            ctx.lineTo(bx + bossW * 0.7, by + bossH + 65);
+            ctx.lineTo(bx + bossW * 0.8, by + bossH - 10);
+            ctx.closePath();
+            ctx.fill();
 
-          // Wing edge energy lines
-          ctx.strokeStyle = accentColor;
-          ctx.lineWidth = 3;
-          ctx.shadowColor = accentColor;
-          ctx.shadowBlur = 15;
-          ctx.beginPath();
-          ctx.moveTo(bx + bossW * 0.25, by - 50);
-          ctx.lineTo(bx + bossW * 0.4, by - 70);
-          ctx.lineTo(bx + bossW * 0.55, by - 60);
-          ctx.lineTo(bx + bossW * 0.7, by - 65);
-          ctx.moveTo(bx + bossW * 0.25, by + bossH + 50);
-          ctx.lineTo(bx + bossW * 0.4, by + bossH + 70);
-          ctx.lineTo(bx + bossW * 0.55, by + bossH + 60);
-          ctx.lineTo(bx + bossW * 0.7, by + bossH + 65);
-          ctx.stroke();
-          ctx.shadowBlur = 0;
+            // Wing edge energy lines
+            ctx.strokeStyle = accentColor;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.moveTo(bx + bossW * 0.25, by - 50);
+            ctx.lineTo(bx + bossW * 0.4, by - 70);
+            ctx.lineTo(bx + bossW * 0.55, by - 60);
+            ctx.lineTo(bx + bossW * 0.7, by - 65);
+            ctx.moveTo(bx + bossW * 0.25, by + bossH + 50);
+            ctx.lineTo(bx + bossW * 0.4, by + bossH + 70);
+            ctx.lineTo(bx + bossW * 0.55, by + bossH + 60);
+            ctx.lineTo(bx + bossW * 0.7, by + bossH + 65);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+          }
 
           // MAIN DEATH LASER - Central weapon
           const laserActive = boss.laserCharging || boss.laserFiring;
@@ -10197,8 +10315,8 @@ const SpaceShooter = () => {
           ctx.fill();
 
           // Laser core
-          ctx.fillStyle = laserActive ? accentColor : (isDark ? '#441111' : '#004455');
-          ctx.shadowColor = laserActive ? accentColor : accentColorDim;
+          ctx.fillStyle = laserActive ? glowColor : hullMid;
+          ctx.shadowColor = laserActive ? glowColor : accentColorDim;
           ctx.shadowBlur = laserActive ? 40 + Math.sin(pulsePhase * 2) * 15 : 10;
           ctx.beginPath();
           ctx.arc(bx + 20, centerY, 25, 0, Math.PI * 2);
@@ -10214,8 +10332,8 @@ const SpaceShooter = () => {
           // Secondary weapon banks
           for (let side = -1; side <= 1; side += 2) {
             const weaponY = centerY + side * bossH * 0.35;
-            ctx.fillStyle = isDark ? '#aa3333' : '#00aaaa';
-            ctx.shadowColor = accentColor;
+            ctx.fillStyle = accentColorDim;
+            ctx.shadowColor = glowColor;
             ctx.shadowBlur = 12;
             ctx.beginPath();
             ctx.arc(bx + 40, weaponY, 12, 0, Math.PI * 2);
@@ -10228,15 +10346,15 @@ const SpaceShooter = () => {
           ctx.shadowBlur = 0;
 
           // Central eye cluster
-          ctx.fillStyle = isDark ? '#110000' : '#001111';
+          ctx.fillStyle = hullDark;
           ctx.beginPath();
           ctx.arc(bx + bossW * 0.45, centerY, 25, 0, Math.PI * 2);
           ctx.fill();
 
           // Main eye
-          ctx.shadowColor = '#ff0000';
+          ctx.shadowColor = eyeColor;
           ctx.shadowBlur = 25;
-          ctx.fillStyle = '#ff0000';
+          ctx.fillStyle = eyeColor;
           ctx.beginPath();
           ctx.arc(bx + bossW * 0.45, centerY, 15, 0, Math.PI * 2);
           ctx.fill();
@@ -10253,9 +10371,9 @@ const SpaceShooter = () => {
             const eyeAngle = (Math.PI / 3) * i + Math.PI / 6 + pulsePhase * 0.3;
             const eyeX = bx + bossW * 0.45 + Math.cos(eyeAngle) * 35;
             const eyeY = centerY + Math.sin(eyeAngle) * 30;
-            ctx.shadowColor = '#ff4444';
+            ctx.shadowColor = accentColor;
             ctx.shadowBlur = 8;
-            ctx.fillStyle = '#ff4444';
+            ctx.fillStyle = accentColor;
             ctx.beginPath();
             ctx.arc(eyeX, eyeY, 6, 0, Math.PI * 2);
             ctx.fill();
@@ -10265,15 +10383,15 @@ const SpaceShooter = () => {
         } else if (boss.isMegaBoss) {
           // ========== MEGA BOSS - DREADNOUGHT ==========
           // Massive engine array glow
-          ctx.shadowColor = isDark ? '#ff0000' : '#ff4400';
+          ctx.shadowColor = glowColor;
           ctx.shadowBlur = 30;
           for (let i = 0; i < 4; i++) {
             const engineY = by + bossH * (0.2 + i * 0.2);
-            ctx.fillStyle = isDark ? '#ff0000' : '#ff6600';
+            ctx.fillStyle = accentColor;
             ctx.beginPath();
             ctx.ellipse(bx + bossW + 15, engineY, 20, 8, 0, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = isDark ? '#ff4444' : '#ffff00';
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.ellipse(bx + bossW + 10, engineY, 10, 4, 0, 0, Math.PI * 2);
             ctx.fill();
@@ -10282,11 +10400,11 @@ const SpaceShooter = () => {
 
           // Main hull gradient
           const megaGrad = ctx.createLinearGradient(bx, by, bx, by + bossH);
-          megaGrad.addColorStop(0, isDark ? '#000000' : '#440000');
-          megaGrad.addColorStop(0.2, isDark ? '#110000' : '#881100');
-          megaGrad.addColorStop(0.5, isDark ? '#220000' : '#cc2200');
-          megaGrad.addColorStop(0.8, isDark ? '#110000' : '#881100');
-          megaGrad.addColorStop(1, isDark ? '#000000' : '#440000');
+          megaGrad.addColorStop(0, '#000000');
+          megaGrad.addColorStop(0.2, hullDark);
+          megaGrad.addColorStop(0.5, hullMid);
+          megaGrad.addColorStop(0.8, hullDark);
+          megaGrad.addColorStop(1, '#000000');
           ctx.fillStyle = megaGrad;
 
           // Armored main body
@@ -10347,7 +10465,7 @@ const SpaceShooter = () => {
           ctx.stroke();
 
           // Weapon arrays on wings
-          ctx.fillStyle = isDark ? '#111111' : '#333333';
+          ctx.fillStyle = '#111111';
           for (let i = 0; i < 3; i++) {
             ctx.fillRect(bx + bossW * (0.35 + i * 0.1), by - 25, 8, 15);
             ctx.fillRect(bx + bossW * (0.35 + i * 0.1), by + bossH + 10, 8, 15);
@@ -10355,7 +10473,7 @@ const SpaceShooter = () => {
 
           // LASER CANNON - Central weapon system
           const laserActive = boss.laserCharging || boss.laserFiring;
-          ctx.fillStyle = isDark ? '#111111' : '#222222';
+          ctx.fillStyle = '#111111';
           ctx.beginPath();
           ctx.moveTo(bx, centerY);
           ctx.lineTo(bx + 40, centerY - 20);
@@ -10364,23 +10482,23 @@ const SpaceShooter = () => {
           ctx.fill();
 
           // Laser barrel
-          ctx.fillStyle = laserActive ? '#ffff00' : '#444444';
-          ctx.shadowColor = laserActive ? '#ffff00' : '#ff0000';
+          ctx.fillStyle = laserActive ? glowColor : '#444444';
+          ctx.shadowColor = laserActive ? glowColor : accentColor;
           ctx.shadowBlur = laserActive ? 25 + Math.sin(pulsePhase) * 10 : 5;
           ctx.beginPath();
           ctx.arc(bx + 15, centerY, 18, 0, Math.PI * 2);
           ctx.fill();
 
           // Inner glow
-          ctx.fillStyle = laserActive ? '#ffffff' : (isDark ? '#ff0000' : '#ff4400');
+          ctx.fillStyle = laserActive ? '#ffffff' : accentColor;
           ctx.beginPath();
           ctx.arc(bx + 15, centerY, 10, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
 
           // Secondary weapons
-          ctx.fillStyle = isDark ? '#ff0000' : '#ff4400';
-          ctx.shadowColor = isDark ? '#ff0000' : '#ff4400';
+          ctx.fillStyle = accentColor;
+          ctx.shadowColor = glowColor;
           ctx.shadowBlur = 8;
           ctx.beginPath();
           ctx.arc(bx + 50, by + 25, 8, 0, Math.PI * 2);
@@ -10393,14 +10511,14 @@ const SpaceShooter = () => {
           // Multiple eyes/sensors
           for (let i = 0; i < 3; i++) {
             const eyeY = centerY + (i - 1) * 30;
-            ctx.fillStyle = isDark ? '#000000' : '#220000';
+            ctx.fillStyle = hullDark;
             ctx.beginPath();
             ctx.arc(bx + bossW * 0.5, eyeY, 12, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.shadowColor = '#ff0000';
+            ctx.shadowColor = eyeColor;
             ctx.shadowBlur = 15;
-            ctx.fillStyle = '#ff0000';
+            ctx.fillStyle = eyeColor;
             ctx.beginPath();
             ctx.arc(bx + bossW * 0.5, eyeY, 6, 0, Math.PI * 2);
             ctx.fill();
@@ -10414,11 +10532,11 @@ const SpaceShooter = () => {
         } else {
           // ========== REGULAR BOSS - BATTLECRUISER ==========
           // Engine glow array
-          ctx.shadowColor = '#ff00ff';
+          ctx.shadowColor = glowColor;
           ctx.shadowBlur = 20;
           for (let i = 0; i < 3; i++) {
             const engineY = by + bossH * (0.25 + i * 0.25);
-            ctx.fillStyle = '#ff44ff';
+            ctx.fillStyle = accentColor;
             ctx.beginPath();
             ctx.ellipse(bx + bossW + 8, engineY, 12, 6, 0, 0, Math.PI * 2);
             ctx.fill();
@@ -10431,11 +10549,11 @@ const SpaceShooter = () => {
 
           // Main hull gradient
           const bossGrad = ctx.createLinearGradient(bx, by, bx, by + bossH);
-          bossGrad.addColorStop(0, '#330033');
-          bossGrad.addColorStop(0.3, '#660066');
-          bossGrad.addColorStop(0.5, '#990099');
-          bossGrad.addColorStop(0.7, '#660066');
-          bossGrad.addColorStop(1, '#330033');
+          bossGrad.addColorStop(0, hullDark);
+          bossGrad.addColorStop(0.3, hullMid);
+          bossGrad.addColorStop(0.5, hullLight);
+          bossGrad.addColorStop(0.7, hullMid);
+          bossGrad.addColorStop(1, hullDark);
           ctx.fillStyle = bossGrad;
 
           // Main armored body
@@ -10451,7 +10569,7 @@ const SpaceShooter = () => {
           ctx.fill();
 
           // Top wing
-          ctx.fillStyle = '#440044';
+          ctx.fillStyle = hullMid;
           ctx.beginPath();
           ctx.moveTo(bx + bossW * 0.35, by + 5);
           ctx.lineTo(bx + bossW * 0.4, by - 20);
@@ -10470,7 +10588,7 @@ const SpaceShooter = () => {
           ctx.fill();
 
           // Wing edge glow
-          ctx.strokeStyle = '#ff00ff';
+          ctx.strokeStyle = accentColor;
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(bx + bossW * 0.4, by - 20);
@@ -10480,7 +10598,7 @@ const SpaceShooter = () => {
           ctx.stroke();
 
           // Front weapon prong
-          ctx.fillStyle = '#550055';
+          ctx.fillStyle = hullLight;
           ctx.beginPath();
           ctx.moveTo(bx, centerY);
           ctx.lineTo(bx + 25, centerY - 12);
@@ -10489,9 +10607,9 @@ const SpaceShooter = () => {
           ctx.fill();
 
           // Weapon tip glow
-          ctx.shadowColor = '#00ffff';
+          ctx.shadowColor = glowColor;
           ctx.shadowBlur = 12;
-          ctx.fillStyle = '#00ffff';
+          ctx.fillStyle = accentColor;
           ctx.beginPath();
           ctx.arc(bx + 8, centerY, 5, 0, Math.PI * 2);
           ctx.fill();
@@ -10502,9 +10620,9 @@ const SpaceShooter = () => {
           ctx.fillRect(bx + 30, by - 5, 20, 10);
           ctx.fillRect(bx + 30, by + bossH - 5, 20, 10);
 
-          ctx.shadowColor = '#ff00ff';
+          ctx.shadowColor = glowColor;
           ctx.shadowBlur = 8;
-          ctx.fillStyle = '#ff00ff';
+          ctx.fillStyle = accentColor;
           ctx.beginPath();
           ctx.arc(bx + 35, by, 4, 0, Math.PI * 2);
           ctx.fill();
@@ -10514,14 +10632,14 @@ const SpaceShooter = () => {
           ctx.shadowBlur = 0;
 
           // Central eye/core
-          ctx.fillStyle = '#220022';
+          ctx.fillStyle = hullDark;
           ctx.beginPath();
           ctx.arc(bx + bossW * 0.45, centerY, 15, 0, Math.PI * 2);
           ctx.fill();
 
-          ctx.shadowColor = '#ff0000';
+          ctx.shadowColor = eyeColor;
           ctx.shadowBlur = 20;
-          ctx.fillStyle = '#ff0000';
+          ctx.fillStyle = eyeColor;
           ctx.beginPath();
           ctx.arc(bx + bossW * 0.45, centerY, 8, 0, Math.PI * 2);
           ctx.fill();
@@ -10537,7 +10655,7 @@ const SpaceShooter = () => {
           const chargeRadius = 15 + (boss.laserCharge / 100) * 35;
 
           // Outer energy ring
-          ctx.strokeStyle = `rgba(255, 100, 0, ${0.5 + boss.laserCharge / 200})`;
+          ctx.strokeStyle = `rgba(${parseInt(accentColor.slice(1,3), 16)}, ${parseInt(accentColor.slice(3,5), 16)}, ${parseInt(accentColor.slice(5,7), 16)}, ${0.5 + boss.laserCharge / 200})`;
           ctx.lineWidth = 3;
           ctx.beginPath();
           ctx.arc(bx + 15, centerY, chargeRadius + 10, 0, Math.PI * 2);
@@ -10953,21 +11071,17 @@ const SpaceShooter = () => {
           ctx.stroke();
         }
 
-        ctx.strokeStyle = isDark ? '#ff0000' : (boss.isMegaBoss ? '#ff4400' : '#ff00ff');
+        ctx.strokeStyle = accentColor;
         ctx.lineWidth = boss.isMegaBoss ? 3 : 2;
         ctx.strokeRect(bx, healthBarY, healthBarWidth, healthBarHeight);
 
         // Boss label with shadow
         ctx.shadowColor = '#000000';
         ctx.shadowBlur = 4;
-        ctx.fillStyle = isDark ? '#ff0000' : (boss.isSuperBoss ? '#ff0000' : (boss.isMegaBoss ? '#ff4400' : '#ff00ff'));
+        ctx.fillStyle = accentColor;
         ctx.font = boss.isSuperBoss ? "bold 16px 'Press Start 2P', monospace" : (boss.isMegaBoss ? "bold 14px 'Press Start 2P', monospace" : "bold 11px 'Press Start 2P', monospace");
         ctx.textAlign = 'center';
-        const bossName = boss.isSuperBoss
-          ? (isDark ? `\ud83d\udc80 DARK OVERLORD \ud83d\udc80` : `\ud83d\udc51 OVERLORD \ud83d\udc51`)
-          : (boss.isMegaBoss
-            ? (isDark ? `\ud83d\udc7f SHADOW DREADNOUGHT \ud83d\udc7f` : `\u2694\ufe0f DREADNOUGHT \u2694\ufe0f`)
-            : `WAVE ${waveRef.current} BOSS`);
+        const bossName = boss.zoneName || `WAVE ${waveRef.current} BOSS`;
         ctx.fillText(bossName, bx + bossW / 2, healthBarY - (boss.isSuperBoss ? 28 : 8));
         ctx.shadowBlur = 0;
 
@@ -14342,6 +14456,11 @@ const SpaceShooter = () => {
         return trail.lifetime > 0 && trail.alpha > 0.05;
       });
 
+      // Limit bullet trails during boss fights to prevent excessive buildup
+      if (bossActiveRef.current && bulletTrailsRef.current.length > 150) {
+        bulletTrailsRef.current = bulletTrailsRef.current.slice(-150);
+      }
+
       // Update missile trails
       missileTrailsRef.current = missileTrailsRef.current.filter(trail => {
         trail.lifetime--;
@@ -14352,6 +14471,11 @@ const SpaceShooter = () => {
         }
         return trail.lifetime > 0 && trail.alpha > 0.05;
       });
+
+      // Limit missile trails during boss fights to prevent excessive buildup
+      if (bossActiveRef.current && missileTrailsRef.current.length > 100) {
+        missileTrailsRef.current = missileTrailsRef.current.slice(-100);
+      }
 
       // Update option satellite positions (follow player trail)
       const options = optionsRef.current;
@@ -15075,7 +15199,9 @@ const SpaceShooter = () => {
       // Update player bullets and filter out off-screen bullets
       bulletsRef.current = bulletsRef.current.filter(bullet => {
         const bulletPolarity = bullet.polarity || 'light';
-        if (Math.random() < 0.5) {
+        // Reduce trail generation during boss fights (20% instead of 50%)
+        const trailChance = bossActiveRef.current ? 0.2 : 0.5;
+        if (Math.random() < trailChance) {
           bulletTrailsRef.current.push({
             x: bullet.x - 2,
             y: bullet.y + BULLET_HEIGHT / 2,
@@ -15087,8 +15213,9 @@ const SpaceShooter = () => {
           });
         }
 
-        // Wave cannon energy trail
-        if (bullet.isWaveCannon && Math.random() < 0.8) {
+        // Wave cannon energy trail - reduced during boss fights
+        const waveTrailChance = bossActiveRef.current ? 0.3 : 0.8;
+        if (bullet.isWaveCannon && Math.random() < waveTrailChance) {
           bulletTrailsRef.current.push({
             x: bullet.x - 10 + (Math.random() - 0.5) * 10,
             y: bullet.y + bullet.size / 2 + (Math.random() - 0.5) * bullet.size,
@@ -15117,8 +15244,9 @@ const SpaceShooter = () => {
 
       // Update missiles (homing behavior)
       missilesRef.current = missilesRef.current.filter(missile => {
-        // Spawn smoke trail particles for missiles
-        if (Math.random() < 0.7) {
+        // Spawn smoke trail particles for missiles - reduced during boss fights
+        const missileTrailChance = bossActiveRef.current ? 0.25 : 0.7;
+        if (Math.random() < missileTrailChance) {
           missileTrailsRef.current.push({
             x: missile.x - 5,
             y: missile.y + MISSILE_HEIGHT / 2 + (Math.random() - 0.5) * 4,
@@ -15178,13 +15306,35 @@ const SpaceShooter = () => {
         const bossHealth = 100 + (waveRef.current * 50);
         const bossShield = isSuperBoss ? bossHealth * 0.3 : 0;
 
+        // Zone-specific boss modifications
+        const currentZone = getZoneForWave(waveRef.current);
+        let zoneModifier = {
+          healthMult: 1.0,
+          speedMult: 1.0,
+          attackPattern: 'standard',
+          color: '#ff4444',
+          description: 'BOSS WARNING'
+        };
+
+        if (currentZone === WAVE_ZONES.moon) {
+          zoneModifier = { healthMult: 0.9, speedMult: 0.8, attackPattern: 'slow_tank', color: '#8888ff', description: 'LUNAR GUARDIAN' };
+        } else if (currentZone === WAVE_ZONES.mars) {
+          zoneModifier = { healthMult: 1.1, speedMult: 1.0, attackPattern: 'heavy_artillery', color: '#ff6644', description: 'MARS DEVASTATOR' };
+        } else if (currentZone === WAVE_ZONES.jupiter) {
+          zoneModifier = { healthMult: 1.0, speedMult: 1.2, attackPattern: 'erratic_storm', color: '#ff8844', description: 'STORM TYRANT' };
+        } else if (currentZone === WAVE_ZONES.saturn) {
+          zoneModifier = { healthMult: 1.2, speedMult: 1.0, attackPattern: 'defensive_ring', color: '#ffdd88', description: 'RING COMMANDER' };
+        } else if (currentZone === WAVE_ZONES.uranus) {
+          zoneModifier = { healthMult: 1.3, speedMult: 1.1, attackPattern: 'ice_fortress', color: '#88ddff', description: 'FROZEN COLOSSUS' };
+        }
+
         bossRef.current = {
           x: GAME_WIDTH + 50,
           y: GAME_HEIGHT / 2 - BOSS_HEIGHT / 2,
           width: BOSS_WIDTH,
           height: BOSS_HEIGHT,
-          health: bossHealth,
-          maxHealth: bossHealth,
+          health: Math.floor(bossHealth * zoneModifier.healthMult),
+          maxHealth: Math.floor(bossHealth * zoneModifier.healthMult),
           shield: bossShield,
           maxShield: bossShield,
           shieldRegenDelay: 0,
@@ -15192,6 +15342,10 @@ const SpaceShooter = () => {
           type: bossType,
           isSuperBoss: isSuperBoss,
           isMegaBoss: isMegaBoss,
+          zonePattern: zoneModifier.attackPattern,
+          zoneColor: zoneModifier.color,
+          zoneName: zoneModifier.description,
+          speedMultiplier: zoneModifier.speedMult,
           entered: false,
           phase: 0,
           phaseTimer: 0,
