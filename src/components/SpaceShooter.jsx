@@ -1514,7 +1514,7 @@ const SpaceShooter = () => {
   ];
 
   const [menuSelection, setMenuSelection] = useState(0); // 0 = Start, 1 = Continue (if save), 2 = Customize, 3 = Controls
-  const [pauseSelection, setPauseSelection] = useState(0); // 0 = Resume, 1 = Restart, 2 = Controls, 3 = Main Menu
+  const [pauseSelection, setPauseSelection] = useState(0); // 0 = Resume, 1 = Restart, 2 = Controls, 3 = Settings, 4 = Main Menu
   const [checkpointSelection, setCheckpointSelection] = useState(0); // 0 = Continue, 1 = Save, 2 = Customize, 3 = Quit
   const [checkpointStats, setCheckpointStats] = useState({ wave: 0, score: 0, lives: 0, bonusPoints: 0 });
   const [saveFeedback, setSaveFeedback] = useState(false);
@@ -3022,7 +3022,7 @@ const SpaceShooter = () => {
     electricityRef.current = [];
     lastElectricityRef.current = 0;
     playerLaserRef.current = { charging: false, charge: 0, firing: false, duration: 0 };
-    hazardsRef.current = { asteroids: [], laserBarriers: [], gravityWells: [] };
+    hazardsRef.current = { asteroids: [], laserBarriers: [], gravityWells: [], atmosphericParticles: [], terrainObstacles: [] };
     lastHazardSpawnRef.current = 0;
     // Reset graze system
     grazeRef.current = { count: 0, meter: 0, lastGrazeTime: 0, displayTimer: 0, combo: 0, comboTimer: 0 };
@@ -4738,10 +4738,12 @@ const SpaceShooter = () => {
         planetTheme = 'uranus'; // Waves 17+: Uranus (cyan/blue ice giant)
       }
 
-      if (planetTheme && gameStateRef.current === 'playing') {
-        // Update scroll position for parallax effect
-        planetScrollRef.current += 0.5;
-        if (planetScrollRef.current > GAME_WIDTH * 2) planetScrollRef.current = 0;
+      if (planetTheme) {
+        // Update scroll position for parallax effect (only when playing)
+        if (gameStateRef.current === 'playing') {
+          planetScrollRef.current += 0.5;
+          if (planetScrollRef.current > GAME_WIDTH * 2) planetScrollRef.current = 0;
+        }
 
         const planetY = GAME_HEIGHT - 180; // Position from bottom
         const planetHeight = 180;
@@ -13426,34 +13428,82 @@ const SpaceShooter = () => {
         // Handle pause menu navigation with D-pad and analog stick
         if (gameStateRef.current === 'paused') {
           const stickY = gamepad.axes[1] || 0;
+          const stickX = gamepad.axes[0] || 0;
           const stickDeadzone = 0.5;
           const stickUp = stickY < -stickDeadzone;
           const stickDown = stickY > stickDeadzone;
+          const stickLeft = stickX < -stickDeadzone;
+          const stickRight = stickX > stickDeadzone;
 
-          // D-pad Up (button 12) or Left Stick Up - navigate up in pause menu
+          // Grid navigation mapping:
+          // Row 0: [0, 1]  (Resume, Restart)
+          // Row 1: [2, 3]  (Controls, Settings)
+          // Row 2: [4]     (Main Menu - spans both columns)
+
+          // D-pad Up (button 12) or Left Stick Up - navigate up in grid
           if ((gamepad.buttons[12]?.pressed && !gamepadButtonsRef.current.menuUp) ||
               (stickUp && !gamepadButtonsRef.current.stickUp)) {
-            if (!showPauseControlsRef.current) {
-              setPauseSelection(prev => prev <= 0 ? 3 : prev - 1);
+            if (!showPauseControlsRef.current && !showSettingsRef.current) {
+              setPauseSelection(prev => {
+                if (prev === 0 || prev === 1) return 4; // Top row to bottom
+                if (prev === 2 || prev === 3) return prev - 2; // Middle to top (same column)
+                if (prev === 4) return 2; // Bottom to middle left
+                return prev;
+              });
             }
           }
           gamepadButtonsRef.current.menuUp = gamepad.buttons[12]?.pressed || false;
           gamepadButtonsRef.current.stickUp = stickUp;
 
-          // D-pad Down (button 13) or Left Stick Down - navigate down in pause menu
+          // D-pad Down (button 13) or Left Stick Down - navigate down in grid
           if ((gamepad.buttons[13]?.pressed && !gamepadButtonsRef.current.menuDown) ||
               (stickDown && !gamepadButtonsRef.current.stickDown)) {
-            if (!showPauseControlsRef.current) {
-              setPauseSelection(prev => prev >= 3 ? 0 : prev + 1);
+            if (!showPauseControlsRef.current && !showSettingsRef.current) {
+              setPauseSelection(prev => {
+                if (prev === 0 || prev === 1) return prev + 2; // Top to middle (same column)
+                if (prev === 2 || prev === 3) return 4; // Middle to bottom
+                if (prev === 4) return 0; // Bottom to top left
+                return prev;
+              });
             }
           }
           gamepadButtonsRef.current.menuDown = gamepad.buttons[13]?.pressed || false;
           gamepadButtonsRef.current.stickDown = stickDown;
 
+          // D-pad Left (button 14) or Left Stick Left - navigate left in grid
+          if ((gamepad.buttons[14]?.pressed && !gamepadButtonsRef.current.menuLeft) ||
+              (stickLeft && !gamepadButtonsRef.current.stickLeft)) {
+            if (!showPauseControlsRef.current && !showSettingsRef.current) {
+              setPauseSelection(prev => {
+                if (prev === 1) return 0; // Right to left in row 0
+                if (prev === 3) return 2; // Right to left in row 1
+                return prev;
+              });
+            }
+          }
+          gamepadButtonsRef.current.menuLeft = gamepad.buttons[14]?.pressed || false;
+          gamepadButtonsRef.current.stickLeft = stickLeft;
+
+          // D-pad Right (button 15) or Left Stick Right - navigate right in grid
+          if ((gamepad.buttons[15]?.pressed && !gamepadButtonsRef.current.menuRight) ||
+              (stickRight && !gamepadButtonsRef.current.stickRight)) {
+            if (!showPauseControlsRef.current && !showSettingsRef.current) {
+              setPauseSelection(prev => {
+                if (prev === 0) return 1; // Left to right in row 0
+                if (prev === 2) return 3; // Left to right in row 1
+                return prev;
+              });
+            }
+          }
+          gamepadButtonsRef.current.menuRight = gamepad.buttons[15]?.pressed || false;
+          gamepadButtonsRef.current.stickRight = stickRight;
+
           // X button (button 0) - select pause menu item
           if (gamepad.buttons[0]?.pressed && !gamepadButtonsRef.current.menuSelect) {
             if (showPauseControlsRef.current) {
               setShowPauseControls(false);
+            } else if (showSettingsRef.current) {
+              setShowSettings(false);
             } else {
               if (pauseSelectionRef.current === 0) {
                 setGameState('playing');
@@ -13464,6 +13514,8 @@ const SpaceShooter = () => {
               } else if (pauseSelectionRef.current === 2) {
                 setShowPauseControls(true);
               } else if (pauseSelectionRef.current === 3) {
+                setShowSettings(true);
+              } else if (pauseSelectionRef.current === 4) {
                 setGameState('menu');
                 setShowPauseControls(false);
                 setPauseSelection(0);
@@ -13476,6 +13528,8 @@ const SpaceShooter = () => {
           if (gamepad.buttons[1]?.pressed && !gamepadButtonsRef.current.menuBack) {
             if (showPauseControlsRef.current) {
               setShowPauseControls(false);
+            } else if (showSettingsRef.current) {
+              setShowSettings(false);
             } else {
               setGameState('playing');
             }
@@ -19434,6 +19488,7 @@ const SpaceShooter = () => {
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
           className="game-canvas"
+          style={{ pointerEvents: gameState === 'paused' ? 'none' : 'auto' }}
         />
 
         {/* Recording Indicator */}
@@ -20963,37 +21018,49 @@ const SpaceShooter = () => {
           </div>
         )}
 
-        {gameState === 'paused' && !showPauseControls && (
-          <div className="overlay pause-overlay">
+        {gameState === 'paused' && !showPauseControls && !showSettings && (
+          <div className="overlay pause-overlay" onClick={(e) => e.stopPropagation()}>
             <h2> PAUSED</h2>
-            <div className="pause-buttons">
+            <div className="pause-buttons-grid">
               <button
-                onClick={() => setGameState('playing')}
-                className={`start-button ${pauseSelection === 0 ? 'gamepad-selected' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setGameState('playing'); }}
+                className={`pause-grid-button ${pauseSelection === 0 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(0)}
               >
-                <span className="btn-icon">▶️</span> RESUME
+                <span className="btn-icon">▶️</span>
+                <span className="btn-label">RESUME</span>
               </button>
               <button
-                onClick={() => { startGame(); setGameState('playing'); setPauseSelection(0); }}
-                className={`restart-button ${pauseSelection === 1 ? 'gamepad-selected' : ''}`}
+                onClick={(e) => { e.stopPropagation(); startGame(); setGameState('playing'); setPauseSelection(0); }}
+                className={`pause-grid-button ${pauseSelection === 1 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(1)}
               >
-                <span className="btn-icon"></span> RESTART
+                <span className="btn-icon">🔄</span>
+                <span className="btn-label">RESTART</span>
               </button>
               <button
-                onClick={() => setShowPauseControls(true)}
-                className={`settings-button ${pauseSelection === 2 ? 'gamepad-selected' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setShowPauseControls(true); }}
+                className={`pause-grid-button ${pauseSelection === 2 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(2)}
               >
-                <span className="btn-icon">🎮</span> CONTROLS
+                <span className="btn-icon">🎮</span>
+                <span className="btn-label">CONTROLS</span>
               </button>
               <button
-                onClick={() => { soundSystem.stopMusic(); setGameState('menu'); setShowPauseControls(false); setPauseSelection(0); }}
-                className={`menu-button ${pauseSelection === 3 ? 'gamepad-selected' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setShowSettings(true); }}
+                className={`pause-grid-button ${pauseSelection === 3 ? 'gamepad-selected' : ''}`}
                 onMouseEnter={() => setPauseSelection(3)}
               >
-                <span className="btn-icon">🏀</span> MAIN MENU
+                <span className="btn-icon">⚙️</span>
+                <span className="btn-label">SETTINGS</span>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); soundSystem.stopMusic(); setGameState('menu'); setShowPauseControls(false); setPauseSelection(0); }}
+                className={`pause-grid-button pause-grid-full ${pauseSelection === 4 ? 'gamepad-selected' : ''}`}
+                onMouseEnter={() => setPauseSelection(4)}
+              >
+                <span className="btn-icon">🏠</span>
+                <span className="btn-label">MAIN MENU</span>
               </button>
             </div>
             <p className="start-hint">🎮 D-Pad to navigate ↩ ↩ to select ↩ ESC to resume</p>
@@ -21053,6 +21120,173 @@ const SpaceShooter = () => {
               </div>
             </div>
             <button onClick={() => setShowPauseControls(false)} className="back-button">
+              ◀ BACK
+            </button>
+            <p className="start-hint">🎮 Press ↩❌ or ↩ to go back</p>
+          </div>
+        )}
+
+        {gameState === 'paused' && showSettings && (
+          <div className="overlay settings-overlay">
+            <h2>⚙️ SETTINGS</h2>
+
+            {/* Settings Tabs */}
+            <div className="settings-tabs">
+              <button
+                className={`settings-tab ${settingsTab === 'audio' ? 'active' : ''}`}
+                onClick={() => setSettingsTab('audio')}
+              >
+                🔊 Audio
+              </button>
+              <button
+                className={`settings-tab ${settingsTab === 'profile' ? 'active' : ''}`}
+                onClick={() => setSettingsTab('profile')}
+              >
+                👤 Profile
+              </button>
+            </div>
+
+            <div className="settings-content">
+              {/* Audio Tab */}
+              {settingsTab === 'audio' && (
+                <div className="settings-audio">
+                  <div className="volume-control">
+                    <label>🔊 Master Volume</label>
+                    <div className="slider-row">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={userSettings.masterVolume}
+                        onChange={(e) => setUserSettings(prev => ({ ...prev, masterVolume: parseInt(e.target.value) }))}
+                        className="volume-slider"
+                      />
+                      <span className="volume-value">{userSettings.masterVolume}%</span>
+                    </div>
+                  </div>
+                  <div className="volume-control">
+                    <label>🎵 Music Volume</label>
+                    <div className="slider-row">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={userSettings.musicVolume}
+                        onChange={(e) => setUserSettings(prev => ({ ...prev, musicVolume: parseInt(e.target.value) }))}
+                        className="volume-slider"
+                      />
+                      <span className="volume-value">{userSettings.musicVolume}%</span>
+                    </div>
+                  </div>
+                  <div className="volume-control">
+                    <label>🔊 SFX Volume</label>
+                    <div className="slider-row">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={userSettings.sfxVolume}
+                        onChange={(e) => setUserSettings(prev => ({ ...prev, sfxVolume: parseInt(e.target.value) }))}
+                        className="volume-slider"
+                      />
+                      <span className="volume-value">{userSettings.sfxVolume}%</span>
+                    </div>
+                  </div>
+                  <button
+                    className="test-sound-button"
+                    onClick={() => soundSystem.playShoot()}
+                  >
+                    🔊 Test Sound
+                  </button>
+
+                  <div className="performance-section">
+                    <h4 style={{ marginTop: '20px', marginBottom: '10px', color: '#00ffff' }}>⚡ PERFORMANCE</h4>
+                    <div className="toggle-option">
+                      <label className="toggle-label">
+                        <span>⚡ Performance Mode</span>
+                        <span className="toggle-desc">Reduce visual effects for smoother gameplay</span>
+                      </label>
+                      <button
+                        className={`toggle-button ${userSettings.performanceMode ? 'active' : ''}`}
+                        onClick={() => setUserSettings(prev => ({ ...prev, performanceMode: !prev.performanceMode }))}
+                      >
+                        {userSettings.performanceMode ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                    <div className="toggle-option">
+                      <label className="toggle-label">
+                        <span>📊 Show FPS</span>
+                        <span className="toggle-desc">Display frames per second counter</span>
+                      </label>
+                      <button
+                        className={`toggle-button ${userSettings.showFPS ? 'active' : ''}`}
+                        onClick={() => setUserSettings(prev => ({ ...prev, showFPS: !prev.showFPS }))}
+                      >
+                        {userSettings.showFPS ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Profile Tab */}
+              {settingsTab === 'profile' && (
+                <div className="settings-profile">
+                  <div className="profile-name-section">
+                    <label>✏️ Pilot Name</label>
+                    <input
+                      type="text"
+                      value={userSettings.playerName}
+                      onChange={(e) => setUserSettings(prev => ({ ...prev, playerName: e.target.value.toUpperCase().slice(0, 12) }))}
+                      className="name-input"
+                      maxLength={12}
+                      placeholder="ENTER NAME"
+                    />
+                  </div>
+                  <div className="avatar-section">
+                    <label>🚀 Avatar</label>
+                    <div className="avatar-grid">
+                      {AVATAR_OPTIONS.map(avatar => (
+                        <button
+                          key={avatar.id}
+                          className={`avatar-option rarity-${avatar.rarity} ${userSettings.avatar === avatar.id ? 'selected' : ''}`}
+                          onClick={() => setUserSettings(prev => ({ ...prev, avatar: avatar.id }))}
+                          title={`${avatar.name} (${avatar.rarity.toUpperCase()})`}
+                          style={userSettings.avatar === avatar.id ? {
+                            borderColor: userSettings.avatarColor,
+                            boxShadow: `0 0 12px ${userSettings.avatarColor}40`
+                          } : {}}
+                        >
+                          <span className="avatar-icon">{avatar.icon}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="avatar-color-section">
+                    <label>🎨 Avatar Color</label>
+                    <div className="color-grid">
+                      {AVATAR_COLORS.map(colorOption => (
+                        <button
+                          key={colorOption.id}
+                          className={`color-option ${userSettings.avatarColor === colorOption.color ? 'selected' : ''} ${colorOption.special ? 'special-gradient' : ''}`}
+                          onClick={() => setUserSettings(prev => ({ ...prev, avatarColor: colorOption.color }))}
+                          title={colorOption.name}
+                          style={{
+                            background: colorOption.color,
+                            borderColor: userSettings.avatarColor === colorOption.color ? '#ffffff' : 'transparent',
+                            boxShadow: userSettings.avatarColor === colorOption.color && colorOption.glow ? `0 0 12px ${colorOption.glow}` : 'none'
+                          }}
+                        >
+                          {userSettings.avatarColor === colorOption.color && <span className="color-check">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button onClick={() => setShowSettings(false)} className="back-button">
               ◀ BACK
             </button>
             <p className="start-hint">🎮 Press ↩❌ or ↩ to go back</p>
