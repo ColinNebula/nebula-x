@@ -36,7 +36,7 @@ replacements = [
     # SFX Volume - 🔉 speaker medium (quadruple-encoded)
     (b'\xc3\x83\xc2\x83\xc3\x82\xc2\xb0\xc3\x83\xc2\x82\xc3\x82\xc2\x9f\xc3\x83\xc2\x82\xc3\x82\xc2\x94\xc3\x83\xc2\x82\xc3\x82\xc2\x89',
      b'\xf0\x9f\x94\x89', '🔉'),
-    
+
     # Test Sound - 🔊 speaker (same pattern as Audio tab, already fixed)
     # But let me check if it's a different emoji
 ]

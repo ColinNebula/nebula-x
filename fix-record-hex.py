@@ -27,10 +27,10 @@ print(f"Found {count} instances")
 
 if count > 0:
     content = content.replace(corrupted_bytes, correct_bytes)
-    
+
     with open(file_path, 'wb') as f:
         f.write(content)
-    
+
     print("✅ Fixed recording button!")
 else:
     print("⚠️ Pattern not found")

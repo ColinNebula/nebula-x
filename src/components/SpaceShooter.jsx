@@ -19827,7 +19827,7 @@ const SpaceShooter = () => {
                     </div>
                   </div>
                   <div className="volume-control">
-                    <label>ÃÂ°ÃÂÃÂÃÂ SFX Volume</label>
+                    <label>🔊 SFX Volume</label>
                     <div className="slider-row">
                       <input 
                         type="range" 
@@ -19844,7 +19844,7 @@ const SpaceShooter = () => {
                     className="test-sound-button"
                     onClick={() => soundSystem.playShoot()}
                   >
-                    ÃÂ°ÃÂÃÂÃÂ Test Sound
+                    🔊 Test Sound
                   </button>
                   
                   <div className="performance-section">
@@ -19863,7 +19863,7 @@ const SpaceShooter = () => {
                     </div>
                     <div className="toggle-option">
                       <label className="toggle-label">
-                        <span>ÃÂ°ÃÂÃÂÃÂ Show FPS</span>
+                        <span>🔊 Show FPS</span>
                         <span className="toggle-desc">Display frames per second counter</span>
                       </label>
                       <button 
@@ -20795,7 +20795,7 @@ const SpaceShooter = () => {
                   <span className="volume-val">{userSettings.musicVolume}%</span>
                 </div>
                 <div className="volume-row">
-                  <span className="volume-label">ÃÂ°ÃÂÃÂÃÂ SFX</span>
+                  <span className="volume-label">🔊 SFX</span>
                   <input 
                     type="range" 
                     min="0" 

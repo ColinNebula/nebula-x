@@ -169,7 +169,6 @@ We welcome contributions! Here's how:
 ### Audio
 - Sound effects from [Mixkit](https://mixkit.co) (Free License)
 - Additional sounds from [Freesound.org](https://freesound.org)
-- Game Music from [teknoaxe.com](https://teknoaxe.com/Link_Code_3.php?q=1428&genre=Suspense)
 
 ### Inspiration
 - Gradius series (Force Pod system)
