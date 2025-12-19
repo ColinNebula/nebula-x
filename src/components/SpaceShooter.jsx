@@ -1922,7 +1922,9 @@ const SpaceShooter = () => {
   const hazardsRef = useRef({
     asteroids: [],      // { x, y, size, rotation, rotationSpeed, vx, vy, health }
     laserBarriers: [],  // { y, width, active, timer, warningTimer }
-    gravityWells: []    // { x, y, radius, strength, pulsePhase }
+    gravityWells: [],   // { x, y, radius, strength, pulsePhase }
+    atmosphericParticles: [], // { x, y, vx, vy, size, alpha, type, color }
+    terrainObstacles: []  // { x, y, width, height, type, vx }
   });
   const lastHazardSpawnRef = useRef(0);
 
@@ -4886,6 +4888,98 @@ const SpaceShooter = () => {
 
       // ========== DRAW ENVIRONMENTAL HAZARDS ==========
       const hazards = hazardsRef.current;
+
+      // Draw atmospheric particles (behind hazards but in front of stars)
+      ctx.save();
+      hazards.atmosphericParticles.forEach(p => {
+        ctx.globalAlpha = p.alpha;
+
+        if (p.type === 'ice') {
+          // Ice crystals - sparkly
+          ctx.fillStyle = p.color;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+          // Add sparkle
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(p.x - 0.5, p.y - 0.5, 1, 1);
+        } else if (p.type === 'gas') {
+          // Gas clouds - blurry circles
+          const gasGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+          gasGrad.addColorStop(0, p.color);
+          gasGrad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = gasGrad;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (p.type === 'sand' || p.type === 'dust_devil') {
+          // Sand/dust - irregular shapes
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size * 1.5);
+        } else {
+          // Default dust particles
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, p.size, p.size);
+        }
+      });
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // Draw terrain obstacles
+      ctx.save();
+      hazards.terrainObstacles.forEach(obs => {
+        ctx.fillStyle = obs.color;
+
+        if (obs.type === 'crater_wall') {
+          // Moon crater walls - jagged
+          ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.fillRect(obs.x + 5, obs.y + 5, obs.width - 10, obs.height - 10);
+        } else if (obs.type === 'canyon_wall') {
+          // Mars canyon - layered
+          for (let i = 0; i < 3; i++) {
+            ctx.fillStyle = `rgba(170, 85, 51, ${0.8 - i * 0.2})`;
+            ctx.fillRect(obs.x + i * 5, obs.y, obs.width, obs.height);
+          }
+        } else if (obs.type === 'gas_column') {
+          // Jupiter gas column - translucent gradient
+          const gasGrad = ctx.createLinearGradient(obs.x, obs.y, obs.x + obs.width, obs.y);
+          gasGrad.addColorStop(0, 'rgba(221, 136, 68, 0.3)');
+          gasGrad.addColorStop(0.5, 'rgba(221, 136, 68, 0.7)');
+          gasGrad.addColorStop(1, 'rgba(221, 136, 68, 0.3)');
+          ctx.fillStyle = gasGrad;
+          ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        } else if (obs.type === 'ring_chunk') {
+          // Saturn ring chunks - crystalline
+          ctx.fillStyle = obs.color;
+          ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+          ctx.strokeStyle = '#ffffaa';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+        } else if (obs.type === 'ice_pillar') {
+          // Uranus ice - translucent blue
+          const iceGrad = ctx.createLinearGradient(obs.x, obs.y, obs.x + obs.width, obs.y);
+          iceGrad.addColorStop(0, 'rgba(102, 153, 204, 0.5)');
+          iceGrad.addColorStop(0.5, 'rgba(102, 153, 204, 0.9)');
+          iceGrad.addColorStop(1, 'rgba(102, 153, 204, 0.5)');
+          ctx.fillStyle = iceGrad;
+          ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+          // Ice shine
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+          ctx.fillRect(obs.x + 5, obs.y + 5, obs.width / 3, obs.height - 10);
+        } else {
+          ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        }
+
+        // Health indicator
+        if (obs.health < 5) {
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(obs.x, obs.y - 5, (obs.health / 5) * obs.width, 3);
+        }
+      });
+      ctx.restore();
 
       // Draw gravity wells (behind everything)
       hazards.gravityWells.forEach(well => {
@@ -14944,15 +15038,142 @@ const SpaceShooter = () => {
       const hazards = hazardsRef.current;
       const waveNum = waveRef.current;
 
+      // Determine current planet theme for hazards
+      let planetTheme = null;
+      if (waveNum >= 1 && waveNum <= 4) planetTheme = 'moon';
+      else if (waveNum >= 5 && waveNum <= 8) planetTheme = 'mars';
+      else if (waveNum >= 9 && waveNum <= 12) planetTheme = 'jupiter';
+      else if (waveNum >= 13 && waveNum <= 16) planetTheme = 'saturn';
+      else if (waveNum >= 17) planetTheme = 'uranus';
+
+      // Spawn atmospheric particles continuously
+      if (Math.random() < 0.3 && hazards.atmosphericParticles.length < 150) {
+        const particleType = {
+          'moon': { color: '#888899', size: 1 + Math.random() * 2, speed: 0.5 + Math.random() * 1, type: 'dust' },
+          'mars': { color: '#cc6633', size: 2 + Math.random() * 3, speed: 1 + Math.random() * 2, type: 'sand' },
+          'jupiter': { color: '#ffaa44', size: 3 + Math.random() * 4, speed: 2 + Math.random() * 3, type: 'gas' },
+          'saturn': { color: '#ddcc88', size: 1 + Math.random() * 2, speed: 0.8 + Math.random() * 1.5, type: 'ring_dust' },
+          'uranus': { color: '#88ccff', size: 2 + Math.random() * 3, speed: 1 + Math.random() * 2, type: 'ice' }
+        }[planetTheme] || { color: '#ffffff', size: 1, speed: 1, type: 'dust' };
+
+        hazards.atmosphericParticles.push({
+          x: GAME_WIDTH + 10,
+          y: Math.random() * GAME_HEIGHT,
+          vx: -particleType.speed,
+          vy: (Math.random() - 0.5) * 0.5,
+          size: particleType.size,
+          alpha: 0.3 + Math.random() * 0.4,
+          type: particleType.type,
+          color: particleType.color,
+          rotation: Math.random() * Math.PI * 2
+        });
+      }
+
       // Spawn hazards periodically (starts wave 3, but not during boss battles)
       if (waveNum >= 3 && !bossActiveRef.current && timestamp - lastHazardSpawnRef.current > 3000) {
         lastHazardSpawnRef.current = timestamp;
 
-        // Random hazard type based on wave
+        // Random hazard type based on wave and planet
         const roll = Math.random();
 
+        // Planet-specific terrain obstacles
+        if (roll < 0.15 && hazards.terrainObstacles.length < 2) {
+          const obstacleTypes = {
+            'moon': { width: 40, height: 80 + Math.random() * 120, color: '#555577', type: 'crater_wall' },
+            'mars': { width: 60, height: 100 + Math.random() * 150, color: '#aa5533', type: 'canyon_wall' },
+            'jupiter': { width: 80, height: 120 + Math.random() * 200, color: '#dd8844', type: 'gas_column' },
+            'saturn': { width: 30, height: 60 + Math.random() * 100, color: '#ccaa66', type: 'ring_chunk' },
+            'uranus': { width: 50, height: 90 + Math.random() * 140, color: '#6699cc', type: 'ice_pillar' }
+          }[planetTheme] || { width: 40, height: 100, color: '#666666', type: 'generic' };
+
+          hazards.terrainObstacles.push({
+            x: GAME_WIDTH,
+            y: Math.random() * (GAME_HEIGHT - obstacleTypes.height),
+            width: obstacleTypes.width,
+            height: obstacleTypes.height,
+            type: obstacleTypes.type,
+            color: obstacleTypes.color,
+            vx: -2 - Math.random() * 1.5,
+            health: 5 + waveNum
+          });
+        }
+        // Planet-specific special hazards
+        else if (roll < 0.25) {
+          if (planetTheme === 'moon' && hazards.asteroids.length < 8) {
+            // Moon: Debris from destroyed mining stations
+            hazards.asteroids.push({
+              x: GAME_WIDTH + 30,
+              y: Math.random() * GAME_HEIGHT,
+              size: 15 + Math.random() * 25,
+              rotation: Math.random() * Math.PI * 2,
+              rotationSpeed: (Math.random() - 0.5) * 0.08,
+              vx: -3 - Math.random() * 2,
+              vy: (Math.random() - 0.5) * 1.5,
+              health: 2,
+              isDebris: true
+            });
+          } else if (planetTheme === 'mars' && hazards.atmosphericParticles.length < 200) {
+            // Mars: Dust devil - creates swirling particle cluster
+            for (let i = 0; i < 15; i++) {
+              const angle = (i / 15) * Math.PI * 2;
+              const radius = 30 + Math.random() * 20;
+              hazards.atmosphericParticles.push({
+                x: GAME_WIDTH + 50 + Math.cos(angle) * radius,
+                y: GAME_HEIGHT / 2 + Math.sin(angle) * radius,
+                vx: -2 + Math.cos(angle) * 0.5,
+                vy: Math.sin(angle) * 0.5,
+                size: 3 + Math.random() * 2,
+                alpha: 0.6,
+                type: 'dust_devil',
+                color: '#cc6633',
+                rotation: angle
+              });
+            }
+          } else if (planetTheme === 'jupiter') {
+            // Jupiter: Lightning arc hazard
+            hazards.laserBarriers.push({
+              y: 50 + Math.random() * (GAME_HEIGHT - 100),
+              width: 0,
+              maxWidth: GAME_WIDTH * 0.4,
+              active: false,
+              timer: 0,
+              warningTimer: 60,
+              growSpeed: 12,
+              type: 'lightning',
+              color: '#ffff44'
+            });
+          } else if (planetTheme === 'saturn' && hazards.asteroids.length < 10) {
+            // Saturn: Ring ice chunks in a line
+            const yPos = 100 + Math.random() * (GAME_HEIGHT - 200);
+            for (let i = 0; i < 3; i++) {
+              hazards.asteroids.push({
+                x: GAME_WIDTH + i * 80,
+                y: yPos + (Math.random() - 0.5) * 40,
+                size: 20 + Math.random() * 30,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.06,
+                vx: -2.5 - Math.random() * 1,
+                vy: (Math.random() - 0.5) * 0.5,
+                health: 3,
+                isIce: true
+              });
+            }
+          } else if (planetTheme === 'uranus') {
+            // Uranus: Frozen methane cloud (gravity well variant)
+            hazards.gravityWells.push({
+              x: GAME_WIDTH + 80,
+              y: 80 + Math.random() * (GAME_HEIGHT - 160),
+              radius: 70 + Math.random() * 30,
+              strength: 0.15,
+              pulsePhase: 0,
+              vx: -1.5,
+              type: 'frozen_cloud',
+              color: '#6699ff'
+            });
+          }
+        }
         // Asteroids - most common (starts wave 3)
-        if (roll < 0.5) {
+        else if (roll < 0.65) {
           // 20% chance for HUGE asteroid (5x normal size)
           const isGiant = Math.random() < 0.2;
           const baseSize = 20 + Math.random() * 40;
@@ -14994,6 +15215,55 @@ const SpaceShooter = () => {
           });
         }
       }
+
+      // Update atmospheric particles
+      hazards.atmosphericParticles = hazards.atmosphericParticles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += 0.02;
+
+        // Slight turbulence for gas/sand particles
+        if (p.type === 'gas' || p.type === 'sand' || p.type === 'dust_devil') {
+          p.vy += (Math.random() - 0.5) * 0.1;
+        }
+
+        return p.x > -10;
+      });
+
+      // Update terrain obstacles
+      hazards.terrainObstacles = hazards.terrainObstacles.filter(obs => {
+        obs.x += obs.vx;
+
+        // Check collision with player
+        if (playerInvincibleRef.current <= 0 && !dashRef.current.active) {
+          const player = playerRef.current;
+          if (player.x + PLAYER_WIDTH > obs.x &&
+              player.x < obs.x + obs.width &&
+              player.y + PLAYER_HEIGHT > obs.y &&
+              player.y < obs.y + obs.height) {
+            // Player hit terrain!
+            if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
+              upgradesRef.current.shieldHits--;
+              obs.health--;
+            } else {
+              handlePlayerDeath();
+            }
+          }
+        }
+
+        // Check collision with player bullets
+        bulletsRef.current = bulletsRef.current.filter(bullet => {
+          if (bullet.x > obs.x && bullet.x < obs.x + obs.width &&
+              bullet.y > obs.y && bullet.y < obs.y + obs.height) {
+            obs.health--;
+            createExplosion(bullet.x, bullet.y, 'small');
+            return false;
+          }
+          return true;
+        });
+
+        return obs.x > -obs.width && obs.health > 0;
+      });
 
       // Update asteroids
       hazards.asteroids = hazards.asteroids.filter(asteroid => {
