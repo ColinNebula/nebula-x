@@ -3,8 +3,11 @@ import './SpaceShooter.css';
 
 // DEBUG: Verify file is loaded
 
-// Helper to resolve public assets (Vite serves public/ folder at root)
-const asset = (path) => `/${path.replace(/^\//, '')}`;
+// Helper to resolve public assets with base path support (for GitHub Pages)
+const asset = (path) => {
+  const base = import.meta.env.BASE_URL || '/';
+  return `${base}${path.replace(/^\//, '')}`;
+};
 
 // ============= WEB AUDIO SOUND SYSTEM =============
 class SoundSystem {
@@ -81,7 +84,7 @@ class SoundSystem {
   playShoot(pitch = 1) {
     if (!this.initialized) return;
     try {
-      const shootSound = new Audio('/main-weapons.wav');
+      const shootSound = new Audio(asset('main-weapons.wav'));
       shootSound.volume = 0.25 * this.sfxVolume;
       shootSound.playbackRate = pitch;
       shootSound.play().catch(() => {});
@@ -92,7 +95,7 @@ class SoundSystem {
   playEnemyShoot() {
     if (!this.initialized) return;
     try {
-      const enemyGunSound = new Audio('/enemy-guns.mp3');
+      const enemyGunSound = new Audio(asset('enemy-guns.mp3'));
       enemyGunSound.volume = 0.2;
       enemyGunSound.play().catch(() => {});
     } catch (e) {}
@@ -194,7 +197,7 @@ class SoundSystem {
   playWaveCannonFire() {
     if (!this.initialized) return;
     try {
-      const waveCannonSound = new Audio('/power-weapons.wav');
+      const waveCannonSound = new Audio(asset('power-weapons.wav'));
       waveCannonSound.volume = this.sfxGain.gain.value;
       waveCannonSound.play().catch(() => {});
     } catch (e) {
@@ -402,7 +405,7 @@ class SoundSystem {
   playPlayerDestroy() {
     if (!this.initialized) return;
     try {
-      const destroySound = new Audio('/user-ship-destroy.wav');
+      const destroySound = new Audio(asset('user-ship-destroy.wav'));
       destroySound.volume = 0.5 * this.sfxVolume;
       destroySound.play().catch(() => {});
     } catch (e) {}
@@ -906,6 +909,78 @@ const DASH_DISTANCE = 80; // How far the dash moves
 const DASH_COOLDOWN = 60; // Frames before can dash again (~1 second)
 const DASH_DURATION = 8; // Frames of invincibility during dash
 
+// Wave-based zone themes for enemy colors and effects
+const WAVE_ZONES = {
+  moon: {
+    waves: [1, 4],
+    name: 'LUNAR ORBIT',
+    color: '#8888cc',
+    enemyTint: '#9999dd',
+    particleColor: '#aaaaff',
+    preferredEnemies: ['normal', 'turret', 'formation'],
+    preferredFormations: ['line', 'vShape'],
+    hazardMultiplier: 0.7,
+    enemySpeedMultiplier: 0.9,
+    description: 'Low gravity, slow-moving enemies'
+  },
+  mars: {
+    waves: [5, 8],
+    name: 'MARTIAN WASTES',
+    color: '#ff8844',
+    enemyTint: '#ff9955',
+    particleColor: '#ffaa66',
+    preferredEnemies: ['heavy', 'bomber', 'turret'],
+    preferredFormations: ['arrow', 'diamond'],
+    hazardMultiplier: 1.2,
+    enemySpeedMultiplier: 1.0,
+    description: 'Armored units and explosive tactics'
+  },
+  jupiter: {
+    waves: [9, 12],
+    name: 'JOVIAN STORM',
+    color: '#cc8844',
+    enemyTint: '#dd9955',
+    particleColor: '#eeaa66',
+    preferredEnemies: ['wave', 'spiral', 'teleporter'],
+    preferredFormations: ['wave', 'spiralIn'],
+    hazardMultiplier: 1.5,
+    enemySpeedMultiplier: 1.1,
+    description: 'Chaotic patterns and unpredictable movement'
+  },
+  saturn: {
+    waves: [13, 16],
+    name: 'SATURNIAN RINGS',
+    color: '#ddcc88',
+    enemyTint: '#eedd99',
+    particleColor: '#ffeebb',
+    preferredEnemies: ['shielded', 'formation', 'splitter'],
+    preferredFormations: ['circle', 'wave'],
+    hazardMultiplier: 1.8,
+    enemySpeedMultiplier: 1.2,
+    description: 'Ring debris and defensive formations'
+  },
+  uranus: {
+    waves: [17, 20],
+    name: 'ICE GIANT',
+    color: '#88ddff',
+    enemyTint: '#99eeff',
+    particleColor: '#aaffff',
+    preferredEnemies: ['sniper', 'cloaked', 'healer', 'shielder'],
+    preferredFormations: ['diamond', 'arrow'],
+    hazardMultiplier: 2.0,
+    enemySpeedMultiplier: 1.3,
+    description: 'Elite units with support abilities'
+  }
+};
+
+const getZoneForWave = (waveNum) => {
+  if (waveNum >= 1 && waveNum <= 4) return WAVE_ZONES.moon;
+  if (waveNum >= 5 && waveNum <= 8) return WAVE_ZONES.mars;
+  if (waveNum >= 9 && waveNum <= 12) return WAVE_ZONES.jupiter;
+  if (waveNum >= 13 && waveNum <= 16) return WAVE_ZONES.saturn;
+  return WAVE_ZONES.uranus;
+};
+
 // Power-up types with rarity system
 const POWERUP_TYPES = {
   // Common power-ups (55% of drops)
@@ -977,6 +1052,7 @@ const SpaceShooter = () => {
   const [wave, setWave] = useState(1);
   const [bossActive, setBossActive] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [zoneTransition, setZoneTransition] = useState(null); // For zone change effects
   const [showPauseControls, setShowPauseControls] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [showMissionMenu, setShowMissionMenu] = useState(false);
@@ -2079,7 +2155,8 @@ const SpaceShooter = () => {
         { x: -80, y: 60 }
       ],
       bonus: 500,
-      color: '#ffff00'
+      color: '#ffff00',
+      zones: ['moon']
     },
     line: {
       name: 'LINE ATTACK',
@@ -2090,7 +2167,8 @@ const SpaceShooter = () => {
         { x: -150, y: 0 }
       ],
       bonus: 400,
-      color: '#00ffff'
+      color: '#00ffff',
+      zones: ['moon', 'mars']
     },
     diamond: {
       name: 'DIAMOND SQUAD',
@@ -2101,7 +2179,8 @@ const SpaceShooter = () => {
         { x: -80, y: 0 }
       ],
       bonus: 600,
-      color: '#ff00ff'
+      color: '#ff00ff',
+      zones: ['mars', 'saturn', 'uranus']
     },
     wave: {
       name: 'WAVE ASSAULT',
@@ -2114,7 +2193,8 @@ const SpaceShooter = () => {
         { x: -150, y: -25 }
       ],
       bonus: 750,
-      color: '#ff8800'
+      color: '#ff8800',
+      zones: ['jupiter', 'saturn']
     },
     arrow: {
       name: 'ARROW HEAD',
@@ -2127,7 +2207,36 @@ const SpaceShooter = () => {
         { x: -70, y: 0 }
       ],
       bonus: 800,
-      color: '#88ff00'
+      color: '#88ff00',
+      zones: ['mars', 'uranus']
+    },
+    circle: {
+      name: 'RING FORMATION',
+      positions: [
+        { x: 0, y: 0 },
+        { x: -50, y: -40 },
+        { x: -50, y: 40 },
+        { x: -100, y: -60 },
+        { x: -100, y: 60 },
+        { x: -150, y: 0 }
+      ],
+      bonus: 850,
+      color: '#ffdd88',
+      zones: ['saturn']
+    },
+    spiralIn: {
+      name: 'SPIRAL DESCENT',
+      positions: [
+        { x: 0, y: 0 },
+        { x: -60, y: -50 },
+        { x: -120, y: 0 },
+        { x: -60, y: 50 },
+        { x: -180, y: -25 },
+        { x: -180, y: 25 }
+      ],
+      bonus: 900,
+      color: '#ff8844',
+      zones: ['jupiter']
     }
   };
 
@@ -3339,7 +3448,7 @@ const SpaceShooter = () => {
       explosionSpriteLoadedRef.current = false;
     };
     // Start loading immediately
-    img.src = '/explosion2.png';
+    img.src = asset('explosion2.png');
 
     // Set a timeout to mark as failed if not loaded within 5 seconds
     const timeout = setTimeout(() => {
@@ -3538,7 +3647,7 @@ const SpaceShooter = () => {
     } else if (size !== 'small') {
       // Play the mixkit explosive impact sound for normal enemy destruction
       try {
-        const explosionSound = new Audio('/mixkit-explosive-impact-from-afar-2758.mp3');
+        const explosionSound = new Audio(asset('mixkit-explosive-impact-from-afar-2758.mp3'));
         explosionSound.volume = 0.25;
         explosionSound.play().catch(() => {});
       } catch (e) {}
@@ -4286,7 +4395,15 @@ const SpaceShooter = () => {
 
   // Spawn a formation group of enemies
   const spawnFormation = useCallback(() => {
-    const patternKeys = Object.keys(FORMATION_PATTERNS);
+    const currentZone = getZoneForWave(waveRef.current);
+    const currentZoneName = Object.keys(WAVE_ZONES).find(key => WAVE_ZONES[key] === currentZone);
+
+    // Filter formations suitable for current zone
+    const patternKeys = Object.keys(FORMATION_PATTERNS).filter(key => {
+      const pattern = FORMATION_PATTERNS[key];
+      return !pattern.zones || pattern.zones.includes(currentZoneName);
+    });
+
     const patternKey = patternKeys[Math.floor(Math.random() * patternKeys.length)];
     const pattern = FORMATION_PATTERNS[patternKey];
 
@@ -4719,39 +4836,53 @@ const SpaceShooter = () => {
         shake.intensity *= 0.9; // Decay intensity
       }
 
-      // Draw parallax stars (layered) - optimized
+      // Update zone transition effect
+      if (zoneTransition) {
+        const newProgress = zoneTransition.progress + (1 / zoneTransition.duration);
+        if (newProgress >= 1) {
+          setZoneTransition(null); // Transition complete
+        } else {
+          setZoneTransition(prev => ({ ...prev, progress: newProgress }));
+        }
+      }
+
+      // Draw parallax stars (layered) - optimized with zone-based tinting
       const perfMode = userSettingsRef.current?.performanceMode;
+      const currentZoneForStars = getZoneForWave(waveRef.current);
+      const starTint = currentZoneForStars.particleColor;
+
       starsRef.current.forEach(star => {
         if (star.layer === 'near') {
-          // Near stars - draw as streaks
+          // Near stars - draw as streaks with subtle zone tint
           ctx.globalAlpha = star.brightness;
           if (perfMode) {
-            // Performance mode: simple rectangle, no gradient
-            ctx.fillStyle = '#ffffff';
+            // Performance mode: simple rectangle with zone tint
+            ctx.fillStyle = starTint;
             ctx.fillRect(star.x, star.y, star.length, star.size * 0.6);
           } else {
-            // Quality mode: use gradient (creates new one each frame due to x position change)
+            // Quality mode: use gradient with zone tint
             const gradient = ctx.createLinearGradient(star.x, star.y, star.x + star.length, star.y);
-            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(0, starTint);
             gradient.addColorStop(1, 'rgba(255,255,255,0)');
             ctx.fillStyle = gradient;
             ctx.fillRect(star.x, star.y, star.length, star.size * 0.6);
           }
         } else if (star.layer === 'mid') {
-          // Mid layer - regular stars with slight twinkle
+          // Mid layer - regular stars with slight twinkle and zone tint
           if (perfMode) {
             // Performance mode: skip twinkle calculation
-            ctx.globalAlpha = star.brightness;
+            ctx.globalAlpha = star.brightness * 0.9;
           } else {
             const twinkle = 0.9 + Math.sin(timestamp * 0.005 + star.x) * 0.1;
-            ctx.globalAlpha = star.brightness * twinkle;
+            ctx.globalAlpha = star.brightness * twinkle * 0.9;
           }
+          // Blend white with zone tint
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(star.x, star.y, star.size, star.size);
         } else {
-          // Far layer - dim, small dots
-          ctx.globalAlpha = star.brightness;
-          ctx.fillStyle = '#8888aa';
+          // Far layer - dim, small dots with zone ambient color
+          ctx.globalAlpha = star.brightness * 0.7;
+          ctx.fillStyle = starTint;
           ctx.fillRect(star.x, star.y, star.size, star.size);
         }
       });
@@ -4926,6 +5057,48 @@ const SpaceShooter = () => {
 
       // ========== DRAW ENVIRONMENTAL HAZARDS ==========
       const hazards = hazardsRef.current;
+
+      // Draw zone transition effect
+      if (zoneTransition) {
+        ctx.save();
+        const progress = zoneTransition.progress;
+        const newZone = getZoneForWave(zoneTransition.toWave);
+
+        // Fade overlay with zone color
+        if (progress < 0.5) {
+          // Fade to black first
+          const fadeAlpha = progress * 2;
+          ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha * 0.7})`;
+          ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        } else {
+          // Then show zone flash
+          const flashAlpha = (1 - progress) * 2;
+          const rgb = newZone.color.match(/\w\w/g).map(x => parseInt(x, 16));
+          ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${flashAlpha * 0.5})`;
+          ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        }
+
+        // Zone name text during transition
+        if (progress >= 0.4 && progress <= 0.8) {
+          const textAlpha = progress < 0.6 ? (progress - 0.4) * 5 : (0.8 - progress) * 5;
+          ctx.globalAlpha = textAlpha;
+
+          ctx.font = "bold 32px 'Press Start 2P', monospace";
+          ctx.textAlign = 'center';
+          ctx.fillStyle = newZone.color;
+          ctx.shadowColor = newZone.color;
+          ctx.shadowBlur = 25;
+          ctx.fillText('ENTERING', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30);
+
+          ctx.font = "bold 40px 'Press Start 2P', monospace";
+          ctx.fillText(newZone.name, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
+
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = 1;
+        }
+
+        ctx.restore();
+      }
 
       // Draw atmospheric particles (behind hazards but in front of stars)
       ctx.save();
@@ -8020,6 +8193,7 @@ const SpaceShooter = () => {
 
       // Draw enemies
       let renderCounter = 0;
+      const currentZone = getZoneForWave(waveRef.current);
       enemiesRef.current.forEach(enemy => {
         // Guard against non-finite coordinates
         if (!isFinite(enemy.x) || !isFinite(enemy.y)) return;
@@ -8037,6 +8211,13 @@ const SpaceShooter = () => {
         const eh = Math.max(1, enemy.height || ENEMY_HEIGHT);
         const centerY = ey + eh / 2;
         const centerX = ex + ew / 2;
+
+        // Apply zone-based color tint to enemies (except special types)
+        const useZoneTint = !enemy.isMiniBoss && !enemy.isBoss && enemy.type !== 'formation';
+        if (useZoneTint) {
+          ctx.globalCompositeOperation = 'source-over';
+          // Store original colors, we'll blend them with zone color
+        }
 
         if (enemy.type === 'heavy') {
           // HEAVY ENEMY - Large cannon ship
@@ -14241,7 +14422,7 @@ const SpaceShooter = () => {
             playerLaser.charging = false;
             // Play laser blast sound
             try {
-              const laserSound = new Audio('/ship-lasser-blast.mp3');
+              const laserSound = new Audio(asset('ship-lasser-blast.mp3'));
               laserSound.volume = 0.4;
               laserSound.play().catch(() => {});
             } catch (e) {}
@@ -14254,7 +14435,7 @@ const SpaceShooter = () => {
           playerLaser.duration = Math.floor(playerLaser.charge * 0.6); // Shorter duration based on charge
           // Play laser blast sound
           try {
-            const laserSound = new Audio('/ship-lasser-blast.mp3');
+            const laserSound = new Audio(asset('ship-lasser-blast.mp3'));
             laserSound.volume = 0.4;
             laserSound.play().catch(() => {});
           } catch (e) {}
@@ -14834,8 +15015,23 @@ const SpaceShooter = () => {
                 return elec.lifetime > 0;
               }
 
+              const previousWave = waveRef.current;
               waveRef.current++;
               setWave(waveRef.current);
+
+              // Check if we're entering a new zone and trigger transition effect
+              const oldZone = getZoneForWave(previousWave);
+              const newZone = getZoneForWave(waveRef.current);
+              if (oldZone.name !== newZone.name) {
+                // Entering new zone - trigger transition
+                setZoneTransition({
+                  fromWave: previousWave,
+                  toWave: waveRef.current,
+                  progress: 0,
+                  duration: 120 // frames
+                });
+              }
+
               // Track highest wave reached for Practice Mode
               const currentHighestWave = parseInt(localStorage.getItem('nebulaXHighestWave') || '1', 10);
               if (waveRef.current > currentHighestWave) {
@@ -15028,6 +15224,28 @@ const SpaceShooter = () => {
         bossActiveRef.current = true;
         setBossActive(true);
         soundSystem.playBossWarning();
+
+        // Add zone-specific boss warning text
+        floatingTextsRef.current.push({
+          x: GAME_WIDTH / 2,
+          y: GAME_HEIGHT / 2 - 60,
+          text: zoneModifier.description,
+          color: zoneModifier.color,
+          lifetime: 90,
+          vy: 0,
+          flash: true,
+          scale: 1.3
+        });
+        floatingTextsRef.current.push({
+          x: GAME_WIDTH / 2,
+          y: GAME_HEIGHT / 2 - 20,
+          text: '⚠️ WARNING ⚠️',
+          color: '#ff4444',
+          lifetime: 90,
+          vy: 0,
+          flash: true,
+          scale: 1.5
+        });
       }
 
       // In Boss Rush mode, spawn boss immediately
@@ -15057,11 +15275,15 @@ const SpaceShooter = () => {
       }
 
       // Spawn formations periodically (starts wave 2, ~10% chance when spawning)
+      // Zone-based formation frequency
+      const currentZone = getZoneForWave(waveRef.current);
+      const formationChance = currentZone === WAVE_ZONES.saturn ? 0.45 : currentZone === WAVE_ZONES.mars ? 0.35 : 0.3;
+
       // Skip in Boss Rush mode
       const formationInterval = 8000 - Math.min(4000, waveRef.current * 300); // 8s at wave 1, down to 4s
       if (!isBossRush && gracePeriodOver && !bossActiveRef.current && waveRef.current >= 2 &&
           timestamp - lastFormationSpawnRef.current > formationInterval) {
-        if (Math.random() < 0.3) { // 30% chance to spawn a formation
+        if (Math.random() < formationChance) { // Zone-modified chance
           spawnFormation();
         }
         lastFormationSpawnRef.current = timestamp;
@@ -15282,6 +15504,14 @@ const SpaceShooter = () => {
           const baseSize = 20 + Math.random() * 40;
           const size = isGiant ? baseSize * 5 : baseSize;
 
+          // Zone-specific asteroid colors
+          let asteroidColor = '#888888';
+          if (planetTheme === 'moon') asteroidColor = '#9999aa';
+          else if (planetTheme === 'mars') asteroidColor = '#aa6644';
+          else if (planetTheme === 'jupiter') asteroidColor = '#bb8855';
+          else if (planetTheme === 'saturn') asteroidColor = '#ccbb88';
+          else if (planetTheme === 'uranus') asteroidColor = '#88aacc';
+
           hazards.asteroids.push({
             x: GAME_WIDTH + size,
             y: Math.random() * (GAME_HEIGHT - size * 2) + size,
@@ -15291,7 +15521,9 @@ const SpaceShooter = () => {
             vx: -2 - Math.random() * 2 - waveNum * 0.1,
             vy: (Math.random() - 0.5) * 2,
             health: isGiant ? Math.floor(size / 5) + 10 : Math.floor(size / 10) + 1, // Giant asteroids have more health
-            isGiant: isGiant
+            isGiant: isGiant,
+            color: asteroidColor,
+            zone: planetTheme
           });
         }
         // Laser barriers - less common (starts wave 4)
@@ -16780,7 +17012,7 @@ const SpaceShooter = () => {
                 boss.laserDuration = boss.isSuperBoss ? 90 : 60; // Super boss laser lasts longer
                 // Play boss laser blast sound
                 try {
-                  const bossLaserSound = new Audio('/boss-lasser-blast.mp3');
+                  const bossLaserSound = new Audio(asset('boss-lasser-blast.mp3'));
                   bossLaserSound.volume = 0.5;
                   bossLaserSound.play().catch(() => {});
                 } catch (e) {}
@@ -17309,8 +17541,23 @@ const SpaceShooter = () => {
                 return true;
               }
 
+              const previousWave = waveRef.current;
               waveRef.current++;
               setWave(waveRef.current);
+
+              // Check if we're entering a new zone and trigger transition effect
+              const oldZone = getZoneForWave(previousWave);
+              const newZone = getZoneForWave(waveRef.current);
+              if (oldZone.name !== newZone.name) {
+                // Entering new zone - trigger transition
+                setZoneTransition({
+                  fromWave: previousWave,
+                  toWave: waveRef.current,
+                  progress: 0,
+                  duration: 120 // frames
+                });
+              }
+
               waveKillsRef.current = 0;
               waveKillsNeededRef.current = 10 + (waveRef.current * 5);
               waveStartTimeRef.current = timestamp; // Use consistent timestamp source
@@ -17960,8 +18207,23 @@ const SpaceShooter = () => {
                 return false; // Remove bullet
               }
 
+              const previousWave = waveRef.current;
               waveRef.current++;
               setWave(waveRef.current);
+
+              // Check if we're entering a new zone and trigger transition effect
+              const oldZone = getZoneForWave(previousWave);
+              const newZone = getZoneForWave(waveRef.current);
+              if (oldZone.name !== newZone.name) {
+                // Entering new zone - trigger transition
+                setZoneTransition({
+                  fromWave: previousWave,
+                  toWave: waveRef.current,
+                  progress: 0,
+                  duration: 120 // frames
+                });
+              }
+
               waveKillsRef.current = 0;
               waveKillsNeededRef.current = 10 + (waveRef.current * 5);
               waveStartTimeRef.current = performance.now(); // Reset grace period for new wave
@@ -20130,6 +20392,109 @@ const SpaceShooter = () => {
                         >+</button>
                       </div>
                       <span className="setting-hint">Highest reached: Wave {parseInt(localStorage.getItem('nebulaXHighestWave') || '1', 10)}</span>
+
+                      {/* Zone preview */}
+                      <div className="zone-preview" style={{
+                        marginTop: '10px',
+                        padding: '8px 12px',
+                        background: 'rgba(0, 20, 40, 0.7)',
+                        borderRadius: '4px',
+                        border: `2px solid ${getZoneForWave(practiceSettings.startWave).color}`,
+                        boxShadow: `0 0 15px ${getZoneForWave(practiceSettings.startWave).color}40`
+                      }}>
+                        <div style={{ color: getZoneForWave(practiceSettings.startWave).color, fontSize: '10px', fontWeight: 'bold' }}>
+                          {getZoneForWave(practiceSettings.startWave).name}
+                        </div>
+                        <div style={{ color: '#aaaaaa', fontSize: '8px', marginTop: '4px' }}>
+                          {getZoneForWave(practiceSettings.startWave).description}
+                        </div>
+                        <div style={{ color: '#888888', fontSize: '7px', marginTop: '4px', fontStyle: 'italic' }}>
+                          {practiceSettings.startWave >= 1 && practiceSettings.startWave <= 4 && 'Moon: Gray cratered surface, slower enemies'}
+                          {practiceSettings.startWave >= 5 && practiceSettings.startWave <= 8 && 'Mars: Red desert wasteland, heavy units'}
+                          {practiceSettings.startWave >= 9 && practiceSettings.startWave <= 12 && 'Jupiter: Gas giant with chaotic patterns'}
+                          {practiceSettings.startWave >= 13 && practiceSettings.startWave <= 16 && 'Saturn: Ringed planet, defensive formations'}
+                          {practiceSettings.startWave >= 17 && 'Uranus: Cyan ice giant, elite enemies'}
+                        </div>
+                      </div>
+
+                      {/* Quick zone jump buttons */}
+                      <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <button
+                          className="zone-jump-btn"
+                          style={{
+                            fontSize: '8px',
+                            padding: '6px 10px',
+                            background: 'rgba(136, 136, 204, 0.3)',
+                            border: '1px solid #8888cc',
+                            borderRadius: '3px',
+                            color: '#aaaaff',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => setPracticeSettings(prev => ({ ...prev, startWave: 1 }))}
+                        >
+                          🌑 MOON (1-4)
+                        </button>
+                        <button
+                          className="zone-jump-btn"
+                          style={{
+                            fontSize: '8px',
+                            padding: '6px 10px',
+                            background: 'rgba(255, 136, 68, 0.3)',
+                            border: '1px solid #ff8844',
+                            borderRadius: '3px',
+                            color: '#ffaa66',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => setPracticeSettings(prev => ({ ...prev, startWave: 5 }))}
+                        >
+                          🔴 MARS (5-8)
+                        </button>
+                        <button
+                          className="zone-jump-btn"
+                          style={{
+                            fontSize: '8px',
+                            padding: '6px 10px',
+                            background: 'rgba(204, 136, 68, 0.3)',
+                            border: '1px solid #cc8844',
+                            borderRadius: '3px',
+                            color: '#eeaa66',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => setPracticeSettings(prev => ({ ...prev, startWave: 9 }))}
+                        >
+                          🟠 JUPITER (9-12)
+                        </button>
+                        <button
+                          className="zone-jump-btn"
+                          style={{
+                            fontSize: '8px',
+                            padding: '6px 10px',
+                            background: 'rgba(221, 204, 136, 0.3)',
+                            border: '1px solid #ddcc88',
+                            borderRadius: '3px',
+                            color: '#ffeebb',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => setPracticeSettings(prev => ({ ...prev, startWave: 13 }))}
+                        >
+                          🪐 SATURN (13-16)
+                        </button>
+                        <button
+                          className="zone-jump-btn"
+                          style={{
+                            fontSize: '8px',
+                            padding: '6px 10px',
+                            background: 'rgba(136, 221, 255, 0.3)',
+                            border: '1px solid #88ddff',
+                            borderRadius: '3px',
+                            color: '#aaffff',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => setPracticeSettings(prev => ({ ...prev, startWave: 17 }))}
+                        >
+                          🔵 URANUS (17+)
+                        </button>
+                      </div>
                     </div>
 
                     <div className="practice-toggles">
