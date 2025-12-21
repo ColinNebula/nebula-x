@@ -876,6 +876,140 @@ class SoundSystem {
 // Global sound instance
 const soundSystem = new SoundSystem();
 
+// ============= PERFORMANCE OPTIMIZATION SYSTEMS =============
+
+// Enhanced Object Pool for reusable game objects (bullets, particles, etc.)
+class ObjectPool {
+  constructor(createFn, resetFn, initialSize = 50, maxSize = 1000) {
+    this.createFn = createFn;
+    this.resetFn = resetFn;
+    this.available = [];
+    this.inUse = new Set();
+    this.maxSize = maxSize;
+
+    // Pre-populate pool
+    for (let i = 0; i < initialSize; i++) {
+      this.available.push(createFn());
+    }
+  }
+
+  acquire(initData) {
+    let obj;
+    if (this.available.length > 0) {
+      obj = this.available.pop();
+    } else {
+      obj = this.createFn();
+    }
+    this.resetFn(obj, initData);
+    this.inUse.add(obj);
+    return obj;
+  }
+
+  release(obj) {
+    if (this.inUse.has(obj)) {
+      this.inUse.delete(obj);
+      // Prevent pool from growing too large
+      if (this.available.length < this.maxSize) {
+        this.available.push(obj);
+      }
+    }
+  }
+
+  releaseAll(objects) {
+    objects.forEach(obj => this.release(obj));
+  }
+
+  clear() {
+    this.available = [];
+    this.inUse.clear();
+  }
+
+  getStats() {
+    return {
+      available: this.available.length,
+      inUse: this.inUse.size,
+      total: this.available.length + this.inUse.size
+    };
+  }
+}
+
+// Batch Renderer for minimizing canvas state changes
+class BatchRenderer {
+  constructor() {
+    this.batches = new Map(); // key: state signature, value: array of draw commands
+  }
+
+  reset() {
+    this.batches.clear();
+  }
+
+  addDraw(stateKey, drawFn) {
+    if (!this.batches.has(stateKey)) {
+      this.batches.set(stateKey, []);
+    }
+    this.batches.get(stateKey).push(drawFn);
+  }
+
+  flush(ctx) {
+    for (const [stateKey, drawFns] of this.batches) {
+      // Execute all draws with the same state in one batch
+      drawFns.forEach(fn => fn(ctx));
+    }
+    this.reset();
+  }
+}
+
+// Spatial Partitioning Grid for faster collision detection
+class SpatialGrid {
+  constructor(width, height, cellSize = 100) {
+    this.width = width;
+    this.height = height;
+    this.cellSize = cellSize;
+    this.cols = Math.ceil(width / cellSize);
+    this.rows = Math.ceil(height / cellSize);
+    this.grid = [];
+    this.clear();
+  }
+
+  clear() {
+    this.grid = Array(this.rows).fill(null).map(() =>
+      Array(this.cols).fill(null).map(() => [])
+    );
+  }
+
+  getCellCoords(x, y) {
+    return {
+      col: Math.floor(x / this.cellSize),
+      row: Math.floor(y / this.cellSize)
+    };
+  }
+
+  insert(obj, x, y, width = 0, height = 0) {
+    const minCell = this.getCellCoords(x, y);
+    const maxCell = this.getCellCoords(x + width, y + height);
+
+    for (let row = Math.max(0, minCell.row); row <= Math.min(this.rows - 1, maxCell.row); row++) {
+      for (let col = Math.max(0, minCell.col); col <= Math.min(this.cols - 1, maxCell.col); col++) {
+        this.grid[row][col].push(obj);
+      }
+    }
+  }
+
+  query(x, y, width, height) {
+    const minCell = this.getCellCoords(x, y);
+    const maxCell = this.getCellCoords(x + width, y + height);
+    const results = new Set();
+
+    for (let row = Math.max(0, minCell.row); row <= Math.min(this.rows - 1, maxCell.row); row++) {
+      for (let col = Math.max(0, minCell.col); col <= Math.min(this.cols - 1, maxCell.col); col++) {
+        this.grid[row][col].forEach(obj => results.add(obj));
+      }
+    }
+
+    return Array.from(results);
+  }
+}
+
 // ============= GAME CONSTANTS =============
 const GAME_WIDTH = 1400;
 const GAME_HEIGHT = 500;
@@ -1644,6 +1778,8 @@ const SpaceShooter = () => {
   const explosionsRef = useRef([]);
   const explosionSpriteRef = useRef(null); // Explosion sprite sheet
   const explosionSpriteLoadedRef = useRef(false);
+  const explosionAtlasRef = useRef(null); // TexturePacker JSON data
+  const explosionAtlasLoadedRef = useRef(false);
   const pickupEffectsRef = useRef([]);
   const floatingTextsRef = useRef([]);
   const specialEffectsRef = useRef([]); // Special visual effects
@@ -1990,6 +2126,23 @@ const SpaceShooter = () => {
 
   // Performance tracking refs
   const fpsRef = useRef({ frames: 0, lastTime: 0, fps: 60 });
+  const performanceRef = useRef({
+    autoReduceEffects: false,
+    objectCount: 0,
+    lastOptimization: 0,
+    maxObjects: 500, // Threshold for auto-optimization
+    spatialGrid: null, // Spatial partitioning for collision detection
+    batchRenderer: null, // Batch renderer for optimized drawing
+    lowFpsFrames: 0, // Counter for frames below target FPS
+    adaptiveQuality: 1.0, // 1.0 = full quality, 0.5 = half quality
+    lastFpsCheck: 0,
+    frameBudget: 16.67, // Target: 60fps = 16.67ms per frame
+    frameTimeHistory: [], // Track last N frame times
+    maxFrameHistory: 60, // Track 1 second of frame times
+    culledObjects: 0, // Count culled objects for stats
+    particlePooling: true, // Enable particle pooling
+    lodDistance: 300 // Distance threshold for LOD
+  });
   const userSettingsRef = useRef(null); // Sync ref for settings access in game loop
   const starGradientsRef = useRef(new Map()); // Cache star gradients for performance
 
@@ -3435,20 +3588,58 @@ const SpaceShooter = () => {
     return localStorage.getItem('nebulaXSaveGame') !== null;
   }, []);
 
-  // Load explosion sprite sheet
+  // Load explosion sprite sheet with TexturePacker JSON support
   useEffect(() => {
-    const img = new Image();
-    img.onload = () => {
-      explosionSpriteRef.current = img;
-      explosionSpriteLoadedRef.current = true;
-      console.log('[EXPLOSION] Sprite loaded successfully');
-    };
-    img.onerror = () => {
-      console.warn('[EXPLOSION] Failed to load sprite, using particle effects only');
-      explosionSpriteLoadedRef.current = false;
-    };
-    // Start loading immediately
-    img.src = asset('explosion2.png');
+    let mounted = true;
+
+    // First, try to load the TexturePacker JSON
+    fetch(asset('explosions.json'))
+      .then(response => response.json())
+      .then(atlasData => {
+        if (!mounted) return;
+
+        explosionAtlasRef.current = atlasData;
+        explosionAtlasLoadedRef.current = true;
+        console.log('[EXPLOSION] Atlas JSON loaded:', {
+          frames: Object.keys(atlasData.frames).length,
+          imageSize: atlasData.meta.size
+        });
+
+        // Now load the sprite image
+        const img = new Image();
+        img.onload = () => {
+          if (!mounted) return;
+          explosionSpriteRef.current = img;
+          explosionSpriteLoadedRef.current = true;
+          console.log('[EXPLOSION] Sprite loaded successfully:', {
+            size: `${img.width}x${img.height}`,
+            atlasFrames: Object.keys(atlasData.frames).length
+          });
+        };
+        img.onerror = () => {
+          console.warn('[EXPLOSION] Failed to load sprite image');
+          explosionSpriteLoadedRef.current = false;
+        };
+        img.src = asset('explosions.png');
+      })
+      .catch(err => {
+        console.warn('[EXPLOSION] Failed to load atlas JSON, falling back to legacy sprite:', err);
+
+        // Fallback to legacy explosion2.png without atlas
+        const img = new Image();
+        img.onload = () => {
+          if (!mounted) return;
+          explosionSpriteRef.current = img;
+          explosionSpriteLoadedRef.current = true;
+          explosionAtlasLoadedRef.current = false;
+          console.log('[EXPLOSION] Legacy sprite loaded (no atlas)');
+        };
+        img.onerror = () => {
+          console.warn('[EXPLOSION] Failed to load sprite, using particle effects only');
+          explosionSpriteLoadedRef.current = false;
+        };
+        img.src = asset('explosion2.png');
+      });
 
     // Set a timeout to mark as failed if not loaded within 5 seconds
     const timeout = setTimeout(() => {
@@ -3457,7 +3648,10 @@ const SpaceShooter = () => {
       }
     }, 5000);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+    };
   }, []);
 
   // Trigger screen shake
@@ -3781,50 +3975,143 @@ const SpaceShooter = () => {
     }
 
     if (shouldUseSprite) {
-      // Sprite-based explosion with 8 frames - BIGGER sizes!
+      // Determine if we're using TexturePacker atlas or legacy sprite
+      const useAtlas = explosionAtlasLoadedRef.current && explosionAtlasRef.current;
+
       let spriteSize;
       switch (size) {
-        case 'small': spriteSize = 56; break;
-        case 'normal': spriteSize = 80; break;
-        case 'heavy': spriteSize = 110; break;
-        case 'boss': spriteSize = 180; break;
-        default: spriteSize = 80;
+        case 'small': spriteSize = 120; break;
+        case 'normal': spriteSize = 200; break;
+        case 'heavy': spriteSize = 280; break;
+        case 'boss': spriteSize = 400; break;
+        default: spriteSize = 200;
       }
-      const explosion = {
-        x,
-        y,
-        isSprite: true,
-        frame: 0,
-        totalFrames: 8,
-        frameTimer: 0,
-        frameDelay: size === 'boss' ? 4 : 3,
-        spriteSize: spriteSize,
-        lifetime: size === 'boss' ? 32 : 24,
-        maxLifetime: size === 'boss' ? 32 : 24,
-        startTime: Date.now(),
-        particles: []
-      };
-      explosionsRef.current.push(explosion);
+
+      if (useAtlas) {
+        // TexturePacker format - use frames from JSON
+        const atlas = explosionAtlasRef.current;
+        
+        // Select explosion type based on size
+        let explosionPrefix;
+        switch (size) {
+          case 'small': explosionPrefix = 'expl_07_'; break;   // 32x32 small explosion
+          case 'normal': explosionPrefix = 'expl_01_'; break;  // 64x64 normal explosion
+          case 'heavy': explosionPrefix = 'expl_02_'; break;   // 64x64 heavy explosion
+          case 'boss': explosionPrefix = 'expl_11_'; break;    // 96x96 large explosion
+          default: explosionPrefix = 'expl_01_';
+        }
+        
+        // Filter frames for this explosion type and sort
+        const allFrameNames = Object.keys(atlas.frames);
+        const frameNames = allFrameNames
+          .filter(name => name.startsWith(explosionPrefix))
+          .sort();
+
+        // Get first frame data
+        const frameName = frameNames[0];
+        const frameData = atlas.frames[frameName];
+
+        const explosion = {
+          x,
+          y,
+          isSprite: true,
+          isAtlas: true,
+          atlasFrameNames: frameNames, // Store all frame names for cycling
+          frameName: frameName,
+          frameData: frameData,
+          frame: 0,
+          totalFrames: frameNames.length, // Number of frames in atlas
+          frameTimer: 0,
+          frameDelay: size === 'boss' ? 2 : 2, // Faster animation for multi-frame
+          spriteSize: spriteSize,
+          lifetime: frameNames.length * 2, // Match frame count * delay
+          maxLifetime: frameNames.length * 2,
+          startTime: Date.now(),
+          particles: [],
+          scale: 1.0,
+          rotation: 0
+        };
+        explosionsRef.current.push(explosion);
+      } else {
+        // Legacy horizontal strip format (8 frames)
+        const explosion = {
+          x,
+          y,
+          isSprite: true,
+          isAtlas: false,
+          frame: 0,
+          totalFrames: 8,
+          frameTimer: 0,
+          frameDelay: size === 'boss' ? 4 : 3,
+          spriteSize: spriteSize,
+          lifetime: size === 'boss' ? 32 : 24,
+          maxLifetime: size === 'boss' ? 32 : 24,
+          startTime: Date.now(),
+          particles: []
+        };
+        explosionsRef.current.push(explosion);
+      }
 
       // For boss explosions, add multiple sprite explosions for massive effect (immediate, no setTimeout)
       if (size === 'boss') {
+        const useAtlas = explosionAtlasLoadedRef.current && explosionAtlasRef.current;
+
         for (let i = 0; i < 4; i++) { // Reduced from 6 to 4
           const angle = (Math.PI * 2 * i) / 4;
           const dist = 40 + Math.random() * 30;
-          explosionsRef.current.push({
-            x: x + Math.cos(angle) * dist,
-            y: y + Math.sin(angle) * dist,
-            isSprite: true,
-            frame: 0,
-            totalFrames: 8,
-            frameTimer: 0,
-            frameDelay: 3,
-            spriteSize: 100 + Math.random() * 40,
-            lifetime: 24,
-            maxLifetime: 24,
-            startTime: Date.now(),
-            particles: []
-          });
+
+          if (useAtlas) {
+            const atlas = explosionAtlasRef.current;
+            
+            // Use different explosion types for variety
+            const explosionTypes = ['expl_02_', 'expl_03_', 'expl_04_', 'expl_06_'];
+            const explosionPrefix = explosionTypes[i % explosionTypes.length];
+            
+            const allFrameNames = Object.keys(atlas.frames);
+            const frameNames = allFrameNames
+              .filter(name => name.startsWith(explosionPrefix))
+              .sort();
+              
+            const frameName = frameNames[0];
+            const frameData = atlas.frames[frameName];
+
+            explosionsRef.current.push({
+              x: x + Math.cos(angle) * dist,
+              y: y + Math.sin(angle) * dist,
+              isSprite: true,
+              isAtlas: true,
+              atlasFrameNames: frameNames,
+              frameName: frameName,
+              frameData: frameData,
+              frame: 0,
+              totalFrames: frameNames.length,
+              frameTimer: 0,
+              frameDelay: 2,
+              spriteSize: 100 + Math.random() * 40,
+              lifetime: frameNames.length * 2,
+              maxLifetime: frameNames.length * 2,
+              startTime: Date.now(),
+              particles: [],
+              scale: 0.6 + Math.random() * 0.4,
+              rotation: Math.random() * Math.PI * 2
+            });
+          } else {
+            explosionsRef.current.push({
+              x: x + Math.cos(angle) * dist,
+              y: y + Math.sin(angle) * dist,
+              isSprite: true,
+              isAtlas: false,
+              frame: 0,
+              totalFrames: 8,
+              frameTimer: 0,
+              frameDelay: 3,
+              spriteSize: 100 + Math.random() * 40,
+              lifetime: 24,
+              maxLifetime: 24,
+              startTime: Date.now(),
+              particles: []
+            });
+          }
           // Add more debris for each secondary explosion
           for (let j = 0; j < 3; j++) { // Reduced from 5 to 3
             const debrisAngle = Math.random() * Math.PI * 2;
@@ -4811,10 +5098,80 @@ const SpaceShooter = () => {
       return;
     }
 
-    const render = (ctx, timestamp) => {
-      // DEBUG: Log render call to verify new code is running
-      if (Math.random() < 0.01) { // Log 1% of frames to avoid spam
+    // Initialize spatial grid for collision detection
+    if (!performanceRef.current.spatialGrid) {
+      performanceRef.current.spatialGrid = new SpatialGrid(GAME_WIDTH, GAME_HEIGHT, 100);
+    }
+
+    // Initialize batch renderer for optimized drawing
+    if (!performanceRef.current.batchRenderer) {
+      performanceRef.current.batchRenderer = new BatchRenderer();
+    }
+
+    // Performance helper functions
+    const isOnScreen = (x, y, width, height, margin = 50) => {
+      return x + width >= -margin &&
+             x <= GAME_WIDTH + margin &&
+             y + height >= -margin &&
+             y <= GAME_HEIGHT + margin;
+    };
+
+    const getDistanceToPlayer = (x, y) => {
+      const player = playerRef.current;
+      const dx = x - (player.x + PLAYER_WIDTH / 2);
+      const dy = y - (player.y + PLAYER_HEIGHT / 2);
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const getLODLevel = (distance, perfData) => {
+      // LOD 0 = full quality, LOD 1 = reduced, LOD 2 = minimal
+      const threshold1 = perfData.lodDistance;
+      const threshold2 = perfData.lodDistance * 2;
+      if (distance < threshold1) return 0;
+      if (distance < threshold2) return 1;
+      return 2;
+    };
+
+    // Cache for canvas state to avoid redundant changes
+    let lastFillStyle = null;
+    let lastStrokeStyle = null;
+    let lastLineWidth = null;
+    let lastGlobalAlpha = null;
+    let lastShadowBlur = null;
+
+    const setFillStyle = (ctx, style) => {
+      if (lastFillStyle !== style) {
+        ctx.fillStyle = style;
+        lastFillStyle = style;
       }
+    };
+
+    const setStrokeStyle = (ctx, style) => {
+      if (lastStrokeStyle !== style) {
+        ctx.strokeStyle = style;
+        lastStrokeStyle = style;
+      }
+    };
+
+    const setShadowBlur = (ctx, blur) => {
+      if (lastShadowBlur !== blur) {
+        ctx.shadowBlur = blur;
+        lastShadowBlur = blur;
+      }
+    };
+
+    const resetCanvasStateCache = () => {
+      lastFillStyle = null;
+      lastStrokeStyle = null;
+      lastLineWidth = null;
+      lastGlobalAlpha = null;
+      lastShadowBlur = null;
+    };
+
+    const render = (ctx, timestamp) => {
+      // Reset culling counter and canvas state cache
+      performanceRef.current.culledObjects = 0;
+      resetCanvasStateCache();
 
       // Clear canvas FIRST before any transformations
       ctx.save();
@@ -5480,11 +5837,48 @@ const SpaceShooter = () => {
             return; // Skip if sprite not ready
           }
 
-          const frameWidth = sprite.width / explosion.totalFrames;
-          const frameHeight = sprite.height;
-          const currentFrame = Math.min(Math.floor(age / (explosion.frameDelay || 3)), explosion.totalFrames - 1);
-          const srcX = currentFrame * frameWidth;
-          const srcY = 0;
+          let frameWidth, frameHeight, srcX, srcY, currentFrame;
+
+          if (explosion.isAtlas && explosion.frameData) {
+            // TexturePacker atlas format - cycle through frames
+            currentFrame = explosion.frame; // Use the frame counter from update loop
+
+            // Get current frame data from atlas
+            if (explosion.atlasFrameNames && explosion.atlasFrameNames.length > 0) {
+              const currentFrameName = explosion.atlasFrameNames[Math.min(currentFrame, explosion.atlasFrameNames.length - 1)];
+              const currentFrameData = explosionAtlasRef.current.frames[currentFrameName];
+
+              if (currentFrameData) {
+                const frameData = currentFrameData.frame;
+                srcX = frameData.x;
+                srcY = frameData.y;
+                frameWidth = frameData.w;
+                frameHeight = frameData.h;
+              } else {
+                // Fallback to stored frameData
+                const frameData = explosion.frameData.frame;
+                srcX = frameData.x;
+                srcY = frameData.y;
+                frameWidth = frameData.w;
+                frameHeight = frameData.h;
+              }
+            } else {
+              // Single frame atlas
+              const frameData = explosion.frameData.frame;
+              srcX = frameData.x;
+              srcY = frameData.y;
+              frameWidth = frameData.w;
+              frameHeight = frameData.h;
+              currentFrame = 0;
+            }
+          } else {
+            // Legacy horizontal strip format
+            frameWidth = sprite.width / explosion.totalFrames;
+            frameHeight = sprite.height;
+            currentFrame = Math.min(Math.floor(age / (explosion.frameDelay || 3)), explosion.totalFrames - 1);
+            srcX = currentFrame * frameWidth;
+            srcY = 0;
+          }
 
           // Guard against invalid sprite dimensions
           if (!isFinite(frameWidth) || !isFinite(frameHeight) || frameWidth <= 0 || frameHeight <= 0) {
@@ -5494,14 +5888,18 @@ const SpaceShooter = () => {
           // Calculate destination size preserving aspect ratio
           const frameAspect = frameWidth / frameHeight;
           let destWidth, destHeight;
+
+          // Apply scale factor if using atlas format
+          const scaleFactor = explosion.scale || 1.0;
+
           if (frameAspect >= 1) {
             // Frame is wider than tall
-            destWidth = explosion.spriteSize;
-            destHeight = explosion.spriteSize / frameAspect;
+            destWidth = explosion.spriteSize * scaleFactor;
+            destHeight = (explosion.spriteSize / frameAspect) * scaleFactor;
           } else {
             // Frame is taller than wide
-            destWidth = explosion.spriteSize * frameAspect;
-            destHeight = explosion.spriteSize;
+            destWidth = (explosion.spriteSize * frameAspect) * scaleFactor;
+            destHeight = explosion.spriteSize * scaleFactor;
           }
 
           ctx.save();
@@ -5553,23 +5951,26 @@ const SpaceShooter = () => {
 
           // Draw sprite - centered and clean
           ctx.save();
-          ctx.globalAlpha = 1;
 
-          // Draw sprite centered at explosion position
-          // Debug sprite rendering (only log first few times)
-          if (currentFrame === 0 && Math.random() < 0.01) {
-            console.log('[SPRITE] Drawing explosion:', {
-              spriteSize: `${sprite.width}x${sprite.height}`,
-              frameWidth,
-              frameHeight,
-              frameAspect: (frameWidth / frameHeight).toFixed(2),
-              currentFrame,
-              srcX,
-              destWidth,
-              destHeight,
-              position: `${explosion.x},${explosion.y}`,
-              drawPos: `${explosion.x - destWidth / 2},${explosion.y - destHeight / 2}`
-            });
+          // Handle alpha for atlas format
+          if (explosion.isAtlas) {
+            if (explosion.totalFrames === 1) {
+              // Single frame atlas - fade out over lifetime
+              const lifeProgress = age / maxLifetime;
+              ctx.globalAlpha = Math.max(0.2, 1 - lifeProgress * 0.8);
+            } else {
+              // Multi-frame atlas - full opacity, let frames handle animation
+              ctx.globalAlpha = 1.0;
+            }
+
+            // Optional: Apply rotation if specified
+            if (explosion.rotation) {
+              ctx.translate(explosion.x, explosion.y);
+              ctx.rotate(explosion.rotation);
+              ctx.translate(-explosion.x, -explosion.y);
+            }
+          } else {
+            ctx.globalAlpha = 1;
           }
 
           ctx.drawImage(
@@ -5578,14 +5979,6 @@ const SpaceShooter = () => {
             explosion.x - destWidth / 2, explosion.y - destHeight / 2,
             destWidth, destHeight
           );
-
-          // Debug: Draw red dot at explosion center (remove after debugging)
-          if (false) { // Set to true to debug
-            ctx.fillStyle = 'red';
-            ctx.beginPath();
-            ctx.arc(explosion.x, explosion.y, 5, 0, Math.PI * 2);
-            ctx.fill();
-          }
 
           ctx.restore(); // Restore main context
           return; // Skip particle rendering for sprite explosions
@@ -6857,10 +7250,31 @@ const SpaceShooter = () => {
         const safeFlameSize = isFinite(flameSize) ? flameSize : 8;
         const safeFlameOffset = isFinite(flameOffset) ? flameOffset : 0;
 
+        // Add booster glow effect
+        const glowIntensity = (Math.sin(Date.now() / 100) * 0.3 + 0.7) * (0.5 + Math.max(0, player.vx || 0) * 0.1);
+        const glowSize = (safeFlameSize * 1.5 + 10) * glowIntensity;
+
         if (boosterOpt.dual) {
           // Dual boosters - top and bottom
           [-1, 1].forEach(dir => {
             const yOff = dir * 6;
+
+            // Draw glow first (behind flame)
+            if (!perfMode) {
+              const glowGrad = ctx.createRadialGradient(
+                px + 5, py + ph / 2 + yOff, 0,
+                px + 5, py + ph / 2 + yOff, glowSize
+              );
+              glowGrad.addColorStop(0, `rgba(255, 200, 100, ${glowIntensity * 0.6})`);
+              glowGrad.addColorStop(0.3, `rgba(255, 120, 40, ${glowIntensity * 0.4})`);
+              glowGrad.addColorStop(0.6, `rgba(255, 80, 0, ${glowIntensity * 0.2})`);
+              glowGrad.addColorStop(1, 'rgba(255, 60, 0, 0)');
+              ctx.fillStyle = glowGrad;
+              ctx.beginPath();
+              ctx.arc(px + 5, py + ph / 2 + yOff, glowSize, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
             const flameGrad = ctx.createLinearGradient(px - safeFlameSize - safeFlameOffset, py + ph / 2 + yOff, px, py + ph / 2 + yOff);
             flameGrad.addColorStop(0, 'transparent');
             flameGrad.addColorStop(0.3, '#ff4400');
@@ -6884,6 +7298,22 @@ const SpaceShooter = () => {
             ctx.fill();
           });
         } else {
+          // Draw glow behind single booster
+          if (!perfMode) {
+            const glowGrad = ctx.createRadialGradient(
+              px + 5, py + ph / 2, 0,
+              px + 5, py + ph / 2, glowSize * 1.2
+            );
+            glowGrad.addColorStop(0, `rgba(255, 200, 100, ${glowIntensity * 0.6})`);
+            glowGrad.addColorStop(0.3, `rgba(255, 120, 40, ${glowIntensity * 0.4})`);
+            glowGrad.addColorStop(0.6, `rgba(255, 80, 0, ${glowIntensity * 0.2})`);
+            glowGrad.addColorStop(1, 'rgba(255, 60, 0, 0)');
+            ctx.fillStyle = glowGrad;
+            ctx.beginPath();
+            ctx.arc(px + 5, py + ph / 2, glowSize * 1.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
           // Single booster with size scaling
           const flameGradient = ctx.createLinearGradient(px - safeFlameSize - safeFlameOffset, py + ph / 2, px, py + ph / 2);
           flameGradient.addColorStop(0, 'transparent');
@@ -7643,10 +8073,31 @@ const SpaceShooter = () => {
       });
 
       // Draw enemy bullets - use reduced effects during boss battles for performance
+      // Enhanced with aggressive culling and LOD
       const reducedBulletEffects = bossActiveRef.current && !perfMode;
+      let renderedBullets = 0;
+      const maxBulletsToRender = perfMode ? 150 : (performanceRef.current.adaptiveQuality < 0.7 ? 300 : 600);
+
       enemyBulletsRef.current.forEach(bullet => {
         // Skip bullets with non-finite positions
         if (!isFinite(bullet.x) || !isFinite(bullet.y)) return;
+
+        // Enhanced off-screen culling with tighter margins
+        const bulletSize = bullet.cannonSize ? 24 : 8;
+        if (!isOnScreen(bullet.x - bulletSize, bullet.y - bulletSize, bulletSize * 2, bulletSize * 2, 50)) {
+          performanceRef.current.culledObjects++;
+          return;
+        }
+
+        // Limit total bullets rendered based on performance
+        if (renderedBullets++ > maxBulletsToRender) {
+          performanceRef.current.culledObjects++;
+          return;
+        }
+
+        // Distance-based LOD for bullet effects
+        const distToPlayer = getDistanceToPlayer(bullet.x, bullet.y);
+        const lodLevel = getLODLevel(distToPlayer, performanceRef.current);
 
         // Bullet color based on type
         if (bullet.isCannon) {
@@ -7665,12 +8116,14 @@ const SpaceShooter = () => {
           const outerColor = isRegenCannon ? '#aa0000' : '#ff0000';
           const midColor = isRegenCannon ? '#ff2200' : '#ff6600';
 
-          // Outer glow - reduce during boss battles
-          ctx.shadowColor = glowColor;
-          ctx.shadowBlur = reducedBulletEffects ? 8 : (isRegenCannon ? 25 : 20);
+          // Outer glow - reduce during boss battles or high LOD
+          if (lodLevel === 0 && !reducedBulletEffects) {
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = (isRegenCannon ? 25 : 20) * performanceRef.current.adaptiveQuality;
+          }
 
-          // Plasma ball - simplified gradient during boss battles
-          if (reducedBulletEffects) {
+          // Plasma ball - simplified for LOD and boss battles
+          if (reducedBulletEffects || lodLevel > 0) {
             ctx.fillStyle = midColor;
           } else {
             const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, baseSize);
@@ -7684,11 +8137,13 @@ const SpaceShooter = () => {
           ctx.arc(0, 0, baseSize, 0, Math.PI * 2);
           ctx.fill();
 
-          // Inner core
-          ctx.fillStyle = isRegenCannon ? '#ffaaaa' : '#ffffff';
-          ctx.beginPath();
-          ctx.arc(0, 0, baseSize * 0.35, 0, Math.PI * 2);
-          ctx.fill();
+          // Inner core - skip for LOD 2
+          if (lodLevel < 2) {
+            ctx.fillStyle = isRegenCannon ? '#ffaaaa' : '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, baseSize * 0.35, 0, Math.PI * 2);
+            ctx.fill();
+          }
 
           // Trail - longer for regen cannons
           const trailLength = isRegenCannon ? 20 : 15;
@@ -7697,8 +8152,8 @@ const SpaceShooter = () => {
           ctx.ellipse(-trailLength, 0, trailLength * 0.7, baseSize * 0.5, 0, 0, Math.PI * 2);
           ctx.fill();
 
-          // Extra ring effect for regen cannons
-          if (isRegenCannon && !reducedBulletEffects) {
+          // Extra ring effect for regen cannons - skip for high LOD
+          if (isRegenCannon && !reducedBulletEffects && lodLevel < 2) {
             ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -8194,9 +8649,19 @@ const SpaceShooter = () => {
       // Draw enemies
       let renderCounter = 0;
       const currentZone = getZoneForWave(waveRef.current);
+      const adaptiveQuality = performanceRef.current.adaptiveQuality;
+
       enemiesRef.current.forEach(enemy => {
         // Guard against non-finite coordinates
         if (!isFinite(enemy.x) || !isFinite(enemy.y)) return;
+
+        // Off-screen culling optimization - skip rendering if completely off-screen
+        const ew = Math.max(1, enemy.width || ENEMY_WIDTH);
+        const eh = Math.max(1, enemy.height || ENEMY_HEIGHT);
+        if (enemy.x + ew < -50 || enemy.x > GAME_WIDTH + 50 ||
+            enemy.y + eh < -50 || enemy.y > GAME_HEIGHT + 50) {
+          return; // Skip rendering this enemy
+        }
 
         // DEBUG: Log first enemy render position
         const isFirst = renderCounter === 0;
@@ -8207,8 +8672,6 @@ const SpaceShooter = () => {
         ctx.save();
         const ex = enemy.x;
         const ey = enemy.y;
-        const ew = Math.max(1, enemy.width || ENEMY_WIDTH);
-        const eh = Math.max(1, enemy.height || ENEMY_HEIGHT);
         const centerY = ey + eh / 2;
         const centerX = ex + ew / 2;
 
@@ -12077,16 +12540,31 @@ const SpaceShooter = () => {
       }
       ctx.restore();
 
-      // === RENDER IMPACT PARTICLES ===
+      // === RENDER IMPACT PARTICLES (with culling and LOD) ===
       ctx.save();
+      // Use perfData from render function scope
+      let renderedParticles = 0;
+      const maxParticlesToRender = perfMode ? 100 : (performanceRef.current.adaptiveQuality < 0.7 ? 200 : 500);
+
       impactParticlesRef.current.forEach(p => {
+        // Aggressive culling for particles
+        if (!isOnScreen(p.x, p.y, p.size * 2, p.size * 2, 0)) {
+          performanceRef.current.culledObjects++;
+          return;
+        }
+
+        if (renderedParticles++ > maxParticlesToRender) {
+          performanceRef.current.culledObjects++;
+          return;
+        }
+
         const alpha = p.lifetime / p.maxLifetime;
         ctx.globalAlpha = Math.min(1, alpha * p.brightness);
 
-        // Draw glow ring
-        if (!perfMode) {
+        // Draw glow ring - skip for low quality
+        if (!perfMode && performanceRef.current.adaptiveQuality > 0.7) {
           ctx.shadowColor = p.color;
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 10 * performanceRef.current.adaptiveQuality;
         }
 
         // Main particle
@@ -12096,8 +12574,8 @@ const SpaceShooter = () => {
         ctx.arc(p.x, p.y, p.size * sizeScale, 0, Math.PI * 2);
         ctx.fill();
 
-        // Bright core
-        if (p.size > 2) {
+        // Bright core - skip for very small particles or low quality
+        if (p.size > 2 && performanceRef.current.adaptiveQuality > 0.6) {
           ctx.globalAlpha = Math.min(1, alpha * p.brightness * 1.2);
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
@@ -12108,19 +12586,31 @@ const SpaceShooter = () => {
       ctx.shadowBlur = 0;
       ctx.restore();
 
-      // === RENDER SPARK PARTICLES ===
+      // === RENDER SPARK PARTICLES (with culling and LOD) ===
       ctx.save();
+      renderedParticles = 0;
       sparkParticlesRef.current.forEach(p => {
+        // Aggressive culling for sparks
+        if (!isOnScreen(p.x, p.y, p.size * 2, p.size * 2, 0)) {
+          performanceRef.current.culledObjects++;
+          return;
+        }
+
+        if (renderedParticles++ > maxParticlesToRender) {
+          performanceRef.current.culledObjects++;
+          return;
+        }
+
         const alpha = p.lifetime / p.maxLifetime;
         ctx.globalAlpha = alpha * 0.9;
 
-        // Draw spark trail
-        if (p.prevX !== undefined && p.prevY !== undefined) {
+        // Draw spark trail - skip in low quality mode
+        if (p.prevX !== undefined && p.prevY !== undefined && performanceRef.current.adaptiveQuality > 0.6) {
           ctx.strokeStyle = p.color;
           ctx.lineWidth = Math.max(1, p.size * alpha * 1.2);
-          if (!perfMode) {
+          if (!perfMode && performanceRef.current.adaptiveQuality > 0.7) {
             ctx.shadowColor = p.color;
-            ctx.shadowBlur = 12;
+            ctx.shadowBlur = 12 * performanceRef.current.adaptiveQuality;
           }
           ctx.beginPath();
           ctx.moveTo(p.prevX, p.prevY);
@@ -13210,17 +13700,52 @@ const SpaceShooter = () => {
         ctx.restore();
       }
 
-      // Draw FPS counter if enabled
+      // Draw FPS counter and performance stats if enabled
       if (userSettingsRef.current?.showFPS) {
         ctx.save();
         ctx.font = '10px monospace';
         ctx.textAlign = 'left';
         const fps = fpsRef.current.fps;
         const fpsColor = fps >= 55 ? '#00ff00' : fps >= 30 ? '#ffff00' : '#ff0000';
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(5, 5, 60, 18);
+
+        // Calculate average frame time
+        const avgFrameTime = perfData.frameTimeHistory.length > 0
+          ? (perfData.frameTimeHistory.reduce((a, b) => a + b, 0) / perfData.frameTimeHistory.length).toFixed(2)
+          : '0.00';
+
+        // Enhanced stats display
+        const statsHeight = 95;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(5, 5, 180, statsHeight);
+
+        // FPS
         ctx.fillStyle = fpsColor;
         ctx.fillText(`FPS: ${fps}`, 10, 18);
+
+        // Frame time
+        const frameTimeColor = parseFloat(avgFrameTime) < 16.67 ? '#00ff00' : '#ffff00';
+        ctx.fillStyle = frameTimeColor;
+        ctx.fillText(`Frame: ${avgFrameTime}ms`, 10, 32);
+
+        // Adaptive quality
+        ctx.fillStyle = '#00ccff';
+        ctx.fillText(`Quality: ${(perfData.adaptiveQuality * 100).toFixed(0)}%`, 10, 46);
+
+        // Object counts
+        ctx.fillStyle = '#ffffff';
+        const totalObjects = enemiesRef.current.length + enemyBulletsRef.current.length +
+                            bulletsRef.current.length + explosionsRef.current.length;
+        ctx.fillText(`Objects: ${totalObjects}`, 10, 60);
+
+        // Culled objects (performance win)
+        ctx.fillStyle = '#88ff88';
+        ctx.fillText(`Culled: ${perfData.culledObjects}`, 10, 74);
+
+        // Particle count
+        const particleCount = impactParticlesRef.current.length + sparkParticlesRef.current.length;
+        ctx.fillStyle = '#ffaa88';
+        ctx.fillText(`Particles: ${particleCount}`, 10, 88);
+
         ctx.restore();
       }
 
@@ -13291,13 +13816,41 @@ const SpaceShooter = () => {
     };
 
     const gameLoop = (timestamp) => {
-      // Update FPS counter
+      // Update FPS counter and adaptive performance
       const fpsData = fpsRef.current;
+      const perfData = performanceRef.current;
+      const frameStartTime = performance.now();
+
       fpsData.frames++;
+
       if (timestamp - fpsData.lastTime >= 1000) {
         fpsData.fps = fpsData.frames;
         fpsData.frames = 0;
         fpsData.lastTime = timestamp;
+
+        // Calculate average frame time from history
+        const avgFrameTime = perfData.frameTimeHistory.length > 0
+          ? perfData.frameTimeHistory.reduce((a, b) => a + b, 0) / perfData.frameTimeHistory.length
+          : perfData.frameBudget;
+
+        // Adaptive quality based on FPS and frame budget
+        if (!userSettingsRef.current?.performanceMode) { // Only auto-adjust if not in manual perf mode
+          if (fpsData.fps < 50 || avgFrameTime > perfData.frameBudget * 1.2) {
+            perfData.lowFpsFrames++;
+
+            // If FPS is consistently low (3+ seconds), reduce quality
+            if (perfData.lowFpsFrames >= 3 && perfData.adaptiveQuality > 0.4) {
+              perfData.adaptiveQuality = Math.max(0.4, perfData.adaptiveQuality - 0.15);
+              console.log(`[PERFORMANCE] FPS low (${fpsData.fps}), frame time ${avgFrameTime.toFixed(2)}ms, reducing quality to ${perfData.adaptiveQuality.toFixed(1)}x`);
+            }
+          } else if (fpsData.fps >= 58 && avgFrameTime < perfData.frameBudget * 0.8) {
+            // FPS is good, gradually restore quality
+            if (perfData.adaptiveQuality < 1.0) {
+              perfData.adaptiveQuality = Math.min(1.0, perfData.adaptiveQuality + 0.05);
+              perfData.lowFpsFrames = 0;
+            }
+          }
+        }
       }
 
       // Don't render at all during brand, cinematic, or splash screens
@@ -19931,6 +20484,15 @@ const SpaceShooter = () => {
       });
 
       render(ctx, timestamp);
+
+      // Track frame time for performance monitoring
+      const frameEndTime = performance.now();
+      const frameTime = frameEndTime - frameStartTime;
+      perfData.frameTimeHistory.push(frameTime);
+      if (perfData.frameTimeHistory.length > perfData.maxFrameHistory) {
+        perfData.frameTimeHistory.shift();
+      }
+
       animationFrameRef.current = requestAnimationFrame(gameLoop);
     };
 

@@ -1,0 +1,35 @@
+{
+  "frames": {
+    "explosion3.png": {
+      "frame": {
+        "x": 2,
+        "y": 2,
+        "w": 787,
+        "h": 311
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 787,
+        "h": 311
+      },
+      "sourceSize": {
+        "w": 787,
+        "h": 311
+      }
+    }
+  },
+  "meta": {
+    "app": "Nebula Painter Sprite Packer",
+    "version": "1.0",
+    "image": "spritesheet.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 791,
+      "h": 315
+    },
+    "scale": "1"
+  }
+}
