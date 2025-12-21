@@ -23067,7 +23067,7 @@ const SpaceShooter = () => {
 
               {/* Zone Selection - Branching Paths */}
               <div className="zone-selection">
-                <h3>CHOOSE NEXT ZONE</h3>
+                <h3>⚡ CHOOSE NEXT ZONE</h3>
                 <div className="zone-options">
                   {Object.entries(ZONE_PATHS).slice(0, 3).map(([key, zone]) => (
                     <button
@@ -23087,6 +23087,104 @@ const SpaceShooter = () => {
                       <span className="zone-desc">{zone.description}</span>
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Checkpoint Adjustments Panel */}
+              <div className="checkpoint-adjustments">
+                <h3>⚙️ QUICK ADJUSTMENTS</h3>
+                <div className="adjustment-grid">
+                  {/* Difficulty Adjustment */}
+                  <div className="adjustment-item">
+                    <label>Difficulty:</label>
+                    <div className="difficulty-mini-buttons">
+                      {Object.entries(DIFFICULTY_SETTINGS).map(([key, diff]) => (
+                        <button
+                          key={key}
+                          className={`diff-mini-btn ${userSettings.difficulty === key ? 'active' : ''}`}
+                          style={{ borderColor: diff.color }}
+                          onClick={() => {
+                            soundSystem.playUIClick();
+                            setUserSettings(prev => ({ ...prev, difficulty: key }));
+                          }}
+                          title={diff.label}
+                        >
+                          {diff.label.substring(0, 1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Audio Adjustments */}
+                  <div className="adjustment-item">
+                    <label>Master Volume: {userSettings.masterVolume}%</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={userSettings.masterVolume}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setUserSettings(prev => ({ ...prev, masterVolume: val }));
+                        soundSystem.setMasterVolume(val / 100);
+                      }}
+                      className="volume-slider-mini"
+                    />
+                  </div>
+
+                  {/* Performance Mode Toggle */}
+                  <div className="adjustment-item">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={userSettings.performanceMode}
+                        onChange={(e) => {
+                          soundSystem.playUIClick();
+                          setUserSettings(prev => ({ ...prev, performanceMode: e.target.checked }));
+                        }}
+                      />
+                      Performance Mode
+                    </label>
+                    <span className="adjustment-hint">Reduces visual effects</span>
+                  </div>
+
+                  {/* FPS Display Toggle */}
+                  <div className="adjustment-item">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={userSettings.showFPS}
+                        onChange={(e) => {
+                          soundSystem.playUIClick();
+                          setUserSettings(prev => ({ ...prev, showFPS: e.target.checked }));
+                        }}
+                      />
+                      Show FPS Counter
+                    </label>
+                  </div>
+                </div>
+
+                {/* Current Loadout Display */}
+                <div className="checkpoint-loadout">
+                  <h4>📦 CURRENT LOADOUT</h4>
+                  <div className="loadout-stats">
+                    <div className="loadout-stat">
+                      <span className="stat-label">Weapon Level:</span>
+                      <span className="stat-value">{weaponLevel}</span>
+                    </div>
+                    <div className="loadout-stat">
+                      <span className="stat-label">Special Weapon:</span>
+                      <span className="stat-value">{specialWeaponRef.current || 'None'}</span>
+                    </div>
+                    <div className="loadout-stat">
+                      <span className="stat-label">Force Pod:</span>
+                      <span className="stat-value">{forceRef.current ? '✓ Active' : '✗ Inactive'}</span>
+                    </div>
+                    <div className="loadout-stat">
+                      <span className="stat-label">Bombs:</span>
+                      <span className="stat-value">{bombsRef.current}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 

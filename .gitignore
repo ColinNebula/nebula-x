@@ -32,6 +32,10 @@ config/secrets.json
 /out
 *.tsbuildinfo
 
+# Exclude large files from build output
+build/*.mp4
+build/**/*.mp4
+
 # =========================
 # TESTING & COVERAGE
 # =========================
@@ -81,9 +85,9 @@ Desktop.ini
 # =========================
 # LARGE FILES (150MB+)
 # =========================
-# Video file too large for GitHub (155MB)
-# Recommend hosting externally (YouTube/Vimeo) or compressing
-public/Nebula X Cinematic.mp4
+# Video files too large for GitHub (155MB and 93MB)
+# Stored in media-assets directory (not included in build)
+media-assets/
 *.mp4
 
 # =========================

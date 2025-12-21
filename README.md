@@ -2,7 +2,7 @@
 
 A fast-paced arcade space shooter game built with React and HTML5 Canvas.
 
-![Nebula X](public/nebulamedia.png)
+![Nebula X](nebula-x-logo.png)
 
 ## 🎮 Play Now
 
@@ -11,7 +11,7 @@ npm install
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to play!
+Open [https://colinnebula.github.io/nebula-x/](https://colinnebula.github.io/nebula-x/) to play!
 
 ## ✨ Features
 

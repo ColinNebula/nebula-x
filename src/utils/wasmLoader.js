@@ -14,16 +14,21 @@ export async function loadPhysicsModule() {
   isLoading = true;
   loadPromise = (async () => {
     try {
-      // Dynamically import the Emscripten-generated JS wrapper
-      const createPhysicsModule = (await import('/game_physics.js')).default;
+      // Check if WASM file exists
+      if (typeof window !== 'undefined' && window.location) {
+        // Dynamically import the Emscripten-generated JS wrapper
+        const createPhysicsModule = (await import('/game_physics.js')).default;
 
-      // Initialize the WASM module
-      physicsModule = await createPhysicsModule();
+        // Initialize the WASM module
+        physicsModule = await createPhysicsModule();
 
-      console.log('✅ WASM Physics Module loaded successfully');
-      return physicsModule;
+        console.log('✅ WASM Physics Module loaded successfully');
+        return physicsModule;
+      } else {
+        throw new Error('Not in browser environment');
+      }
     } catch (error) {
-      console.warn('⚠️ WASM module not available, using JavaScript fallback:', error);
+      console.warn('⚠️ WASM module not available, using JavaScript fallback:', error.message);
       // Return a fallback object with JavaScript implementations
       return createJavaScriptFallback();
     } finally {
