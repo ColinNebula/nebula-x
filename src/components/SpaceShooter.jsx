@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import './SpaceShooter.css';
+import { getPhysicsEngine } from '../utils/wasmLoader';
 
 // DEBUG: Verify file is loaded
 
@@ -1273,62 +1274,82 @@ const SpaceShooter = () => {
 
   // Avatar options with rarity tiers
   const AVATAR_OPTIONS = [
-    // Common (8)
-    { id: 0, icon: '\ud83d\udc68\u200d\ud83d\ude80', name: 'Astronaut', rarity: 'common' },
-    { id: 1, icon: '\ud83d\udc68\u200d\u2708\ufe0f', name: 'Commander', rarity: 'common' },
-    { id: 2, icon: '\ud83c\udfae', name: 'Gamer', rarity: 'common' },
-    { id: 3, icon: '\u2b50', name: 'Star', rarity: 'common' },
-    { id: 4, icon: '\ud83d\ude80', name: 'Rocket', rarity: 'common' },
-    { id: 5, icon: '\ud83d\udef8', name: 'UFO', rarity: 'common' },
-    { id: 6, icon: '\ud83c\udfaf', name: 'Target', rarity: 'common' },
-    { id: 7, icon: '\u2728', name: 'Spark', rarity: 'common' },
-    // Uncommon (8)
-    { id: 8, icon: '\ud83e\udd16', name: 'Android', rarity: 'uncommon' },
-    { id: 9, icon: '\ud83e\udd8a', name: 'Fox', rarity: 'uncommon' },
-    { id: 10, icon: '\ud83d\udc3a', name: 'Wolf', rarity: 'uncommon' },
-    { id: 11, icon: '\ud83e\udd85', name: 'Eagle', rarity: 'uncommon' },
-    { id: 12, icon: '\ud83d\udc31', name: 'Cat', rarity: 'uncommon' },
-    { id: 13, icon: '\ud83e\udd81', name: 'Lion', rarity: 'uncommon' },
-    { id: 14, icon: '\ud83d\udc2f', name: 'Tiger', rarity: 'uncommon' },
-    { id: 15, icon: '\ud83e\udd87', name: 'Bat', rarity: 'uncommon' },
-    // Rare (8)
-    { id: 16, icon: '\ud83d\udc7d', name: 'Alien', rarity: 'rare' },
-    { id: 17, icon: '\ud83d\udc7e', name: 'Invader', rarity: 'rare' },
-    { id: 18, icon: '\ud83d\udc09', name: 'Dragon', rarity: 'rare' },
-    { id: 19, icon: '\ud83d\udd25', name: 'Inferno', rarity: 'rare' },
-    { id: 20, icon: '\u2744\ufe0f', name: 'Frost', rarity: 'rare' },
-    { id: 21, icon: '\ud83c\udf0a', name: 'Wave', rarity: 'rare' },
-    { id: 22, icon: '\ud83d\udc7b', name: 'Phantom', rarity: 'rare' },
-    { id: 23, icon: '\ud83e\udd84', name: 'Unicorn', rarity: 'rare' },
-    // Epic (8)
-    { id: 24, icon: '\u2620\ufe0f', name: 'Reaper', rarity: 'epic' },
-    { id: 25, icon: '\ud83d\udc79', name: 'Demon', rarity: 'epic' },
-    { id: 26, icon: '\ud83e\udd16', name: 'Cyborg', rarity: 'epic' },
-    { id: 27, icon: '\u26a1', name: 'Thunder', rarity: 'epic' },
-    { id: 28, icon: '\ud83c\udf00', name: 'Cyclone', rarity: 'epic' },
-    { id: 29, icon: '\ud83d\udc80', name: 'Skull', rarity: 'epic' },
-    { id: 30, icon: '\ud83c\udf83', name: 'Pumpkin', rarity: 'epic' },
-    { id: 31, icon: '\ud83e\udd96', name: 'Rex', rarity: 'epic' },
-    // Legendary (12)
-    { id: 32, icon: '\ud83c\udf1f', name: 'Nova', rarity: 'legendary' },
-    { id: 33, icon: '\ud83c\udf0c', name: 'Cosmos', rarity: 'legendary' },
-    { id: 34, icon: '\ud83d\udd31', name: 'Poseidon', rarity: 'legendary' },
-    { id: 35, icon: '\ud83d\udc51', name: 'Overlord', rarity: 'legendary' },
-    { id: 36, icon: '\ud83d\udc8e', name: 'Diamond', rarity: 'legendary' },
-    { id: 37, icon: '\ud83c\udf08', name: 'Prism', rarity: 'legendary' },
-    { id: 38, icon: '\ud83d\udd2e', name: 'Oracle', rarity: 'legendary' },
-    { id: 39, icon: '\ud83d\udc51', name: 'Royalty', rarity: 'legendary' },
-    { id: 40, icon: '\ud83d\udc0d', name: 'Serpent', rarity: 'legendary' },
-    { id: 41, icon: '\ud83d\udd25', name: 'Phoenix', rarity: 'legendary' },
-    { id: 42, icon: '\u2728', name: 'Celestial', rarity: 'legendary' },
-    { id: 43, icon: '\u2b50', name: 'Stardust', rarity: 'legendary' },
-    // Mythic - Ultra Rare (6)
-    { id: 44, icon: '\ud83c\udf11', name: 'Void', rarity: 'mythic' },
-    { id: 45, icon: '\u267e\ufe0f', name: 'Eternal', rarity: 'mythic' },
-    { id: 46, icon: '\ud83d\udc41\ufe0f', name: 'Omniscient', rarity: 'mythic' },
-    { id: 47, icon: '\u267e\ufe0f', name: 'Infinite', rarity: 'mythic' },
-    { id: 48, icon: '\ud83c\udf1e', name: 'Radiant', rarity: 'mythic' },
-    { id: 49, icon: '\ud83c\udf20', name: 'Transcendent', rarity: 'mythic' }
+    // Common (12)
+    { id: 0, icon: '👨‍🚀', name: 'Astronaut', rarity: 'common' },
+    { id: 1, icon: '👨‍✈️', name: 'Commander', rarity: 'common' },
+    { id: 2, icon: '🎮', name: 'Gamer', rarity: 'common' },
+    { id: 3, icon: '⭐', name: 'Star', rarity: 'common' },
+    { id: 4, icon: '🚀', name: 'Rocket', rarity: 'common' },
+    { id: 5, icon: '🛸', name: 'UFO', rarity: 'common' },
+    { id: 6, icon: '🎯', name: 'Target', rarity: 'common' },
+    { id: 7, icon: '✨', name: 'Spark', rarity: 'common' },
+    { id: 8, icon: '🤖', name: 'Robot', rarity: 'common' },
+    { id: 9, icon: '👾', name: 'Space Invader', rarity: 'common' },
+    { id: 10, icon: '🌟', name: 'Glowing Star', rarity: 'common' },
+    { id: 11, icon: '💫', name: 'Dizzy', rarity: 'common' },
+    // Uncommon (12)
+    { id: 12, icon: '🦊', name: 'Fox', rarity: 'uncommon' },
+    { id: 13, icon: '🐺', name: 'Wolf', rarity: 'uncommon' },
+    { id: 14, icon: '🦅', name: 'Eagle', rarity: 'uncommon' },
+    { id: 15, icon: '🐱', name: 'Cat', rarity: 'uncommon' },
+    { id: 16, icon: '🦁', name: 'Lion', rarity: 'uncommon' },
+    { id: 17, icon: '🐯', name: 'Tiger', rarity: 'uncommon' },
+    { id: 18, icon: '🦇', name: 'Bat', rarity: 'uncommon' },
+    { id: 19, icon: '🐻', name: 'Bear', rarity: 'uncommon' },
+    { id: 20, icon: '🐼', name: 'Panda', rarity: 'uncommon' },
+    { id: 21, icon: '🦈', name: 'Shark', rarity: 'uncommon' },
+    { id: 22, icon: '🦎', name: 'Lizard', rarity: 'uncommon' },
+    { id: 23, icon: '🦂', name: 'Scorpion', rarity: 'uncommon' },
+    // Rare (12)
+    { id: 24, icon: '👽', name: 'Alien', rarity: 'rare' },
+    { id: 25, icon: '👾', name: 'Invader', rarity: 'rare' },
+    { id: 26, icon: '🐉', name: 'Dragon', rarity: 'rare' },
+    { id: 27, icon: '🔥', name: 'Inferno', rarity: 'rare' },
+    { id: 28, icon: '❄️', name: 'Frost', rarity: 'rare' },
+    { id: 29, icon: '🌊', name: 'Wave', rarity: 'rare' },
+    { id: 30, icon: '👻', name: 'Phantom', rarity: 'rare' },
+    { id: 31, icon: '🦄', name: 'Unicorn', rarity: 'rare' },
+    { id: 32, icon: '⚡', name: 'Lightning', rarity: 'rare' },
+    { id: 33, icon: '🌙', name: 'Moon', rarity: 'rare' },
+    { id: 34, icon: '☄️', name: 'Comet', rarity: 'rare' },
+    { id: 35, icon: '🌪️', name: 'Tornado', rarity: 'rare' },
+    // Epic (12)
+    { id: 36, icon: '☠️', name: 'Reaper', rarity: 'epic' },
+    { id: 37, icon: '👹', name: 'Demon', rarity: 'epic' },
+    { id: 38, icon: '🤖', name: 'Cyborg', rarity: 'epic' },
+    { id: 39, icon: '⚡', name: 'Thunder', rarity: 'epic' },
+    { id: 40, icon: '🌀', name: 'Cyclone', rarity: 'epic' },
+    { id: 41, icon: '💀', name: 'Skull', rarity: 'epic' },
+    { id: 42, icon: '🎃', name: 'Pumpkin', rarity: 'epic' },
+    { id: 43, icon: '🦖', name: 'Rex', rarity: 'epic' },
+    { id: 44, icon: '🔮', name: 'Crystal', rarity: 'epic' },
+    { id: 45, icon: '💎', name: 'Gem', rarity: 'epic' },
+    { id: 46, icon: '🗡️', name: 'Blade', rarity: 'epic' },
+    { id: 47, icon: '🛡️', name: 'Guardian', rarity: 'epic' },
+    // Legendary (14)
+    { id: 48, icon: '🌟', name: 'Nova', rarity: 'legendary' },
+    { id: 49, icon: '🌌', name: 'Cosmos', rarity: 'legendary' },
+    { id: 50, icon: '🔱', name: 'Poseidon', rarity: 'legendary' },
+    { id: 51, icon: '👑', name: 'Overlord', rarity: 'legendary' },
+    { id: 52, icon: '💎', name: 'Diamond', rarity: 'legendary' },
+    { id: 53, icon: '🌈', name: 'Prism', rarity: 'legendary' },
+    { id: 54, icon: '🔮', name: 'Oracle', rarity: 'legendary' },
+    { id: 55, icon: '👑', name: 'Royalty', rarity: 'legendary' },
+    { id: 56, icon: '🐍', name: 'Serpent', rarity: 'legendary' },
+    { id: 57, icon: '🔥', name: 'Phoenix', rarity: 'legendary' },
+    { id: 58, icon: '✨', name: 'Celestial', rarity: 'legendary' },
+    { id: 59, icon: '⭐', name: 'Stardust', rarity: 'legendary' },
+    { id: 60, icon: '🦅', name: 'Freedom', rarity: 'legendary' },
+    { id: 61, icon: '🌠', name: 'Shooting Star', rarity: 'legendary' },
+    // Mythic - Ultra Rare (8)
+    { id: 62, icon: '🌑', name: 'Void', rarity: 'mythic' },
+    { id: 63, icon: '☯️', name: 'Eternal', rarity: 'mythic' },
+    { id: 64, icon: '👁️', name: 'Omniscient', rarity: 'mythic' },
+    { id: 65, icon: '♾️', name: 'Infinite', rarity: 'mythic' },
+    { id: 66, icon: '🌞', name: 'Radiant', rarity: 'mythic' },
+    { id: 67, icon: '🌠', name: 'Transcendent', rarity: 'mythic' },
+    { id: 68, icon: '🎭', name: 'Enigma', rarity: 'mythic' },
+    { id: 69, icon: '🧿', name: 'Ancient', rarity: 'mythic' }
   ];
 
   // Avatar color options - expanded with more variety
@@ -1501,6 +1522,9 @@ const SpaceShooter = () => {
   const impactParticlesRef = useRef([]);
   const sparkParticlesRef = useRef([]);
   const debrisParticlesRef = useRef([]);
+
+  // Physics engine ref
+  const physicsRef = useRef(null);
 
   // Particle pool limits for performance
   const PARTICLE_LIMITS = {
@@ -2564,6 +2588,19 @@ const SpaceShooter = () => {
     6: { name: 'TECH FORTRESS', theme: 'tech', color: '#00ff00' }
   };
   const currentZoneRef = useRef(1);
+
+  // Initialize physics engine
+  useEffect(() => {
+    const initPhysics = async () => {
+      try {
+        physicsRef.current = await getPhysicsEngine();
+        console.log('🚀 Physics Engine:', physicsRef.current.isFallback ? 'JS Fallback' : 'WASM Accelerated');
+      } catch (error) {
+        console.warn('⚠️ Physics engine initialization failed:', error);
+      }
+    };
+    initPhysics();
+  }, []);
 
   // Initialize stars for parallax background (3 layers)
   useEffect(() => {
