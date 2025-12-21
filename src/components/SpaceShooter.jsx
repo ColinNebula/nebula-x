@@ -1787,6 +1787,14 @@ const SpaceShooter = () => {
   const hitFlashRef = useRef({ active: false, timer: 0 }); // Screen hit flash
   const levelFadeRef = useRef({ active: false, fadeIn: true, alpha: 1, showText: 'campaign' }); // campaign, survival, bossRush, timeAttack
   const gameModeRef = useRef('campaign'); // Current game mode: 'campaign', 'survival', 'bossRush', 'timeAttack', 'practice'
+
+  // ============= VISUAL ENHANCEMENT SYSTEM =============
+  const bloomCanvasRef = useRef(null); // Off-screen canvas for bloom effect
+  const bloomCtxRef = useRef(null);
+  const chromaticAberrationRef = useRef({ active: false, intensity: 0 }); // RGB split effect
+  const nebulaParticlesRef = useRef([]); // Animated nebula clouds
+  const timeScaleRef = useRef(1); // Slow-motion effect (1 = normal, 0.5 = half speed)
+  const motionBlurTrailsRef = useRef(new Map()); // Trail data for bullets/ships
   const challengeStatsRef = useRef({
     survivalTime: 0,        // Survival mode: total time survived
     bossesDefeated: 0,      // Boss Rush: bosses beaten
@@ -3850,8 +3858,15 @@ const SpaceShooter = () => {
     // Trigger screen shake based on explosion size
     if (size === 'boss') {
       triggerScreenShake(12, 30); // Big shake for boss
+      // Trigger slow-motion and chromatic aberration for boss explosions
+      timeScaleRef.current = 0.3; // 30% speed
+      chromaticAberrationRef.current = { active: true, intensity: 8, timer: 45 };
+      setTimeout(() => { timeScaleRef.current = 1; }, 600); // Resume after 600ms
     } else if (size === 'large' || size === 'heavy') {
       triggerScreenShake(6, 15); // Medium shake
+      timeScaleRef.current = 0.6; // 60% speed
+      chromaticAberrationRef.current = { active: true, intensity: 4, timer: 25 };
+      setTimeout(() => { timeScaleRef.current = 1; }, 300);
     } else if (size === 'missile') {
       triggerScreenShake(4, 10); // Small shake
     }
@@ -3990,7 +4005,7 @@ const SpaceShooter = () => {
       if (useAtlas) {
         // TexturePacker format - use frames from JSON
         const atlas = explosionAtlasRef.current;
-        
+
         // Select explosion type based on size
         let explosionPrefix;
         switch (size) {
@@ -4000,7 +4015,7 @@ const SpaceShooter = () => {
           case 'boss': explosionPrefix = 'expl_11_'; break;    // 96x96 large explosion
           default: explosionPrefix = 'expl_01_';
         }
-        
+
         // Filter frames for this explosion type and sort
         const allFrameNames = Object.keys(atlas.frames);
         const frameNames = allFrameNames
@@ -4062,16 +4077,16 @@ const SpaceShooter = () => {
 
           if (useAtlas) {
             const atlas = explosionAtlasRef.current;
-            
+
             // Use different explosion types for variety
             const explosionTypes = ['expl_02_', 'expl_03_', 'expl_04_', 'expl_06_'];
             const explosionPrefix = explosionTypes[i % explosionTypes.length];
-            
+
             const allFrameNames = Object.keys(atlas.frames);
             const frameNames = allFrameNames
               .filter(name => name.startsWith(explosionPrefix))
               .sort();
-              
+
             const frameName = frameNames[0];
             const frameData = atlas.frames[frameName];
 
@@ -5098,6 +5113,30 @@ const SpaceShooter = () => {
       return;
     }
 
+    // Initialize bloom canvas for post-processing
+    if (!bloomCanvasRef.current) {
+      bloomCanvasRef.current = document.createElement('canvas');
+      bloomCanvasRef.current.width = GAME_WIDTH;
+      bloomCanvasRef.current.height = GAME_HEIGHT;
+      bloomCtxRef.current = bloomCanvasRef.current.getContext('2d', { willReadFrequently: true });
+    }
+
+    // Initialize nebula cloud particles
+    if (nebulaParticlesRef.current.length === 0) {
+      for (let i = 0; i < 25; i++) {
+        nebulaParticlesRef.current.push({
+          x: Math.random() * GAME_WIDTH,
+          y: Math.random() * GAME_HEIGHT,
+          size: 80 + Math.random() * 120,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: 0.2 + Math.random() * 0.4,
+          opacity: 0.08 + Math.random() * 0.12,
+          color: ['#4444ff', '#ff44ff', '#44ffff', '#ff8844'][Math.floor(Math.random() * 4)],
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
     // Initialize spatial grid for collision detection
     if (!performanceRef.current.spatialGrid) {
       performanceRef.current.spatialGrid = new SpatialGrid(GAME_WIDTH, GAME_HEIGHT, 100);
@@ -5176,6 +5215,7 @@ const SpaceShooter = () => {
       // Clear canvas FIRST before any transformations
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any transforms
+      ctx.globalAlpha = 1; // Always reset alpha to prevent transparency issues
       ctx.fillStyle = '#0a0a20';
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
       ctx.restore();
@@ -5244,6 +5284,45 @@ const SpaceShooter = () => {
         }
       });
       ctx.globalAlpha = 1;
+
+      // ========== DRAW ANIMATED NEBULA CLOUDS ==========
+      if (!perfMode) {
+        ctx.save();
+        nebulaParticlesRef.current.forEach(cloud => {
+          // Update cloud movement
+          if (gameStateRef.current === 'playing') {
+            cloud.x += cloud.vx;
+            cloud.y += cloud.vy;
+            cloud.phase += 0.01;
+
+            // Wrap around screen
+            if (cloud.y > GAME_HEIGHT + cloud.size) {
+              cloud.y = -cloud.size;
+              cloud.x = Math.random() * GAME_WIDTH;
+            }
+            if (cloud.x < -cloud.size) cloud.x = GAME_WIDTH + cloud.size;
+            if (cloud.x > GAME_WIDTH + cloud.size) cloud.x = -cloud.size;
+          }
+
+          // Pulsating opacity
+          const pulseOpacity = cloud.opacity * (0.8 + Math.sin(cloud.phase) * 0.2);
+
+          // Draw nebula with radial gradient
+          const gradient = ctx.createRadialGradient(
+            cloud.x, cloud.y, 0,
+            cloud.x, cloud.y, cloud.size
+          );
+          gradient.addColorStop(0, cloud.color + Math.floor(pulseOpacity * 255).toString(16).padStart(2, '0'));
+          gradient.addColorStop(0.5, cloud.color + Math.floor(pulseOpacity * 0.6 * 255).toString(16).padStart(2, '0'));
+          gradient.addColorStop(1, cloud.color + '00');
+
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(cloud.x, cloud.y, cloud.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+      }
 
       // ========== DRAW PLANETARY BACKGROUND ==========
       // Determine planet based on current wave
@@ -7957,6 +8036,36 @@ const SpaceShooter = () => {
         // Skip bullets with non-finite positions
         if (!isFinite(bullet.x) || !isFinite(bullet.y)) return;
 
+        // Enhanced motion blur trails
+        if (!perfMode && bullet.vx && bullet.vy) {
+          const bulletId = bullet.x + '_' + bullet.y;
+          let trail = motionBlurTrailsRef.current.get(bulletId) || [];
+
+          // Add current position to trail
+          trail.push({ x: bullet.x, y: bullet.y, alpha: 1 });
+          if (trail.length > 8) trail.shift();
+
+          // Draw trail with fading
+          ctx.save();
+          trail.forEach((pos, i) => {
+            const alpha = (i / trail.length) * 0.3;
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = bullet.color || '#ff8800';
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 2 + (i / trail.length) * 2, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          ctx.restore();
+
+          motionBlurTrailsRef.current.set(bulletId, trail);
+
+          // Clean up old trails
+          if (motionBlurTrailsRef.current.size > 200) {
+            const keys = Array.from(motionBlurTrailsRef.current.keys());
+            keys.slice(0, 50).forEach(key => motionBlurTrailsRef.current.delete(key));
+          }
+        }
+
         if (bullet.isWaveCannon) {
           // Wave Cannon beam - massive blue energy blast with crackling edges
           const beamHeight = bullet.size;
@@ -10544,7 +10653,50 @@ const SpaceShooter = () => {
         const bx = boss.x;
         const by = boss.y;
         const centerY = by + bossH / 2;
+        const centerX = bx + bossW / 2;
         const pulsePhase = Date.now() / 200;
+        
+        // Draw boss shield if active
+        if (boss.shield > 0) {
+          const shieldPercent = boss.shield / boss.maxShield;
+          const shieldAlpha = 0.3 + Math.sin(Date.now() / 300) * 0.15;
+          const shieldRadius = Math.max(bossW, bossH) * 0.65;
+          
+          // Shield bubble with hexagonal pattern
+          ctx.save();
+          ctx.globalAlpha = shieldAlpha;
+          
+          // Outer shield glow
+          const shieldGrad = ctx.createRadialGradient(centerX, centerY, shieldRadius * 0.8, centerX, centerY, shieldRadius);
+          shieldGrad.addColorStop(0, 'rgba(0, 255, 255, 0)');
+          shieldGrad.addColorStop(0.7, `rgba(0, 255, 255, ${shieldAlpha * 0.3}`);
+          shieldGrad.addColorStop(1, `rgba(0, 255, 255, ${shieldAlpha * 0.6})`);
+          ctx.fillStyle = shieldGrad;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, shieldRadius, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Shield hexagon pattern
+          ctx.strokeStyle = `rgba(0, 255, 255, ${shieldAlpha * shieldPercent})`;
+          ctx.lineWidth = 2;
+          ctx.shadowColor = '#00ffff';
+          ctx.shadowBlur = 15;
+          for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i + Date.now() / 1000;
+            ctx.beginPath();
+            for (let j = 0; j < 6; j++) {
+              const hexAngle = angle + (Math.PI / 3) * j;
+              const x = centerX + Math.cos(hexAngle) * shieldRadius * 0.85;
+              const y = centerY + Math.sin(hexAngle) * shieldRadius * 0.85;
+              if (j === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+          }
+          
+          ctx.restore();
+        }
 
         // Zone-specific boss color schemes
         let accentColor, accentColorDim, hullDark, hullMid, hullLight, eyeColor, glowColor;
@@ -11157,46 +11309,65 @@ const SpaceShooter = () => {
           const laserSize = boss.laserSize || 30;
           const laserHalfSize = laserSize / 2;
           const coreSize = laserSize * 0.3;
+          const isExtraLarge = boss.isExtraLargeLaser;
 
-          // Screen shake effect hint (visual only)
-          const shake = Math.random() * (boss.isSuperBoss ? 8 : 4) - (boss.isSuperBoss ? 4 : 2);
+          // Screen shake effect hint (visual only) - more intense for extra large lasers
+          const shake = Math.random() * (isExtraLarge ? 12 : (boss.isSuperBoss ? 8 : 4)) - (isExtraLarge ? 6 : (boss.isSuperBoss ? 4 : 2));
 
-          // Outer destructive glow - bigger for super boss
-          ctx.shadowColor = boss.isSuperBoss ? '#ff4400' : '#ff0000';
-          ctx.shadowBlur = boss.isSuperBoss ? 100 : 60;
+          // Outer destructive glow - bigger for extra large lasers
+          ctx.shadowColor = isExtraLarge ? '#ff0000' : (boss.isSuperBoss ? '#ff4400' : '#ff6600');
+          ctx.shadowBlur = isExtraLarge ? 150 : (boss.isSuperBoss ? 100 : 60);
 
           // Create intense beam gradient
           const laserGradient = ctx.createLinearGradient(0, laserY - laserHalfSize - 5, 0, laserY + laserHalfSize + 5);
           laserGradient.addColorStop(0, 'rgba(255, 0, 0, 0)');
-          laserGradient.addColorStop(0.2, 'rgba(255, 50, 0, 0.6)');
-          laserGradient.addColorStop(0.35, 'rgba(255, 150, 50, 0.9)');
+          laserGradient.addColorStop(0.2, isExtraLarge ? 'rgba(255, 0, 0, 0.8)' : 'rgba(255, 50, 0, 0.6)');
+          laserGradient.addColorStop(0.35, isExtraLarge ? 'rgba(255, 100, 0, 0.95)' : 'rgba(255, 150, 50, 0.9)');
           laserGradient.addColorStop(0.5, 'rgba(255, 255, 255, 1)');
-          laserGradient.addColorStop(0.65, 'rgba(255, 150, 50, 0.9)');
-          laserGradient.addColorStop(0.8, 'rgba(255, 50, 0, 0.6)');
+          laserGradient.addColorStop(0.65, isExtraLarge ? 'rgba(255, 100, 0, 0.95)' : 'rgba(255, 150, 50, 0.9)');
+          laserGradient.addColorStop(0.8, isExtraLarge ? 'rgba(255, 0, 0, 0.8)' : 'rgba(255, 50, 0, 0.6)');
           laserGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
 
           ctx.fillStyle = laserGradient;
           ctx.fillRect(0, laserY - laserHalfSize + shake, bx + 15, laserSize);
 
-          // Hot core beam
+          // Hot core beam - thicker for extra large
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, laserY - coreSize + shake, bx + 15, coreSize * 2);
 
-          // Flickering intensity
-          if (Math.random() > 0.3) {
-            ctx.fillStyle = `rgba(255, 200, 100, ${0.3 + Math.random() * 0.4})`;
-            ctx.fillRect(0, laserY - laserHalfSize - 10 + shake, bx + 15, laserSize + 20);
+          // Flickering intensity - more intense for extra large
+          if (Math.random() > (isExtraLarge ? 0.1 : 0.3)) {
+            ctx.fillStyle = `rgba(255, 200, 100, ${0.3 + Math.random() * (isExtraLarge ? 0.6 : 0.4)})`;
+            ctx.fillRect(0, laserY - laserHalfSize - (isExtraLarge ? 15 : 10) + shake, bx + 15, laserSize + (isExtraLarge ? 30 : 20));
           }
 
-          // Energy particles along beam - more for super boss
-          const particleCount = boss.isSuperBoss ? 15 : 8;
+          // Energy particles along beam - more for extra large lasers
+          const particleCount = isExtraLarge ? 25 : (boss.isSuperBoss ? 15 : 8);
           for (let i = 0; i < particleCount; i++) {
             const px = Math.random() * bx;
             const py = laserY + (Math.random() - 0.5) * laserSize;
-            ctx.fillStyle = boss.isSuperBoss ? '#ffff88' : '#ffff00';
+            ctx.fillStyle = isExtraLarge ? '#ffffff' : (boss.isSuperBoss ? '#ffff88' : '#ffff00');
             ctx.beginPath();
-            ctx.arc(px, py, 2 + Math.random() * (boss.isSuperBoss ? 5 : 3), 0, Math.PI * 2);
+            ctx.arc(px, py, 2 + Math.random() * (isExtraLarge ? 7 : (boss.isSuperBoss ? 5 : 3)), 0, Math.PI * 2);
             ctx.fill();
+          }
+          
+          // Extra effects for milestone boss lasers
+          if (isExtraLarge) {
+            // Secondary outer glow rings
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, laserY - laserHalfSize - 20);
+            ctx.lineTo(bx + 15, laserY - laserHalfSize - 20);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, laserY + laserHalfSize + 20);
+            ctx.lineTo(bx + 15, laserY + laserHalfSize + 20);
+            ctx.stroke();
+            ctx.restore();
           }
 
           ctx.shadowBlur = 0;
@@ -13596,6 +13767,90 @@ const SpaceShooter = () => {
         ctx.restore();
       }
 
+      // ========== POST-PROCESSING EFFECTS ==========
+      // Apply bloom/glow effect
+      if (!perfMode && bloomCtxRef.current) {
+        const bloomCtx = bloomCtxRef.current;
+        const bloomCanvas = bloomCanvasRef.current;
+
+        // Copy current canvas to bloom canvas
+        bloomCtx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        bloomCtx.drawImage(canvas, 0, 0);
+
+        // Extract bright areas (simple threshold)
+        const imageData = bloomCtx.getImageData(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+          if (brightness < 180) {
+            data[i] = data[i + 1] = data[i + 2] = 0;
+            data[i + 3] = 0;
+          } else {
+            // Boost bright areas
+            data[i] = Math.min(255, data[i] * 1.3);
+            data[i + 1] = Math.min(255, data[i + 1] * 1.3);
+            data[i + 2] = Math.min(255, data[i + 2] * 1.3);
+          }
+        }
+        bloomCtx.putImageData(imageData, 0, 0);
+
+        // Blur the bloom layer multiple times for better glow
+        bloomCtx.filter = 'blur(8px)';
+        bloomCtx.globalAlpha = 0.5;
+        bloomCtx.drawImage(bloomCanvas, 0, 0);
+        bloomCtx.filter = 'blur(16px)';
+        bloomCtx.globalAlpha = 0.4;
+        bloomCtx.drawImage(bloomCanvas, 0, 0);
+        bloomCtx.filter = 'none';
+        bloomCtx.globalAlpha = 1;
+
+        // Composite bloom back onto main canvas
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = 0.6;
+        ctx.drawImage(bloomCanvas, 0, 0);
+        ctx.restore();
+      }
+
+      // Apply chromatic aberration effect
+      const chromaticAb = chromaticAberrationRef.current;
+      if (chromaticAb.active && chromaticAb.timer > 0) {
+        chromaticAb.timer--;
+        if (chromaticAb.timer <= 0) {
+          chromaticAb.active = false;
+        } else {
+          // Create RGB channel separation effect
+          const intensity = chromaticAb.intensity * (chromaticAb.timer / 45);
+          ctx.save();
+
+          // Get canvas image data
+          const imageData = ctx.getImageData(0, 0, GAME_WIDTH, GAME_HEIGHT);
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = GAME_WIDTH;
+          tempCanvas.height = GAME_HEIGHT;
+          const tempCtx = tempCanvas.getContext('2d');
+          tempCtx.putImageData(imageData, 0, 0);
+
+          // Clear and redraw with RGB offset
+          ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+          // Red channel (shifted right)
+          ctx.globalCompositeOperation = 'screen';
+          ctx.globalAlpha = 0.4;
+          ctx.drawImage(tempCanvas, intensity, 0);
+
+          // Green channel (no shift)
+          ctx.globalAlpha = 1;
+          ctx.drawImage(tempCanvas, 0, 0);
+
+          // Blue channel (shifted left)
+          ctx.globalAlpha = 0.4;
+          ctx.drawImage(tempCanvas, -intensity, 0);
+
+          ctx.restore();
+        }
+      }
+
       // Draw level fade transition overlay
       const levelFade = levelFadeRef.current;
       if (levelFade.active) {
@@ -15585,8 +15840,9 @@ const SpaceShooter = () => {
           }
         }
 
-        bullet.x += bullet.vx;
-        bullet.y += bullet.vy;
+        // Apply slow-motion time scale
+        bullet.x += bullet.vx * timeScaleRef.current;
+        bullet.y += bullet.vy * timeScaleRef.current;
         return bullet.x > 0 && bullet.x < GAME_WIDTH && bullet.y > 0 && bullet.y < GAME_HEIGHT;
       });
 
@@ -15858,6 +16114,11 @@ const SpaceShooter = () => {
         const isSuperBoss = bossType === 'super' || bossType === 'mega';
         const bossHealth = 100 + (waveRef.current * 50);
         const bossShield = isSuperBoss ? bossHealth * 0.3 : 0;
+        
+        // Check if this is a milestone boss (5, 10, 15, 20)
+        const isMilestoneBoss = waveRef.current % 5 === 0;
+        const isExtraLargeLaser = isMilestoneBoss;
+        const laserSize = isExtraLargeLaser ? 60 : 35; // Extra large lasers for milestone bosses
 
         // Zone-specific boss modifications
         const currentZone = getZoneForWave(waveRef.current);
@@ -15891,6 +16152,8 @@ const SpaceShooter = () => {
           shield: bossShield,
           maxShield: bossShield,
           shieldRegenDelay: 0,
+          lastHitTime: Date.now(), // Track when boss was last hit
+          shieldRegenRate: bossShield / 300, // Regen full shield over 5 seconds
           points: 1000 + (waveRef.current * 500),
           type: bossType,
           isSuperBoss: isSuperBoss,
@@ -15915,6 +16178,9 @@ const SpaceShooter = () => {
           laserFiring: false,
           laserChargeDuration: 0,
           laserDuration: 0,
+          laserCharge: 0,
+          laserSize: laserSize,
+          isExtraLargeLaser: isExtraLargeLaser,
           lastShot: Date.now(),
           lastLaser: Date.now(),
           lastCannonShot: Date.now(),
@@ -17440,6 +17706,13 @@ const SpaceShooter = () => {
           // Boss shooting
           const currentTime = Date.now();
 
+          // Shield regeneration: regain shield when not taking fire for 3 seconds
+          const timeSinceLastHit = Date.now() - boss.lastHitTime;
+          if (timeSinceLastHit > 3000 && boss.shield < boss.maxShield) {
+            // Regenerate shield
+            boss.shield = Math.min(boss.maxShield, boss.shield + boss.shieldRegenRate);
+          }
+
           // Update regen cooldown
           if (boss.regenCooldown > 0) {
             boss.regenCooldown--;
@@ -17700,29 +17973,49 @@ const SpaceShooter = () => {
           // Skip offensive attacks during regeneration (but still move)
           const isRegenerating = boss.regenerating;
 
-          // Mega boss laser attack - disabled during regen
-          if (boss.isMegaBoss && !isRegenerating) {
-            // Laser cycle: charge -> fire -> cooldown
-            const laserCooldown = boss.isSuperBoss ? 4000 : 5000;
+          // Laser cannon attack system - ALL bosses now have laser cannons
+          if (!isRegenerating) {
+            // Laser cooldown depends on boss type and laser size
+            const laserCooldown = boss.isExtraLargeLaser ? 4000 : (boss.isSuperBoss ? 5000 : 6000);
+            
             if (!boss.laserCharging && !boss.laserFiring && currentTime - boss.lastLaser > laserCooldown) {
               // Start charging laser
               boss.laserCharging = true;
               boss.laserCharge = 0;
+              soundSystem.playBossWarning();
+              
+              // Show laser charging warning
+              floatingTextsRef.current.push({
+                x: boss.x + boss.width / 2,
+                y: boss.y - 40,
+                text: boss.isExtraLargeLaser ? '⚡ MEGA LASER ⚡' : '⚡ LASER CHARGING ⚡',
+                color: boss.isExtraLargeLaser ? '#ff0000' : '#ffff00',
+                lifetime: 80,
+                vy: -0.5,
+                flash: true,
+                scale: boss.isExtraLargeLaser ? 1.5 : 1.2
+              });
             }
 
             if (boss.laserCharging) {
-              boss.laserCharge += boss.isSuperBoss ? 3 : 2; // Super boss charges faster
+              // Charge rate: faster for milestone bosses
+              boss.laserCharge += boss.isExtraLargeLaser ? 4 : (boss.isSuperBoss ? 3 : 2.5);
+              
               if (boss.laserCharge >= 100) {
                 // Fire the laser!
                 boss.laserCharging = false;
                 boss.laserFiring = true;
-                boss.laserDuration = boss.isSuperBoss ? 90 : 60; // Super boss laser lasts longer
+                // Duration: longer for extra large lasers
+                boss.laserDuration = boss.isExtraLargeLaser ? 120 : (boss.isSuperBoss ? 90 : 75);
+                
                 // Play boss laser blast sound
                 try {
                   const bossLaserSound = new Audio(asset('boss-lasser-blast.mp3'));
-                  bossLaserSound.volume = 0.5;
+                  bossLaserSound.volume = boss.isExtraLargeLaser ? 0.7 : 0.5;
                   bossLaserSound.play().catch(() => {});
                 } catch (e) {}
+                
+                triggerScreenShake(boss.isExtraLargeLaser ? 15 : 8, boss.isExtraLargeLaser ? 25 : 15);
               }
             }
 
@@ -17732,7 +18025,7 @@ const SpaceShooter = () => {
               // Laser damages player
               const player = playerRef.current;
               const laserY = boss.y + boss.height / 2;
-              const laserHeight = boss.laserSize || 30;
+              const laserHeight = boss.laserSize;
 
               if (player.x < boss.x &&
                   player.y + PLAYER_HEIGHT > laserY - laserHeight / 2 &&
@@ -17755,8 +18048,10 @@ const SpaceShooter = () => {
                   setLives(newLives);
                   livesRef.current = newLives;
                   playerInvincibleRef.current = 120;
+                  triggerGamepadVibration(boss.isExtraLargeLaser ? 1.0 : 0.7, 1.0, 400);
 
                   if (newLives <= 0) {
+                    triggerGamepadVibration(1.0, 1.0, 500);
                     handleGameOver();
                   }
                 }
@@ -18147,26 +18442,66 @@ const SpaceShooter = () => {
               { x: boss.x, y: boss.y, width: boss.width, height: boss.height }
             )) {
               const damage = bullet.damage || 1;
+              boss.lastHitTime = Date.now(); // Track hit time for regen delay
 
-            // Super boss shield absorbs damage first
-            if (boss.shield && boss.shield > 0) {
-              boss.shield -= damage;
-              boss.shieldRegenDelay = 180; // 3 seconds before regen
+            // Boss shield must be destroyed before health can be damaged
+            if (boss.shield > 0) {
+              boss.shield = Math.max(0, boss.shield - damage);
               createExplosion(bullet.x, bullet.y, 'small');
-              // Shield hit effect - cyan sparks
-              for (let i = 0; i < 3; i++) {
-                floatingTextsRef.current.push({
-                  x: bullet.x + (Math.random() - 0.5) * 20,
-                  y: bullet.y + (Math.random() - 0.5) * 20,
-                  text: '🛡️',
+              
+              // Shield hit effect - cyan sparks and energy ripple
+              for (let i = 0; i < 5; i++) {
+                pickupEffectsRef.current.push({
+                  x: bullet.x,
+                  y: bullet.y,
+                  vx: (Math.random() - 0.5) * 4,
+                  vy: (Math.random() - 0.5) * 4,
                   color: '#00ffff',
-                  lifetime: 20,
-                  vy: -1 - Math.random()
+                  size: 3 + Math.random() * 3,
+                  lifetime: 20 + Math.floor(Math.random() * 10),
+                  type: 'spark'
                 });
               }
+              
+              // Show shield damage text
+              floatingTextsRef.current.push({
+                x: bullet.x,
+                y: bullet.y - 20,
+                text: `🛡️ -${damage}`,
+                color: '#00ffff',
+                lifetime: 30,
+                vy: -2
+              });
+              
+              // Show warning when shield breaks
+              if (boss.shield <= 0) {
+                floatingTextsRef.current.push({
+                  x: boss.x + boss.width / 2,
+                  y: boss.y - 40,
+                  text: '⚠️ SHIELD DOWN ⚠️',
+                  color: '#ff4444',
+                  lifetime: 90,
+                  vy: -1,
+                  flash: true,
+                  scale: 1.5
+                });
+                soundSystem.playBossWarning();
+                triggerScreenShake(6, 15);
+              }
             } else {
+              // Shield is down, damage health directly
               boss.health -= damage;
               createExplosion(bullet.x, bullet.y, 'small');
+              
+              // Health damage feedback
+              floatingTextsRef.current.push({
+                x: bullet.x,
+                y: bullet.y - 20,
+                text: `-${damage}`,
+                color: '#ff8844',
+                lifetime: 30,
+                vy: -2
+              });
             }
 
             if (boss.health <= 0) {
@@ -19064,11 +19399,11 @@ const SpaceShooter = () => {
 
       // Update explosions
       explosionsRef.current = explosionsRef.current.filter(explosion => {
-        explosion.lifetime--;
+        explosion.lifetime -= timeScaleRef.current;
 
         // Handle sprite-based explosions
         if (explosion.isSprite) {
-          explosion.frameTimer++;
+          explosion.frameTimer += timeScaleRef.current;
           if (explosion.frameTimer >= explosion.frameDelay) {
             explosion.frameTimer = 0;
             explosion.frame++;
@@ -19079,8 +19414,8 @@ const SpaceShooter = () => {
 
         // Handle particle-based explosions
         explosion.particles.forEach(p => {
-          p.x += p.vx;
-          p.y += p.vy;
+          p.x += p.vx * timeScaleRef.current;
+          p.y += p.vy * timeScaleRef.current;
           // Use particle's own decay rate if set, otherwise default
           const decay = p.decay || 0.95;
           p.vx *= decay;
@@ -19276,12 +19611,16 @@ const SpaceShooter = () => {
         const specialMovementTypes = ['turret', 'bomber', 'cloaked', 'shielded', 'spiral', 'wave', 'sniper',
                                        'shielder', 'healer', 'teleporter', 'splitter', 'mine', 'flyby'];
 
+        // Apply slow-motion time scale to enemy movement
+        const timeScale = timeScaleRef.current;
+        const scaledSpeed = effectiveSpeed * timeScale;
+
         // Apply basic movement to non-special types
         if (!specialMovementTypes.includes(enemy.type)) {
           if (enemy.fromBehind) {
-            enemy.x += effectiveSpeed;
+            enemy.x += scaledSpeed;
           } else {
-            enemy.x -= effectiveSpeed;
+            enemy.x -= scaledSpeed;
           }
         }
 
@@ -19295,7 +19634,7 @@ const SpaceShooter = () => {
           let angleDiff = targetAngle - enemy.angle;
           while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
           while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-          enemy.angle += angleDiff * 0.05; // Rotation speed
+          enemy.angle += angleDiff * 0.05 * timeScale; // Rotation speed
         }
 
         if (enemy.type === 'bomber') {
@@ -19303,9 +19642,9 @@ const SpaceShooter = () => {
           const dx = player.x + PLAYER_WIDTH / 2 - (enemy.x + ENEMY_WIDTH / 2);
           const dy = player.y + PLAYER_HEIGHT / 2 - (enemy.y + ENEMY_HEIGHT / 2);
           const dist = Math.sqrt(dx * dx + dy * dy);
-          enemy.x += (dx / dist) * effectiveSpeed;
-          enemy.y += (dy / dist) * effectiveSpeed * 0.8;
-          enemy.pulsePhase = (enemy.pulsePhase || 0) + 0.2;
+          enemy.x += (dx / dist) * scaledSpeed;
+          enemy.y += (dy / dist) * scaledSpeed * 0.8;
+          enemy.pulsePhase = (enemy.pulsePhase || 0) + 0.2 * timeScale;
 
           // Check if close enough to explode
           if (dist < 30 && playerInvincibleRef.current <= 0 && !dashRef.current.active && !upgradesRef.current.invincible) {
@@ -19881,33 +20220,36 @@ const SpaceShooter = () => {
       const bulletSpeedMult = (gameModeRef.current === 'practice' && practiceSettingsRef.current.slowBullets) ? 0.5 : 1;
 
       enemyBulletsRef.current = enemyBulletsRef.current.filter(bullet => {
+        // Apply slow-motion time scale
+        const timeScale = timeScaleRef.current;
+
         // Handle mini-boss special bullet types
         if (bullet.type === 'miniboss') {
-          bullet.x += bullet.vx * bulletSpeedMult;
-          bullet.y += bullet.vy * bulletSpeedMult;
+          bullet.x += bullet.vx * bulletSpeedMult * timeScale;
+          bullet.y += bullet.vy * bulletSpeedMult * timeScale;
         } else if (bullet.type === 'bomb') {
-          bullet.x += bullet.vx * bulletSpeedMult;
-          bullet.y += bullet.vy * bulletSpeedMult;
-          bullet.vy += 0.15; // Gravity effect
+          bullet.x += bullet.vx * bulletSpeedMult * timeScale;
+          bullet.y += bullet.vy * bulletSpeedMult * timeScale;
+          bullet.vy += 0.15 * timeScale; // Gravity effect
         } else if (bullet.type === 'laser') {
           // Laser is stationary but has lifetime
           if (bullet.lifetime !== undefined) {
-            bullet.lifetime--;
+            bullet.lifetime -= timeScale;
             if (bullet.lifetime <= 0) return false;
           }
         } else if (bullet.type === 'spiral') {
           // Spiral bullets move in set direction
-          bullet.x += bullet.vx * bulletSpeedMult;
-          bullet.y += bullet.vy * bulletSpeedMult;
+          bullet.x += bullet.vx * bulletSpeedMult * timeScale;
+          bullet.y += bullet.vy * bulletSpeedMult * timeScale;
         } else if (bullet.type === 'wave') {
           // Wave bullets follow sinusoidal path
-          bullet.x += bullet.vx * bulletSpeedMult;
-          bullet.wavePhase += 0.15;
+          bullet.x += bullet.vx * bulletSpeedMult * timeScale;
+          bullet.wavePhase += 0.15 * timeScale;
           bullet.y = bullet.baseY + Math.sin(bullet.wavePhase) * 40 * bullet.waveAmplitude;
         } else if (bullet.type === 'sniper') {
           // Sniper bullets move fast in set direction
-          bullet.x += bullet.vx * bulletSpeedMult;
-          bullet.y += bullet.vy * bulletSpeedMult;
+          bullet.x += bullet.vx * bulletSpeedMult * timeScale;
+          bullet.y += bullet.vy * bulletSpeedMult * timeScale;
         } else if (bullet.aimed) {
           // Aimed bullets from turrets move in their set direction
           bullet.x += bullet.vx * bulletSpeedMult;
