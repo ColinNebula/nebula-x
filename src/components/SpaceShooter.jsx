@@ -6824,6 +6824,82 @@ const SpaceShooter = () => {
       // Skip rendering if player position is not valid
       if (!isFinite(player.x) || !isFinite(player.y)) return;
 
+      // Draw dash afterimages
+      const dash = dashRef.current;
+      if (dash.active && dash.afterimages.length > 0) {
+        dash.afterimages.forEach((afterimage, index) => {
+          ctx.save();
+          ctx.globalAlpha = afterimage.alpha * 0.7;
+
+          const ship = afterimage.shipDesign;
+          if (ship) {
+            const ax = afterimage.x;
+            const ay = afterimage.y;
+
+            // Draw simplified ship silhouette with cyan tint
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 15;
+
+            // Ship body
+            const bodyGrad = ctx.createLinearGradient(ax, ay, ax, ay + PLAYER_HEIGHT);
+            bodyGrad.addColorStop(0, 'rgba(0, 255, 255, ' + (afterimage.alpha * 0.6) + ')');
+            bodyGrad.addColorStop(0.5, 'rgba(0, 200, 255, ' + (afterimage.alpha * 0.4) + ')');
+            bodyGrad.addColorStop(1, 'rgba(0, 150, 255, ' + (afterimage.alpha * 0.2) + ')');
+            ctx.fillStyle = bodyGrad;
+
+            ctx.beginPath();
+            ctx.moveTo(ax + PLAYER_WIDTH, ay + PLAYER_HEIGHT / 2);
+            ctx.lineTo(ax + PLAYER_WIDTH * 0.6, ay);
+            ctx.lineTo(ax, ay + PLAYER_HEIGHT * 0.3);
+            ctx.lineTo(ax, ay + PLAYER_HEIGHT * 0.7);
+            ctx.lineTo(ax + PLAYER_WIDTH * 0.6, ay + PLAYER_HEIGHT);
+            ctx.closePath();
+            ctx.fill();
+
+            // Energy outline
+            ctx.strokeStyle = `rgba(255, 255, 255, ${afterimage.alpha})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        });
+      }
+
+      // Add motion blur effect during dash
+      if (dash.active) {
+        const blurLength = 20;
+        const blurX = -dash.direction.x * blurLength;
+        const blurY = -dash.direction.y * blurLength;
+
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 20;
+
+        const gradient = ctx.createLinearGradient(
+          player.x + PLAYER_WIDTH / 2,
+          player.y + PLAYER_HEIGHT / 2,
+          player.x + PLAYER_WIDTH / 2 + blurX,
+          player.y + PLAYER_HEIGHT / 2 + blurY
+        );
+        gradient.addColorStop(0, 'rgba(0, 255, 255, 0.5)');
+        gradient.addColorStop(0.5, 'rgba(0, 200, 255, 0.3)');
+        gradient.addColorStop(1, 'rgba(0, 150, 255, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.ellipse(
+          player.x + PLAYER_WIDTH / 2,
+          player.y + PLAYER_HEIGHT / 2,
+          PLAYER_WIDTH / 2 + 5,
+          PLAYER_HEIGHT / 2 + 5,
+          0, 0, Math.PI * 2
+        );
+        ctx.fill();
+        ctx.restore();
+      }
+
       // Player blinks when invincible
       const isInvincible = playerInvincibleRef.current > 0;
       const shouldDrawPlayer = !isInvincible || Math.floor(playerInvincibleRef.current / 5) % 2 === 0;
@@ -10655,17 +10731,17 @@ const SpaceShooter = () => {
         const centerY = by + bossH / 2;
         const centerX = bx + bossW / 2;
         const pulsePhase = Date.now() / 200;
-        
+
         // Draw boss shield if active
         if (boss.shield > 0) {
           const shieldPercent = boss.shield / boss.maxShield;
           const shieldAlpha = 0.3 + Math.sin(Date.now() / 300) * 0.15;
           const shieldRadius = Math.max(bossW, bossH) * 0.65;
-          
+
           // Shield bubble with hexagonal pattern
           ctx.save();
           ctx.globalAlpha = shieldAlpha;
-          
+
           // Outer shield glow
           const shieldGrad = ctx.createRadialGradient(centerX, centerY, shieldRadius * 0.8, centerX, centerY, shieldRadius);
           shieldGrad.addColorStop(0, 'rgba(0, 255, 255, 0)');
@@ -10675,7 +10751,7 @@ const SpaceShooter = () => {
           ctx.beginPath();
           ctx.arc(centerX, centerY, shieldRadius, 0, Math.PI * 2);
           ctx.fill();
-          
+
           // Shield hexagon pattern
           ctx.strokeStyle = `rgba(0, 255, 255, ${shieldAlpha * shieldPercent})`;
           ctx.lineWidth = 2;
@@ -10694,7 +10770,7 @@ const SpaceShooter = () => {
             ctx.closePath();
             ctx.stroke();
           }
-          
+
           ctx.restore();
         }
 
@@ -11351,7 +11427,7 @@ const SpaceShooter = () => {
             ctx.arc(px, py, 2 + Math.random() * (isExtraLarge ? 7 : (boss.isSuperBoss ? 5 : 3)), 0, Math.PI * 2);
             ctx.fill();
           }
-          
+
           // Extra effects for milestone boss lasers
           if (isExtraLarge) {
             // Secondary outer glow rings
@@ -14832,8 +14908,28 @@ const SpaceShooter = () => {
       // Update active dash
       if (dash.active) {
         dash.timer--;
+
+        // Create afterimages during dash
+        if (dash.timer % 2 === 0) {
+          dash.afterimages.push({
+            x: player.x,
+            y: player.y,
+            alpha: 0.8,
+            rotation: Math.atan2(dash.direction.y, dash.direction.x),
+            shipDesign: SHIP_DESIGNS[selectedShip]
+          });
+          if (dash.afterimages.length > 6) dash.afterimages.shift();
+        }
+
+        // Update afterimage alpha
+        dash.afterimages.forEach(img => {
+          img.alpha *= 0.85;
+        });
+        dash.afterimages = dash.afterimages.filter(img => img.alpha > 0.05);
+
         if (dash.timer <= 0) {
           dash.active = false;
+          dash.afterimages = [];
           // Brief invincibility lingers
           if (playerInvincibleRef.current < 10) {
             playerInvincibleRef.current = 10;
@@ -14885,6 +14981,7 @@ const SpaceShooter = () => {
         dashRef.current.active = true;
         dashRef.current.cooldown = dashRef.current.maxCooldown;
         dashRef.current.duration = dashRef.current.maxDuration;
+        dashRef.current.timer = dashRef.current.maxDuration;
         dashRef.current.direction = { x: dirX, y: dirY };
         dashRef.current.speed = 18;
         dashRef.current.invincible = true;
@@ -14897,24 +14994,68 @@ const SpaceShooter = () => {
         // Invincible during dash
         playerInvincibleRef.current = DASH_DURATION + 5;
 
-        // Create dash trail effect
-        for (let i = 0; i < 8; i++) {
-          const trailX = player.x + PLAYER_WIDTH / 2 - dirX * i * 8;
-          const trailY = player.y + PLAYER_HEIGHT / 2 - dirY * i * 8;
+        // Create enhanced dash burst effect at start position
+        const startX = player.x + PLAYER_WIDTH / 2;
+        const startY = player.y + PLAYER_HEIGHT / 2;
+
+        // Burst ring
+        pickupEffectsRef.current.push({
+          x: startX,
+          y: startY,
+          vx: 0,
+          vy: 0,
+          color: '#00ffff',
+          size: 40,
+          lifetime: 20,
+          maxLifetime: 20,
+          type: 'ring',
+          radius: 5,
+          maxRadius: 50
+        });
+
+        // Directional energy wave
+        for (let i = 0; i < 12; i++) {
+          const angle = Math.atan2(dirY, dirX) + (Math.random() - 0.5) * 0.8;
+          const speed = 6 + Math.random() * 4;
+          pickupEffectsRef.current.push({
+            x: startX,
+            y: startY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            color: ['#00ffff', '#00ddff', '#ffffff', '#88ffff'][Math.floor(Math.random() * 4)],
+            size: 3 + Math.random() * 4,
+            lifetime: 20 + Math.floor(Math.random() * 15),
+            type: 'spark'
+          });
+        }
+
+        // Create dash trail effect along path
+        for (let i = 0; i < 15; i++) {
+          const trailX = player.x + PLAYER_WIDTH / 2 - dirX * i * 5;
+          const trailY = player.y + PLAYER_HEIGHT / 2 - dirY * i * 5;
           pickupEffectsRef.current.push({
             x: trailX,
             y: trailY,
-            vx: -dirX * 2 + (Math.random() - 0.5) * 2,
-            vy: -dirY * 2 + (Math.random() - 0.5) * 2,
-            color: '#00ffff',
-            size: 4 + Math.random() * 4,
-            lifetime: 15 + Math.floor(Math.random() * 10),
+            vx: -dirX * 1.5 + (Math.random() - 0.5) * 3,
+            vy: -dirY * 1.5 + (Math.random() - 0.5) * 3,
+            color: i % 2 === 0 ? '#00ffff' : '#ffffff',
+            size: 4 + Math.random() * 5,
+            lifetime: 20 + Math.floor(Math.random() * 15),
             type: 'sparkle'
           });
         }
 
-        // Small screen shake for dash
-        triggerScreenShake(3, 5);
+        // Screen flash effect
+        pickupEffectsRef.current.push({
+          x: startX,
+          y: startY,
+          color: '#00ffff',
+          lifetime: 8,
+          type: 'flash'
+        });
+
+        // Screen shake
+        triggerScreenShake(5, 8);
       }
 
       // Apply acceleration based on input (skip if dashing)
@@ -16114,7 +16255,7 @@ const SpaceShooter = () => {
         const isSuperBoss = bossType === 'super' || bossType === 'mega';
         const bossHealth = 100 + (waveRef.current * 50);
         const bossShield = isSuperBoss ? bossHealth * 0.3 : 0;
-        
+
         // Check if this is a milestone boss (5, 10, 15, 20)
         const isMilestoneBoss = waveRef.current % 5 === 0;
         const isExtraLargeLaser = isMilestoneBoss;
@@ -17977,13 +18118,13 @@ const SpaceShooter = () => {
           if (!isRegenerating) {
             // Laser cooldown depends on boss type and laser size
             const laserCooldown = boss.isExtraLargeLaser ? 4000 : (boss.isSuperBoss ? 5000 : 6000);
-            
+
             if (!boss.laserCharging && !boss.laserFiring && currentTime - boss.lastLaser > laserCooldown) {
               // Start charging laser
               boss.laserCharging = true;
               boss.laserCharge = 0;
               soundSystem.playBossWarning();
-              
+
               // Show laser charging warning
               floatingTextsRef.current.push({
                 x: boss.x + boss.width / 2,
@@ -18000,21 +18141,21 @@ const SpaceShooter = () => {
             if (boss.laserCharging) {
               // Charge rate: faster for milestone bosses
               boss.laserCharge += boss.isExtraLargeLaser ? 4 : (boss.isSuperBoss ? 3 : 2.5);
-              
+
               if (boss.laserCharge >= 100) {
                 // Fire the laser!
                 boss.laserCharging = false;
                 boss.laserFiring = true;
                 // Duration: longer for extra large lasers
                 boss.laserDuration = boss.isExtraLargeLaser ? 120 : (boss.isSuperBoss ? 90 : 75);
-                
+
                 // Play boss laser blast sound
                 try {
                   const bossLaserSound = new Audio(asset('boss-lasser-blast.mp3'));
                   bossLaserSound.volume = boss.isExtraLargeLaser ? 0.7 : 0.5;
                   bossLaserSound.play().catch(() => {});
                 } catch (e) {}
-                
+
                 triggerScreenShake(boss.isExtraLargeLaser ? 15 : 8, boss.isExtraLargeLaser ? 25 : 15);
               }
             }
@@ -18448,7 +18589,7 @@ const SpaceShooter = () => {
             if (boss.shield > 0) {
               boss.shield = Math.max(0, boss.shield - damage);
               createExplosion(bullet.x, bullet.y, 'small');
-              
+
               // Shield hit effect - cyan sparks and energy ripple
               for (let i = 0; i < 5; i++) {
                 pickupEffectsRef.current.push({
@@ -18462,7 +18603,7 @@ const SpaceShooter = () => {
                   type: 'spark'
                 });
               }
-              
+
               // Show shield damage text
               floatingTextsRef.current.push({
                 x: bullet.x,
@@ -18472,7 +18613,7 @@ const SpaceShooter = () => {
                 lifetime: 30,
                 vy: -2
               });
-              
+
               // Show warning when shield breaks
               if (boss.shield <= 0) {
                 floatingTextsRef.current.push({
@@ -18492,7 +18633,7 @@ const SpaceShooter = () => {
               // Shield is down, damage health directly
               boss.health -= damage;
               createExplosion(bullet.x, bullet.y, 'small');
-              
+
               // Health damage feedback
               floatingTextsRef.current.push({
                 x: bullet.x,
