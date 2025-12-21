@@ -1038,8 +1038,9 @@ const ENEMY_FIRE_RATE = 1200; // ms between enemy shots (faster!)
 const ENEMY_BULLET_SPEED = 6;
 const ENEMY_BULLET_WIDTH = 12;
 const ENEMY_BULLET_HEIGHT = 4;
-const WAVE_CANNON_MAX_CHARGE = 100; // Full charge
-const WAVE_CANNON_CHARGE_RATE = 2; // Per frame
+const WAVE_CANNON_MAX_CHARGE = 120; // Full charge
+const WAVE_CANNON_CHARGE_RATE = 3; // Per frame (faster charging)
+const WAVE_CANNON_MIN_CHARGE = 20; // Minimum charge to fire
 const DASH_DISTANCE = 80; // How far the dash moves
 const DASH_COOLDOWN = 60; // Frames before can dash again (~1 second)
 const DASH_DURATION = 8; // Frames of invincibility during dash
@@ -2177,6 +2178,7 @@ const SpaceShooter = () => {
   });
   const userSettingsRef = useRef(null); // Sync ref for settings access in game loop
   const starGradientsRef = useRef(new Map()); // Cache star gradients for performance
+  const screenFlashRef = useRef(null); // Screen flash effects for danger alerts
 
   // Gameplay music tracks (cycled during normal gameplay)
   const GAMEPLAY_TRACKS = [
@@ -2223,6 +2225,7 @@ const SpaceShooter = () => {
   // Flyby formation system - enemies that animate in before attacking
   const flybyFormationsRef = useRef([]); // Array of flyby groups
   const offScreenIndicatorsRef = useRef([]); // Track off-screen enemies for edge warnings
+  const offScreenTrackingFrameRef = useRef(0); // Throttle tracking updates for performance
   const lastFlybySpawnRef = useRef(0);
 
   // Flyby path patterns - bezier curves and animation paths
@@ -8197,43 +8200,82 @@ const SpaceShooter = () => {
         if (bullet.isWaveCannon) {
           // Wave Cannon beam - massive blue energy blast with crackling edges
           const beamHeight = bullet.size;
+          const beamLength = bullet.size * 2;
+          const chargeTier = bullet.chargeTier || 1;
           ctx.save();
 
-          // Electric edge particles (skip in perf mode)
+          // Color scheme based on charge tier
+          let primaryColor, secondaryColor, coreColor;
+          if (chargeTier === 4) {
+            primaryColor = '#ffff00'; // Gold
+            secondaryColor = '#ff00ff'; // Magenta
+            coreColor = '#ffffff';
+          } else if (chargeTier === 3) {
+            primaryColor = '#00ffff'; // Cyan
+            secondaryColor = '#0088ff'; // Blue
+            coreColor = '#ffffff';
+          } else if (chargeTier === 2) {
+            primaryColor = '#88ffff'; // Light cyan
+            secondaryColor = '#0066cc'; // Medium blue
+            coreColor = '#ccffff';
+          } else {
+            primaryColor = '#00ccff'; // Pale cyan
+            secondaryColor = '#0044aa'; // Dark blue
+            coreColor = '#aaffff';
+          }
+
+          // Electric edge particles (more at higher charge)
           if (!perfMode) {
-            for (let i = 0; i < 5; i++) {
+            const particleCount = 5 + chargeTier * 3;
+            for (let i = 0; i < particleCount; i++) {
               const edgeY = bullet.y + (Math.random() * beamHeight);
-              const edgeX = bullet.x + Math.random() * bullet.size * 1.5;
-              ctx.fillStyle = Math.random() > 0.5 ? '#ffffff' : '#00ffff';
+              const edgeX = bullet.x + Math.random() * beamLength;
+              ctx.fillStyle = Math.random() > 0.5 ? coreColor : primaryColor;
               ctx.globalAlpha = 0.5 + Math.random() * 0.5;
               ctx.beginPath();
-              ctx.arc(edgeX, edgeY, 1 + Math.random() * 2, 0, Math.PI * 2);
+              ctx.arc(edgeX, edgeY, 1 + Math.random() * (1 + chargeTier * 0.5), 0, Math.PI * 2);
               ctx.fill();
             }
             ctx.globalAlpha = 1;
           }
 
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = perfMode ? 10 : 25;
+          ctx.shadowColor = primaryColor;
+          ctx.shadowBlur = perfMode ? 15 : (25 + chargeTier * 10);
 
           // Outer glow
-          const gradient = ctx.createLinearGradient(bullet.x, bullet.y, bullet.x + bullet.size * 2, bullet.y);
-          gradient.addColorStop(0, '#ffffff');
-          gradient.addColorStop(0.2, '#88ffff');
-          gradient.addColorStop(0.5, '#00ffff');
-          gradient.addColorStop(0.8, '#0088ff');
-          gradient.addColorStop(1, '#0044aa');
+          const gradient = ctx.createLinearGradient(bullet.x, bullet.y, bullet.x + beamLength, bullet.y);
+          gradient.addColorStop(0, coreColor);
+          gradient.addColorStop(0.15, primaryColor);
+          gradient.addColorStop(0.4, primaryColor);
+          gradient.addColorStop(0.7, secondaryColor);
+          gradient.addColorStop(1, secondaryColor + '80'); // Semi-transparent
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.ellipse(bullet.x + bullet.size, bullet.y + beamHeight / 2, bullet.size, beamHeight / 2, 0, 0, Math.PI * 2);
+          ctx.ellipse(bullet.x + bullet.size, bullet.y + beamHeight / 2, bullet.size * 1.2, beamHeight / 2, 0, 0, Math.PI * 2);
           ctx.fill();
 
           // Core with pulse effect
           const pulse = 0.8 + Math.sin(Date.now() / 30) * 0.2;
-          ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = coreColor;
           ctx.beginPath();
-          ctx.ellipse(bullet.x + bullet.size * 0.7, bullet.y + beamHeight / 2, bullet.size * 0.5 * pulse, beamHeight / 4 * pulse, 0, 0, Math.PI * 2);
+          ctx.ellipse(bullet.x + bullet.size * 0.7, bullet.y + beamHeight / 2, bullet.size * 0.6 * pulse, beamHeight / 3 * pulse, 0, 0, Math.PI * 2);
           ctx.fill();
+
+          // Energy rings for high charge
+          if (chargeTier >= 3 && !perfMode) {
+            const ringOffset = (Date.now() / 20) % 40;
+            for (let i = 0; i < 2; i++) {
+              const ringX = bullet.x + ringOffset + i * 20;
+              ctx.strokeStyle = primaryColor;
+              ctx.globalAlpha = 0.4;
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.ellipse(ringX, bullet.y + beamHeight / 2, 8, beamHeight / 2, 0, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+          }
+
           ctx.restore();
         } else {
           // Normal bullet - enhanced with animated glow trail
@@ -14096,6 +14138,117 @@ const SpaceShooter = () => {
         ctx.restore();
       }
 
+      // Draw danger alert screen border pulse effect
+      if (screenFlashRef.current?.active) {
+        ctx.save();
+
+        const flash = screenFlashRef.current;
+        flash.timer--;
+
+        if (flash.timer <= 0) {
+          flash.active = false;
+        } else {
+          // Simplified pulsing border effect
+          if (flash.borderPulse) {
+            const pulseIntensity = 0.4 + 0.6 * Math.abs(Math.sin(flash.timer * 0.15));
+            const borderWidth = 10;
+
+            ctx.strokeStyle = flash.color;
+            ctx.lineWidth = borderWidth;
+            ctx.shadowColor = flash.color;
+            ctx.shadowBlur = 20; // Reduced from 30
+            ctx.globalAlpha = flash.intensity * pulseIntensity * 0.8;
+
+            // Single border rectangle (no corner accents for performance)
+            ctx.strokeRect(borderWidth / 2, borderWidth / 2,
+                          GAME_WIDTH - borderWidth, GAME_HEIGHT - borderWidth);
+          } else {
+            // Full screen flash (used for other effects)
+            ctx.globalAlpha = (flash.intensity * flash.timer) / 90;
+            ctx.fillStyle = flash.color;
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+          }
+        }
+
+        ctx.restore();
+      }
+
+      // Draw directional threat indicators for off-screen and edge enemies
+      if (offScreenIndicatorsRef.current.length > 0 && gameState === 'playing') {
+        ctx.save();
+
+        const pulseTime = Date.now() / 1000;
+        const lowQuality = perfData.adaptiveQuality < 0.8;
+
+        offScreenIndicatorsRef.current.forEach(indicator => {
+          // Simplified pulsing effect
+          let pulseSpeed = 2;
+          let pulseSize = 1;
+
+          if (indicator.threatLevel === 'critical') {
+            pulseSpeed = 4;
+            pulseSize = 1.4;
+          } else if (indicator.threatLevel === 'high') {
+            pulseSpeed = 3;
+            pulseSize = 1.2;
+          }
+
+          const pulse = lowQuality ? 1 : 0.8 + 0.2 * Math.abs(Math.sin(pulseTime * pulseSpeed));
+          const scale = pulseSize * pulse;
+
+          ctx.save();
+          ctx.translate(indicator.x, indicator.y);
+
+          // Draw arrow pointing to off-screen enemy
+          let rotation = 0;
+          if (indicator.direction === 'left') rotation = Math.PI;
+          else if (indicator.direction === 'right') rotation = 0;
+          else if (indicator.direction === 'top') rotation = Math.PI / 2;
+          else if (indicator.direction === 'bottom') rotation = -Math.PI / 2;
+
+          ctx.rotate(rotation);
+          ctx.scale(scale, scale);
+
+          // Draw arrow (no shadows in low quality mode)
+          ctx.fillStyle = indicator.color;
+          ctx.lineWidth = 2;
+          if (!lowQuality) {
+            ctx.shadowColor = indicator.color;
+            ctx.shadowBlur = 10;
+          }
+
+          ctx.beginPath();
+          ctx.moveTo(10, 0);
+          ctx.lineTo(-5, -8);
+          ctx.lineTo(-5, 8);
+          ctx.closePath();
+          ctx.fill();
+
+          // Only show warning ring for critical threats
+          if (!lowQuality && indicator.threatLevel === 'critical') {
+            ctx.strokeStyle = indicator.color;
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+
+          ctx.shadowBlur = 0;
+          ctx.restore();
+
+          // Only show badge for critical threats
+          if (indicator.threatLevel === 'critical') {
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ff00ff';
+            ctx.fillText('!', indicator.x, indicator.y - 15);
+          }
+        });
+
+        ctx.restore();
+      }
+
       // Draw FPS counter and performance stats if enabled
       if (userSettingsRef.current?.showFPS) {
         ctx.save();
@@ -15556,20 +15709,46 @@ const SpaceShooter = () => {
       if (keysRef.current['ShiftLeft'] || keysRef.current['ShiftRight'] || gpWaveCannon) {
         isChargingRef.current = true;
         waveCannonChargeRef.current = Math.min(WAVE_CANNON_MAX_CHARGE, waveCannonChargeRef.current + WAVE_CANNON_CHARGE_RATE);
-      } else if (isChargingRef.current && waveCannonChargeRef.current > 0) {
+      } else if (isChargingRef.current && waveCannonChargeRef.current >= WAVE_CANNON_MIN_CHARGE) {
         // Release wave cannon!
         soundSystem.playWaveCannonFire();
         const chargeLevel = waveCannonChargeRef.current / WAVE_CANNON_MAX_CHARGE;
-        const waveSize = 10 + chargeLevel * 30;
-        const waveDamage = Math.ceil(1 + chargeLevel * 4);
+
+        // Determine charge tier for visual feedback
+        let chargeTier = 1; // Weak
+        if (chargeLevel >= 0.95) chargeTier = 4; // MAX
+        else if (chargeLevel >= 0.66) chargeTier = 3; // Strong
+        else if (chargeLevel >= 0.33) chargeTier = 2; // Medium
+
+        // Enhanced stats based on charge
+        const waveSize = 15 + chargeLevel * 45; // Larger beam
+        const waveDamage = Math.ceil(2 + chargeLevel * 8); // More damage
+        const waveSpeed = 10 + chargeLevel * 6; // Faster
+        const piercing = Math.floor(chargeLevel * 8) + 1; // Number of enemies it can pierce
+
         bulletsRef.current.push({
           x: player.x + PLAYER_WIDTH,
           y: player.y + PLAYER_HEIGHT / 2,
           isWaveCannon: true,
           size: waveSize,
           damage: waveDamage,
-          speed: 8 + chargeLevel * 4
+          speed: waveSpeed,
+          piercing: piercing,
+          hitEnemies: [], // Track which enemies were already hit
+          chargeTier: chargeTier,
+          chargeLevel: chargeLevel
         });
+
+        // Screen shake based on charge level
+        screenShakeRef.current = {
+          intensity: 8 + chargeLevel * 12,
+          duration: 15 + Math.floor(chargeLevel * 15)
+        };
+
+        waveCannonChargeRef.current = 0;
+        isChargingRef.current = false;
+      } else if (isChargingRef.current && waveCannonChargeRef.current < WAVE_CANNON_MIN_CHARGE && !keysRef.current['ShiftLeft'] && !keysRef.current['ShiftRight'] && !gpWaveCannon) {
+        // Released too early - reset charge
         waveCannonChargeRef.current = 0;
         isChargingRef.current = false;
       }
@@ -16408,7 +16587,8 @@ const SpaceShooter = () => {
           phase: 0,
           phaseTimer: 0,
           targetY: GAME_HEIGHT / 2 - BOSS_HEIGHT / 2,
-          invincible: false,
+          invincible: true, // Invulnerable until shields are destroyed
+          spawnInvulnerable: true, // Track initial spawn invulnerability
           regenerating: false,
           regenCount: 0,
           maxRegens: 2,
@@ -16432,9 +16612,22 @@ const SpaceShooter = () => {
           secondaryFireRate: 1800,
           empActive: false,
           empRadius: 0,
-          lastEMP: Date.now(),
+          empCharging: false,
+          empCharge: 0,
+          lastEMP: Date.now() - 5000,
+          empCooldown: isMegaBoss ? 8000 : isSuperBoss ? 10000 : 12000,
+          empRange: 250,
+          empDamage: 0,
+          isCheckpointBoss: waveRef.current % 5 === 0,
           regenEMPFired: false
         };
+
+        // Enhanced EMP for checkpoint bosses (waves 5, 10, 15, 20)
+        if (bossRef.current.isCheckpointBoss) {
+          bossRef.current.empRange = 400; // Extra large radius
+          bossRef.current.empDamage = 2; // Can damage player
+          bossRef.current.empCooldown *= 0.8; // Slightly faster cooldown
+        }
 
         bossActiveRef.current = true;
         setBossActive(true);
@@ -16469,18 +16662,70 @@ const SpaceShooter = () => {
       // Show "DANGER INCOMING" warning when grace period ends
       if (gracePeriodOver && !graceWarningShownRef.current && !bossActiveRef.current && !isBossRush) {
         graceWarningShownRef.current = true;
+
+        // Enhanced floating text warning
         floatingTextsRef.current.push({
           x: GAME_WIDTH / 2,
-          y: GAME_HEIGHT / 2 - 30,
-          text: '❤️ DANGER INCOMING ❤️',
-          color: '#ff4444',
-          lifetime: 120,
+          y: GAME_HEIGHT / 2 - 50,
+          text: '⚠️ DANGER INCOMING ⚠️',
+          color: '#ff0000',
+          lifetime: 180,
           vy: 0,
           flash: true,
-          scale: 1.5
+          scale: 2.0
         });
-        // Play warning sound
+
+        // Add secondary warning text
+        floatingTextsRef.current.push({
+          x: GAME_WIDTH / 2,
+          y: GAME_HEIGHT / 2 + 10,
+          text: 'ENEMIES APPROACHING',
+          color: '#ffff00',
+          lifetime: 150,
+          vy: 0,
+          flash: true,
+          scale: 1.0
+        });
+
+        // Screen border flash effect - red warning pulse
+        if (!screenFlashRef.current) screenFlashRef.current = {};
+        screenFlashRef.current.active = true;
+        screenFlashRef.current.color = '#ff0000';
+        screenFlashRef.current.intensity = 0.8;
+        screenFlashRef.current.timer = 90;
+        screenFlashRef.current.borderPulse = true;
+
+        // Screen shake for dramatic effect
+        if (screenShakeRef.current) {
+          screenShakeRef.current.intensity = 10;
+          screenShakeRef.current.duration = 30;
+        }
+
+        // Play enhanced warning sound (3 beeps)
         soundSystem.playBossWarning();
+
+        // Scan for nearby enemies and show directional indicators
+        setTimeout(() => {
+          const nearbyEnemies = enemiesRef.current.filter(e => {
+            const dx = e.x - playerRef.current.x;
+            const dy = e.y - playerRef.current.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            return dist < 400;
+          });
+
+          if (nearbyEnemies.length > 0) {
+            floatingTextsRef.current.push({
+              x: GAME_WIDTH / 2,
+              y: GAME_HEIGHT - 100,
+              text: `${nearbyEnemies.length} NEARBY THREATS`,
+              color: '#ff8800',
+              lifetime: 120,
+              vy: -0.5,
+              flash: true,
+              scale: 1.2
+            });
+          }
+        }, 500);
       }
 
       // Skip regular enemy spawning in Boss Rush mode
@@ -17161,19 +17406,41 @@ const SpaceShooter = () => {
             });
           }
 
-          // End regeneration
-          if (mb.regenTimer <= 0) {
+          // End regeneration only when fully healed
+          if (mb.health >= mb.maxHealth) {
+            // Health fully restored - end regen and drop shields
             mb.regenerating = false;
             mb.regenShield = 0;
             mb.hasRegenerated = true;
-            // Show floating text
+
             floatingTextsRef.current.push({
               x: mb.x + mb.width / 2,
               y: mb.y - 20,
-              text: '❤️ REGEN COMPLETE',
-              color: '#ff4400',
+              text: '⚡ FULLY HEALED',
+              color: '#00ff00',
               lifetime: 90,
               vy: -1
+            });
+
+            floatingTextsRef.current.push({
+              x: mb.x + mb.width / 2,
+              y: mb.y,
+              text: '🛡️ SHIELDS DOWN',
+              color: '#ff6600',
+              lifetime: 60,
+              vy: -0.5
+            });
+          } else if (mb.regenTimer <= 0) {
+            // Timer expired but not fully healed - extend regeneration
+            mb.regenTimer = Math.min(120, mb.regenDuration / 2); // Give more time
+
+            floatingTextsRef.current.push({
+              x: mb.x + mb.width / 2,
+              y: mb.y - 20,
+              text: '⚕️ REGENERATING...',
+              color: '#00ff88',
+              lifetime: 60,
+              vy: -0.5
             });
           }
         }
@@ -17717,6 +17984,85 @@ const SpaceShooter = () => {
       let hitPlayer = false;
       const timeWarpModifier = upgradesRef.current.timeWarp ? 0.3 : 1.0;
 
+      // Track off-screen enemies for directional threat indicators (throttled for performance)
+      offScreenTrackingFrameRef.current++;
+      if (offScreenTrackingFrameRef.current % 3 === 0) { // Update every 3 frames
+        offScreenIndicatorsRef.current = [];
+        const dangerZoneRadius = 150; // Reduced from 200 for performance
+        const maxIndicators = 12; // Limit max indicators
+
+        for (let i = 0; i < enemiesRef.current.length && offScreenIndicatorsRef.current.length < maxIndicators; i++) {
+          const enemy = enemiesRef.current[i];
+          if (!enemy || enemy.isDead) continue;
+
+          // Check if enemy is off-screen
+          const isOffScreenLeft = enemy.x + ENEMY_WIDTH < 0;
+          const isOffScreenRight = enemy.x > GAME_WIDTH;
+          const isOffScreenTop = enemy.y + ENEMY_HEIGHT < 0;
+          const isOffScreenBottom = enemy.y > GAME_HEIGHT;
+          const isOffScreen = isOffScreenLeft || isOffScreenRight || isOffScreenTop || isOffScreenBottom;
+
+          // Determine threat level first to prioritize
+          let threatLevel = 'low';
+          let threatColor = '#00ff00';
+          let isCriticalThreat = false;
+
+          if (enemy.isBoss || enemy.type === 'carrier') {
+            threatLevel = 'critical';
+            threatColor = '#ff00ff';
+            isCriticalThreat = true;
+          } else if (enemy.type === 'elite' || enemy.type === 'miniboss' || enemy.health > 50) {
+            threatLevel = 'high';
+            threatColor = '#ff0000';
+            isCriticalThreat = true;
+          } else if (enemy.type === 'shielded' || enemy.type === 'bomber' || enemy.health > 20) {
+            threatLevel = 'medium';
+            threatColor = '#ffaa00';
+          }
+
+          // Only track off-screen enemies or critical threats near edges
+          const nearEdge = isCriticalThreat && (
+            enemy.x < dangerZoneRadius ||
+            enemy.x > GAME_WIDTH - dangerZoneRadius ||
+            enemy.y < dangerZoneRadius ||
+            enemy.y > GAME_HEIGHT - dangerZoneRadius
+          );
+
+          if (isOffScreen || nearEdge) {
+            // Calculate direction indicator position on screen edge
+            let indicatorX, indicatorY;
+            let direction = '';
+
+            if (isOffScreenLeft || enemy.x < dangerZoneRadius) {
+              indicatorX = 20;
+              indicatorY = Math.max(30, Math.min(GAME_HEIGHT - 30, enemy.y + ENEMY_HEIGHT / 2));
+              direction = 'left';
+            } else if (isOffScreenRight || enemy.x > GAME_WIDTH - dangerZoneRadius) {
+              indicatorX = GAME_WIDTH - 20;
+              indicatorY = Math.max(30, Math.min(GAME_HEIGHT - 30, enemy.y + ENEMY_HEIGHT / 2));
+              direction = 'right';
+            } else if (isOffScreenTop || enemy.y < dangerZoneRadius) {
+              indicatorX = Math.max(30, Math.min(GAME_WIDTH - 30, enemy.x + ENEMY_WIDTH / 2));
+              indicatorY = 20;
+              direction = 'top';
+            } else if (isOffScreenBottom || enemy.y > GAME_HEIGHT - dangerZoneRadius) {
+              indicatorX = Math.max(30, Math.min(GAME_WIDTH - 30, enemy.x + ENEMY_WIDTH / 2));
+              indicatorY = GAME_HEIGHT - 20;
+              direction = 'bottom';
+            }
+
+            offScreenIndicatorsRef.current.push({
+              x: indicatorX,
+              y: indicatorY,
+              direction,
+              threatLevel,
+              color: threatColor,
+              isOffScreen
+            });
+          }
+        }
+      }
+
       // Enemy movement, behaviors and collision detection (consolidated into single filter)
       let collisionChecks = 0;
       enemiesRef.current = enemiesRef.current.filter(enemy => {
@@ -17827,6 +18173,11 @@ const SpaceShooter = () => {
         const bulletY = bullet.isWaveCannon ? bullet.y - bullet.size / 2 : bullet.y;
         let damage = bullet.damage || 1;
 
+        // Initialize piercing tracking for wave cannon
+        if (bullet.isWaveCannon && !bullet.hitEnemies) {
+          bullet.hitEnemies = [];
+        }
+
         enemiesRef.current = enemiesRef.current.filter(enemy => {
           const ew = enemy.width || ENEMY_WIDTH;
           const eh = enemy.height || ENEMY_HEIGHT;
@@ -17848,11 +18199,28 @@ const SpaceShooter = () => {
                 lifetime: 20,
                 vy: -1
               });
+              // Wave cannon pierces invulnerable enemies
               if (!bullet.isWaveCannon) bulletHit = true;
               return true; // Enemy survives
             }
 
-            if (!bullet.isWaveCannon) bulletHit = true;
+            // For wave cannon, check if this enemy was already hit
+            if (bullet.isWaveCannon) {
+              // Create unique enemy ID (since we don't have real IDs)
+              const enemyId = `${enemy.x}_${enemy.y}_${enemy.type}`;
+              if (bullet.hitEnemies.includes(enemyId)) {
+                return true; // Skip this enemy, already hit
+              }
+              // Mark this enemy as hit
+              bullet.hitEnemies.push(enemyId);
+
+              // Check if we've reached piercing limit
+              if (bullet.hitEnemies.length >= bullet.piercing) {
+                bulletHit = true; // Bullet exhausted its piercing
+              }
+            } else {
+              bulletHit = true; // Normal bullets are consumed on hit
+            }
 
             // Apply damage
             enemy.health -= damage;
@@ -17992,7 +18360,7 @@ const SpaceShooter = () => {
             const regenAmount = (boss.maxHealth * 0.5) / boss.regenDuration; // Regen 50% of max health
             boss.health = Math.min(boss.maxHealth, boss.health + regenAmount);
 
-            // Regenerate shields over time (restore to max)
+            // Regenerate shields over time (restore to max and keep them up)
             if (boss.maxShield > 0) {
               const shieldRegenAmount = boss.maxShield / boss.regenDuration;
               boss.shield = Math.min(boss.maxShield, (boss.shield || 0) + shieldRegenAmount);
@@ -18145,21 +18513,60 @@ const SpaceShooter = () => {
               });
             }
 
-            // End regeneration
-            if (boss.regenTimer <= 0) {
+            // End regeneration phase only when health is fully restored
+            if (boss.health >= boss.maxHealth) {
+              // Health fully restored - end regen and schedule shield drop
               boss.regenerating = false;
-              boss.invincible = false;
               boss.regenCount++; // Increment regen count (max 3 allowed)
               boss.regenCooldown = boss.regenCooldownMax;
-              // Show floating text
-              const regensLeft = boss.maxRegens - boss.regenCount;
+
               floatingTextsRef.current.push({
                 x: boss.x + boss.width / 2,
                 y: boss.y - 20,
-                text: 'FINAL REGEN COMPLETE!',
+                text: '⚡ FULLY HEALED',
+                color: '#00ff00',
+                lifetime: 120,
+                vy: -0.8
+              });
+
+              // Drop shields after healing completes
+              setTimeout(() => {
+                if (bossRef.current) {
+                  bossRef.current.shield = 0;
+                  bossRef.current.invincible = false;
+                  floatingTextsRef.current.push({
+                    x: bossRef.current.x + bossRef.current.width / 2,
+                    y: bossRef.current.y,
+                    text: '🛡️ SHIELDS DOWN',
+                    color: '#ff6600',
+                    lifetime: 90,
+                    vy: -1
+                  });
+                }
+              }, 2000); // 2 second delay before dropping shields
+
+              // Show regen completion text
+              const regensLeft = boss.maxRegens - boss.regenCount;
+              floatingTextsRef.current.push({
+                x: boss.x + boss.width / 2,
+                y: boss.y - 50,
+                text: regensLeft > 0 ? `REGEN ${boss.regenCount}/${boss.maxRegens}` : 'FINAL REGEN COMPLETE!',
                 color: '#ff4400',
                 lifetime: 90,
                 vy: -1
+              });
+            } else if (boss.regenTimer <= 0) {
+              // Timer expired but not fully healed - keep regenerating with shields up
+              // Reset timer to continue regeneration until 100% health
+              boss.regenTimer = Math.min(180, boss.regenDuration / 2); // Give more time but not full duration
+
+              floatingTextsRef.current.push({
+                x: boss.x + boss.width / 2,
+                y: boss.y - 20,
+                text: '⚕️ REGENERATING...',
+                color: '#00ff88',
+                lifetime: 60,
+                vy: -0.5
               });
             }
 
@@ -18415,12 +18822,25 @@ const SpaceShooter = () => {
             }
           }
 
-          // EMP (Electromagnetic Pulse) attack for mega/super boss (disabled during regen)
-          if (boss.isMegaBoss && boss.entered && !isRegenerating) {
+          // EMP (Electromagnetic Pulse) attack for all bosses (disabled during regen)
+          if (boss.entered && !isRegenerating) {
             // Start charging EMP
             if (!boss.empCharging && !boss.empActive && currentTime - boss.lastEMP > boss.empCooldown) {
               boss.empCharging = true;
               boss.empCharge = 0;
+
+              // Warning for checkpoint boss EMP
+              if (boss.isCheckpointBoss) {
+                floatingTextsRef.current.push({
+                  x: boss.x + boss.width / 2,
+                  y: boss.y - 40,
+                  text: '⚡ MEGA EMP CHARGING ⚡',
+                  color: '#ff00ff',
+                  lifetime: 60,
+                  vy: -1,
+                  flash: true
+                });
+              }
             }
 
             // Charge up the EMP
@@ -18430,22 +18850,28 @@ const SpaceShooter = () => {
                 boss.empCharging = false;
                 boss.empActive = true;
                 boss.empRadius = 0;
+                boss.empHitPlayer = false; // Track if we've hit player this burst
+                soundSystem.playBossWarning();
+                triggerScreenShake(boss.isCheckpointBoss ? 15 : 8, boss.isCheckpointBoss ? 25 : 15);
               }
             }
 
             // EMP shockwave expanding
             if (boss.empActive) {
-              boss.empRadius += 15; // Expand shockwave
+              boss.empRadius += boss.isCheckpointBoss ? 20 : 15; // Expand shockwave faster for checkpoint bosses
+
+              const bossCenterX = boss.x + boss.width / 2;
+              const bossCenterY = boss.y + boss.height / 2;
 
               // Check if force pod is in range
               if (forceRef.current && forceRef.current.active) {
                 const force = forceRef.current;
-                const dx = force.x - (boss.x + boss.width / 2);
-                const dy = force.y - (boss.y + boss.height / 2);
+                const dx = force.x - bossCenterX;
+                const dy = force.y - bossCenterY;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 // If force is within the expanding ring (with some tolerance)
-                if (Math.abs(distance - boss.empRadius) < 30) {
+                if (Math.abs(distance - boss.empRadius) < 35) {
                   // Destroy the force pod!
                   createExplosion(force.x, force.y, 'large');
                   forceRef.current = null;
@@ -18454,30 +18880,75 @@ const SpaceShooter = () => {
                     y: force.y,
                     text: '❤️ DISABLED',
                     color: '#ff0000',
-                    life: 90
+                    lifetime: 90,
+                    vy: -1
                   });
                 }
               }
 
-              // Check if player is in range - disable shields
+              // Check if player is in range
               const player = playerRef.current;
               const px = player.x + PLAYER_WIDTH / 2;
               const py = player.y + PLAYER_HEIGHT / 2;
-              const playerDx = px - (boss.x + boss.width / 2);
-              const playerDy = py - (boss.y + boss.height / 2);
+              const playerDx = px - bossCenterX;
+              const playerDy = py - bossCenterY;
               const playerDistance = Math.sqrt(playerDx * playerDx + playerDy * playerDy);
 
-              if (Math.abs(playerDistance - boss.empRadius) < 30 && upgradesRef.current.shield) {
-                // Disable player shield!
-                upgradesRef.current.shield = false;
-                upgradesRef.current.shieldHits = 0;
-                floatingTextsRef.current.push({
-                  x: px,
-                  y: py - 20,
-                  text: '⚡ SHIELDS DOWN',
-                  color: '#ff6600',
-                  life: 90
-                });
+              // EMP wave hits player
+              if (Math.abs(playerDistance - boss.empRadius) < 35 && !boss.empHitPlayer) {
+                boss.empHitPlayer = true;
+
+                // Disable shields
+                if (upgradesRef.current.shield) {
+                  upgradesRef.current.shield = false;
+                  upgradesRef.current.shieldHits = 0;
+                  floatingTextsRef.current.push({
+                    x: px,
+                    y: py - 20,
+                    text: '⚡ SHIELDS DOWN',
+                    color: '#ff6600',
+                    lifetime: 90,
+                    vy: -1
+                  });
+                }
+
+                // Checkpoint bosses also deal damage
+                if (boss.isCheckpointBoss && boss.empDamage > 0) {
+                  player.health -= boss.empDamage;
+                  player.invincibleTimer = 30; // Brief invincibility
+                  triggerScreenShake(12, 20);
+
+                  floatingTextsRef.current.push({
+                    x: px,
+                    y: py,
+                    text: `-${boss.empDamage} HP`,
+                    color: '#ff0000',
+                    lifetime: 60,
+                    vy: -2,
+                    flash: true
+                  });
+
+                  soundSystem.playPlayerDestroy();
+
+                  // Check if player died from EMP
+                  if (player.health <= 0) {
+                    const newLives = livesRef.current - 1;
+                    setLives(newLives);
+                    livesRef.current = newLives;
+                    playerInvincibleRef.current = 120;
+                    createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
+                    triggerScreenShake(20, 30);
+
+                    if (newLives <= 0) {
+                      handleGameOver();
+                    } else {
+                      // Reset player position
+                      player.x = 50;
+                      player.y = GAME_HEIGHT / 2 - PLAYER_HEIGHT / 2;
+                      player.health = 3;
+                    }
+                  }
+                }
               }
 
               // EMP finished expanding
@@ -18736,19 +19207,48 @@ const SpaceShooter = () => {
                 triggerScreenShake(6, 15);
               }
             } else {
-              // Shield is down, damage health directly
-              boss.health -= damage;
-              createExplosion(bullet.x, bullet.y, 'small');
+              // Shield is down - remove spawn invulnerability if present
+              if (boss.spawnInvulnerable) {
+                boss.spawnInvulnerable = false;
+                boss.invincible = false;
+                floatingTextsRef.current.push({
+                  x: boss.x + boss.width / 2,
+                  y: boss.y - 30,
+                  text: '🎯 VULNERABLE',
+                  color: '#ff4400',
+                  lifetime: 90,
+                  vy: -1,
+                  flash: true,
+                  scale: 1.3
+                });
+                soundSystem.playBossWarning();
+              }
 
-              // Health damage feedback
-              floatingTextsRef.current.push({
-                x: bullet.x,
-                y: bullet.y - 20,
-                text: `-${damage}`,
-                color: '#ff8844',
-                lifetime: 30,
-                vy: -2
-              });
+              // Now damage health (if not invulnerable from regen)
+              if (!boss.invincible) {
+                boss.health -= damage;
+                createExplosion(bullet.x, bullet.y, 'small');
+
+                // Health damage feedback
+                floatingTextsRef.current.push({
+                  x: bullet.x,
+                  y: bullet.y - 20,
+                  text: `-${damage}`,
+                  color: '#ff8844',
+                  lifetime: 30,
+                  vy: -2
+                });
+              } else {
+                // Boss invulnerable from regeneration
+                floatingTextsRef.current.push({
+                  x: bullet.x,
+                  y: bullet.y - 20,
+                  text: 'INVINCIBLE',
+                  color: '#00ff00',
+                  lifetime: 30,
+                  vy: -1
+                });
+              }
             }
 
             if (boss.health <= 0) {
