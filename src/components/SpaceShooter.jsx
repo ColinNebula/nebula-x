@@ -3877,8 +3877,15 @@ const SpaceShooter = () => {
     // Performance mode reduces particle counts
     const perfMode = userSettingsRef.current?.performanceMode;
     // Also reduce particles during boss battles for better performance
-    const bossBattleReduction = bossActiveRef.current ? 0.6 : 1;
-    const particleMultiplier = (perfMode ? 0.5 : 1) * bossBattleReduction;
+    const bossBattleReduction = bossActiveRef.current ? 0.4 : 1;
+    // Reduce particles further if FPS is low
+    const fpsReduction = fpsRef.current.fps < 50 ? 0.3 : (fpsRef.current.fps < 55 ? 0.6 : 1);
+    // Entity-based reduction for heavy scenes
+    const totalEntities = enemiesRef.current.length + bulletsRef.current.length +
+                         enemyBulletsRef.current.length + explosionsRef.current.length +
+                         pickupEffectsRef.current.length;
+    const entityReduction = totalEntities > 400 ? 0.4 : (totalEntities > 300 ? 0.6 : 1);
+    const particleMultiplier = (perfMode ? 0.5 : 1) * bossBattleReduction * fpsReduction * entityReduction;
 
     // Add shockwave for large explosions
     if (size === 'boss' || size === 'large' || size === 'heavy') {
@@ -5248,6 +5255,11 @@ const SpaceShooter = () => {
       const currentZoneForStars = getZoneForWave(waveRef.current);
       const starTint = currentZoneForStars.particleColor;
 
+      // Calculate total entities for performance checks
+      const totalEntities = enemiesRef.current.length + bulletsRef.current.length +
+                           enemyBulletsRef.current.length + explosionsRef.current.length +
+                           pickupEffectsRef.current.length + powerupsRef.current.length;
+
       starsRef.current.forEach(star => {
         if (star.layer === 'near') {
           // Near stars - draw as streaks with subtle zone tint
@@ -5286,7 +5298,9 @@ const SpaceShooter = () => {
       ctx.globalAlpha = 1;
 
       // ========== DRAW ANIMATED NEBULA CLOUDS ==========
-      if (!perfMode) {
+      // Skip nebula when FPS is low or many entities on screen
+      const skipNebula = perfMode || fpsRef.current.fps < 50 || totalEntities > 500;
+      if (!skipNebula) {
         ctx.save();
         nebulaParticlesRef.current.forEach(cloud => {
           // Update cloud movement
@@ -8112,14 +8126,15 @@ const SpaceShooter = () => {
         // Skip bullets with non-finite positions
         if (!isFinite(bullet.x) || !isFinite(bullet.y)) return;
 
-        // Enhanced motion blur trails
-        if (!perfMode && bullet.vx && bullet.vy) {
+// Enhanced motion blur trails (reduce during high load)
+        const skipTrails = fpsRef.current.fps < 50 || bulletsRef.current.length > 200;
+        if (!perfMode && !skipTrails && bullet.vx && bullet.vy) {
           const bulletId = bullet.x + '_' + bullet.y;
           let trail = motionBlurTrailsRef.current.get(bulletId) || [];
 
-          // Add current position to trail
+          // Add current position to trail (fewer positions during load)
           trail.push({ x: bullet.x, y: bullet.y, alpha: 1 });
-          if (trail.length > 8) trail.shift();
+          if (trail.length > 5) trail.shift();
 
           // Draw trail with fading
           ctx.save();
@@ -8261,7 +8276,9 @@ const SpaceShooter = () => {
       // Enhanced with aggressive culling and LOD
       const reducedBulletEffects = bossActiveRef.current && !perfMode;
       let renderedBullets = 0;
-      const maxBulletsToRender = perfMode ? 150 : (performanceRef.current.adaptiveQuality < 0.7 ? 300 : 600);
+      // More aggressive limits based on FPS
+      const fpsBasedLimit = fpsRef.current.fps < 50 ? 80 : (fpsRef.current.fps < 55 ? 150 : 300);
+      const maxBulletsToRender = perfMode ? 80 : Math.min(fpsBasedLimit, performanceRef.current.adaptiveQuality < 0.7 ? 150 : 300);
 
       enemyBulletsRef.current.forEach(bullet => {
         // Skip bullets with non-finite positions
@@ -8302,7 +8319,8 @@ const SpaceShooter = () => {
           const midColor = isRegenCannon ? '#ff2200' : '#ff6600';
 
           // Outer glow - reduce during boss battles or high LOD
-          if (lodLevel === 0 && !reducedBulletEffects) {
+          const skipShadows = fpsRef.current.fps < 50 || enemyBulletsRef.current.length > 150;
+          if (lodLevel === 0 && !reducedBulletEffects && !skipShadows) {
             ctx.shadowColor = glowColor;
             ctx.shadowBlur = (isRegenCannon ? 25 : 20) * performanceRef.current.adaptiveQuality;
           }
@@ -11387,12 +11405,17 @@ const SpaceShooter = () => {
           const coreSize = laserSize * 0.3;
           const isExtraLarge = boss.isExtraLargeLaser;
 
+          // Reduce effects during heavy load
+          const heavyLoad = fpsRef.current.fps < 50 || performanceRef.current.adaptiveQuality < 0.7;
+
           // Screen shake effect hint (visual only) - more intense for extra large lasers
           const shake = Math.random() * (isExtraLarge ? 12 : (boss.isSuperBoss ? 8 : 4)) - (isExtraLarge ? 6 : (boss.isSuperBoss ? 4 : 2));
 
           // Outer destructive glow - bigger for extra large lasers
-          ctx.shadowColor = isExtraLarge ? '#ff0000' : (boss.isSuperBoss ? '#ff4400' : '#ff6600');
-          ctx.shadowBlur = isExtraLarge ? 150 : (boss.isSuperBoss ? 100 : 60);
+          if (!heavyLoad) {
+            ctx.shadowColor = isExtraLarge ? '#ff0000' : (boss.isSuperBoss ? '#ff4400' : '#ff6600');
+            ctx.shadowBlur = isExtraLarge ? 150 : (boss.isSuperBoss ? 100 : 60);
+          }
 
           // Create intense beam gradient
           const laserGradient = ctx.createLinearGradient(0, laserY - laserHalfSize - 5, 0, laserY + laserHalfSize + 5);
@@ -11412,13 +11435,14 @@ const SpaceShooter = () => {
           ctx.fillRect(0, laserY - coreSize + shake, bx + 15, coreSize * 2);
 
           // Flickering intensity - more intense for extra large
-          if (Math.random() > (isExtraLarge ? 0.1 : 0.3)) {
+          if (!heavyLoad && Math.random() > (isExtraLarge ? 0.1 : 0.3)) {
             ctx.fillStyle = `rgba(255, 200, 100, ${0.3 + Math.random() * (isExtraLarge ? 0.6 : 0.4)})`;
             ctx.fillRect(0, laserY - laserHalfSize - (isExtraLarge ? 15 : 10) + shake, bx + 15, laserSize + (isExtraLarge ? 30 : 20));
           }
 
-          // Energy particles along beam - more for extra large lasers
-          const particleCount = isExtraLarge ? 25 : (boss.isSuperBoss ? 15 : 8);
+          // Energy particles along beam - reduced during heavy load
+          const baseParticleCount = isExtraLarge ? 25 : (boss.isSuperBoss ? 15 : 8);
+          const particleCount = heavyLoad ? Math.ceil(baseParticleCount * 0.3) : baseParticleCount;
           for (let i = 0; i < particleCount; i++) {
             const px = Math.random() * bx;
             const py = laserY + (Math.random() - 0.5) * laserSize;
@@ -11428,8 +11452,8 @@ const SpaceShooter = () => {
             ctx.fill();
           }
 
-          // Extra effects for milestone boss lasers
-          if (isExtraLarge) {
+          // Extra effects for milestone boss lasers - skip during heavy load
+          if (isExtraLarge && !heavyLoad) {
             // Secondary outer glow rings
             ctx.save();
             ctx.globalAlpha = 0.3;
@@ -11686,19 +11710,22 @@ const SpaceShooter = () => {
           ctx.fillStyle = '#ffcc00';
           ctx.fill();
 
-          // Rotating energy arcs
-          ctx.globalAlpha = 0.6 * shieldPulse;
-          ctx.strokeStyle = '#ffff88';
-          ctx.lineWidth = 2;
-          const arcAngle = (Date.now() / 500) % (Math.PI * 2);
-          for (let i = 0; i < 4; i++) {
-            const angle = arcAngle + (i * Math.PI / 2);
-            const radius = (bossW + bossH) / 2.5;
-            const arcX = bx + bossW / 2 + Math.cos(angle) * radius;
-            const arcY = centerY + Math.sin(angle) * radius * 0.6;
-            ctx.beginPath();
-            ctx.arc(arcX, arcY, 8, 0, Math.PI * 2);
-            ctx.stroke();
+          // Rotating energy arcs - skip during heavy load
+          const heavyLoad = fpsRef.current.fps < 50 || performanceRef.current.adaptiveQuality < 0.7;
+          if (!heavyLoad) {
+            ctx.globalAlpha = 0.6 * shieldPulse;
+            ctx.strokeStyle = '#ffff88';
+            ctx.lineWidth = 2;
+            const arcAngle = (Date.now() / 500) % (Math.PI * 2);
+            for (let i = 0; i < 4; i++) {
+              const angle = arcAngle + (i * Math.PI / 2);
+              const radius = (bossW + bossH) / 2.5;
+              const arcX = bx + bossW / 2 + Math.cos(angle) * radius;
+              const arcY = centerY + Math.sin(angle) * radius * 0.6;
+              ctx.beginPath();
+              ctx.arc(arcX, arcY, 8, 0, Math.PI * 2);
+              ctx.stroke();
+            }
           }
 
           // "EMERGING" text indicator
@@ -13844,8 +13871,9 @@ const SpaceShooter = () => {
       }
 
       // ========== POST-PROCESSING EFFECTS ==========
-      // Apply bloom/glow effect
-      if (!perfMode && bloomCtxRef.current) {
+      // Apply bloom/glow effect (skip if FPS is low or many entities)
+      const skipBloom = perfMode || fpsRef.current.fps < 50 || totalEntities > 400;
+      if (!skipBloom && bloomCtxRef.current) {
         const bloomCtx = bloomCtxRef.current;
         const bloomCanvas = bloomCanvasRef.current;
 
@@ -14154,6 +14182,11 @@ const SpaceShooter = () => {
 
       fpsData.frames++;
 
+      // Count total entities for performance monitoring
+      const totalEntities = enemiesRef.current.length + bulletsRef.current.length +
+                           enemyBulletsRef.current.length + explosionsRef.current.length +
+                           pickupEffectsRef.current.length + powerupsRef.current.length;
+
       if (timestamp - fpsData.lastTime >= 1000) {
         fpsData.fps = fpsData.frames;
         fpsData.frames = 0;
@@ -14181,6 +14214,36 @@ const SpaceShooter = () => {
               perfData.lowFpsFrames = 0;
             }
           }
+        }
+
+        // Emergency performance mode if entity count is very high
+        if (totalEntities > 800) {
+          perfData.adaptiveQuality = Math.min(perfData.adaptiveQuality, 0.5);
+          console.log(`[PERFORMANCE] Emergency mode: ${totalEntities} entities, forcing quality to 0.5x`);
+        }
+      }
+
+      // Aggressively cap entities when performance is poor
+      if (fpsData.fps < 45 || totalEntities > 600) {
+        // Cap enemy bullets more aggressively
+        const maxEnemyBullets = bossActiveRef.current ? 60 : 100;
+        if (enemyBulletsRef.current.length > maxEnemyBullets) {
+          enemyBulletsRef.current = enemyBulletsRef.current.slice(-maxEnemyBullets);
+        }
+
+        // Cap particle effects
+        if (pickupEffectsRef.current.length > 100) {
+          pickupEffectsRef.current = pickupEffectsRef.current.slice(-100);
+        }
+
+        // Cap explosions
+        if (explosionsRef.current.length > 15) {
+          explosionsRef.current = explosionsRef.current.slice(-15);
+        }
+
+        // Cap player bullets
+        if (bulletsRef.current.length > 150) {
+          bulletsRef.current = bulletsRef.current.slice(-150);
         }
       }
 
@@ -14909,8 +14972,9 @@ const SpaceShooter = () => {
       if (dash.active) {
         dash.timer--;
 
-        // Create afterimages during dash
-        if (dash.timer % 2 === 0) {
+        // Create afterimages during dash (less frequent if FPS is low)
+        const afterimageInterval = fpsRef.current.fps < 50 ? 3 : 2;
+        if (dash.timer % afterimageInterval === 0) {
           dash.afterimages.push({
             x: player.x,
             y: player.y,
@@ -18206,13 +18270,18 @@ const SpaceShooter = () => {
           }
 
           // Normal shooting (spread pattern) - reduced during regen
-          if (!boss.laserCharging && !boss.laserFiring && !isRegenerating && currentTime - boss.lastShot > boss.fireRate) {
+          // Also reduce firing rate when too many bullets on screen
+          const tooManyBullets = enemyBulletsRef.current.length > 150;
+          const effectiveFireRate = tooManyBullets ? boss.fireRate * 1.5 : boss.fireRate;
+
+          if (!boss.laserCharging && !boss.laserFiring && !isRegenerating && currentTime - boss.lastShot > effectiveFireRate) {
             // Boss becomes vulnerable once it starts shooting
             if (boss.invincible && !boss.regenerating) {
               boss.invincible = false;
             }
-            // Fire multiple bullets in a spread
-            const spreadCount = boss.isSuperBoss ? 7 : (boss.isMegaBoss ? 5 : 3);
+            // Fire multiple bullets in a spread - reduce count during heavy load
+            const baseSpreadCount = boss.isSuperBoss ? 7 : (boss.isMegaBoss ? 5 : 3);
+            const spreadCount = tooManyBullets ? Math.ceil(baseSpreadCount * 0.6) : baseSpreadCount;
             for (let i = -(spreadCount - 1) / 2; i <= (spreadCount - 1) / 2; i++) {
               enemyBulletsRef.current.push({
                 x: boss.x,
@@ -18224,7 +18293,7 @@ const SpaceShooter = () => {
               });
             }
             boss.lastShot = currentTime;
-            console.log('[BOSS SHOOT] Fired', spreadCount, 'bullets. Boss:', boss.type, 'FireRate:', boss.fireRate);
+            console.log('[BOSS SHOOT] Fired', spreadCount, 'bullets. Boss:', boss.type, 'FireRate:', effectiveFireRate);
           }
 
           // Mega boss cannons - fire large aimed shots from wing weapons (reduced during regen)
@@ -20129,8 +20198,11 @@ const SpaceShooter = () => {
           }
         }
 
-        // Enemy shooting
-        if (enemy.canShoot && currentTime - enemy.lastShot > ENEMY_FIRE_RATE) {
+        // Enemy shooting - skip if too many bullets on screen
+        const tooManyBullets = enemyBulletsRef.current.length > 120;
+        const shouldShoot = enemy.canShoot && currentTime - enemy.lastShot > ENEMY_FIRE_RATE;
+
+        if (shouldShoot && !tooManyBullets) {
           if (enemy.type === 'turret') {
             // Turret fires aimed shots
             const bulletSpeed = 5;
@@ -20533,6 +20605,26 @@ const SpaceShooter = () => {
 
       if (hitPlayer) {
         soundSystem.playPlayerDestroy();
+
+        // Create massive explosion at player position
+        const player = playerRef.current;
+        createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'boss', true);
+
+        // Play loud explosion sound
+        try {
+          const playerExplosionSound = new Audio(asset('mixkit-explosion-hit-1704.mp3'));
+          playerExplosionSound.volume = 0.9; // Loud volume
+          playerExplosionSound.play().catch(() => {});
+        } catch (e) {}
+
+        // Trigger massive screen shake
+        triggerScreenShake(15, 40);
+
+        // Trigger slow-motion and chromatic aberration
+        timeScaleRef.current = 0.2; // 20% speed for dramatic effect
+        chromaticAberrationRef.current = { active: true, intensity: 10, timer: 60 };
+        setTimeout(() => { timeScaleRef.current = 1; }, 800);
+
         const newLives = livesRef.current - 1;
         setLives(newLives);
         livesRef.current = newLives;
