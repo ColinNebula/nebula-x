@@ -1,7 +1,0 @@
-{
-  "scripts": {
-    "check-emojis": "node final-emoji-check.js",
-    "fix-emojis": "python fix-emojis.py && python fix-all-text-emojis.py && node final-emoji-check.js",
-    "verify-encoding": "git ls-files --eol | grep -v 'i/lf' || echo '✅ All files use LF line endings'"
-  }
-}
