@@ -15364,6 +15364,9 @@ const SpaceShooter = () => {
       let movingRight = false;
       let movingLeft = false;
 
+      // Get controls config (used for movement and shooting)
+      const { controls } = userSettings;
+
       // Combined keyboard + gamepad movement with velocity-based physics
       // Disable player control during carrier intro sequence
       if (carrierIntroActive) {
@@ -15416,7 +15419,7 @@ const SpaceShooter = () => {
       let inputX = 0;
       let inputY = 0;
 
-      const { controls } = userSettings;
+      // Read movement keys
       if (controls.moveUp.some(k => keysRef.current[k])) inputY -= 1;
       if (controls.moveDown.some(k => keysRef.current[k])) inputY += 1;
       if (controls.moveLeft.some(k => keysRef.current[k])) inputX -= 1;
