@@ -3093,8 +3093,24 @@ const SpaceShooter = () => {
 
       // Start/Restart with Enter
       if (e.code === 'Enter') {
-        if (gameStateRef.current === 'menu' || gameStateRef.current === 'gameOver') {
+        if (gameStateRef.current === 'menu') {
           startGame();
+        } else if (gameStateRef.current === 'gameOver') {
+          // If player has a saved checkpoint, retry from there
+          if (hasSaveGame()) {
+            const loaded = loadGame();
+            if (loaded) {
+              soundSystem.init();
+              soundSystem.resume();
+              soundSystem.startMusic();
+              setGameState('playing');
+              gameStateRef.current = 'playing';
+            } else {
+              startGame();
+            }
+          } else {
+            startGame();
+          }
         }
       }
 
@@ -15319,7 +15335,21 @@ const SpaceShooter = () => {
         // Handle start/restart (X button in game over)
         if (gamepad.buttons[0]?.pressed && !gamepadButtonsRef.current.start) {
           if (gameStateRef.current === 'gameOver') {
-            startGame();
+            // If player has a saved checkpoint, retry from there
+            if (hasSaveGame()) {
+              const loaded = loadGame();
+              if (loaded) {
+                soundSystem.init();
+                soundSystem.resume();
+                soundSystem.startMusic();
+                setGameState('playing');
+                gameStateRef.current = 'playing';
+              } else {
+                startGame();
+              }
+            } else {
+              startGame();
+            }
           }
         }
         gamepadButtonsRef.current.start = gamepad.buttons[0]?.pressed || false;
@@ -24075,8 +24105,26 @@ const SpaceShooter = () => {
             </div>
 
             <div className="game-over-buttons">
-              <button onClick={startGame} className="start-button">
-                PLAY AGAIN
+              <button onClick={() => {
+                // If player has a saved checkpoint, retry from there
+                if (hasSaveGame()) {
+                  const loaded = loadGame();
+                  if (loaded) {
+                    soundSystem.init();
+                    soundSystem.resume();
+                    soundSystem.startMusic();
+                    setGameState('playing');
+                    gameStateRef.current = 'playing';
+                  } else {
+                    // If load fails, start fresh
+                    startGame();
+                  }
+                } else {
+                  // No save, start from beginning
+                  startGame();
+                }
+              }} className="start-button">
+                {hasSaveGame() ? '🔄 RETRY FROM CHECKPOINT' : 'PLAY AGAIN'}
               </button>
               <button onClick={() => setGameState('menu')} className="settings-button menu-button">
                 MAIN MENU
@@ -24085,7 +24133,7 @@ const SpaceShooter = () => {
                 QUIT GAME
               </button>
             </div>
-            <p className="start-hint">Press ENTER to restart</p>
+            <p className="start-hint">Press ENTER to {hasSaveGame() ? 'retry from checkpoint' : 'restart'}</p>
 
             {/* Quit Confirmation Modal */}
             {showQuitConfirm && (
