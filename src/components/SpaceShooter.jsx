@@ -16314,9 +16314,9 @@ const SpaceShooter = () => {
               setScore(newScore);
               scoreRef.current = newScore;
 
-              // Check for checkpoint (after waves 5, 10, 15, etc.) BEFORE incrementing
+              // Every boss defeat is a checkpoint - save progress and restore health
               const completedWave = waveRef.current;
-              const isCheckpointWave = completedWave % 5 === 0 && completedWave > 0;
+              const isCheckpointWave = true; // All boss defeats are checkpoints
               // Victory condition depends on game mode
               const mode = gameModeRef.current;
               let isVictoryWave = false;
@@ -16399,26 +16399,8 @@ const SpaceShooter = () => {
               enemyBulletsRef.current = [];
               enemiesRef.current = enemiesRef.current.filter(e => !e.spawnedByBoss);
 
-              if (isCheckpointWave) {
-                // Start smooth checkpoint transition with boss explosion sequence
-                startCheckpointTransition(defeatedBoss, completedWave);
-              } else {
-                // Play level complete sound for regular wave completions
-                try {
-                  const levelCompleteSound = new Audio(asset('mixkit-completion-of-a-level-2063.wav'));
-                  levelCompleteSound.volume = 0.5;
-                  levelCompleteSound.play().catch(() => {});
-                } catch (e) {}
-                // Resume normal gameplay music
-                resumeGameplayMusic();
-                // Trigger wave intro fade effect
-                levelFadeRef.current = {
-                  active: true,
-                  fadeIn: true,
-                  alpha: 0.8,
-                  showText: waveRef.current
-                };
-              }
+              // Always start checkpoint transition after boss defeat
+              startCheckpointTransition(defeatedBoss, completedWave);
             }
           }
         }
@@ -19276,9 +19258,9 @@ const SpaceShooter = () => {
               setScore(newScore);
               scoreRef.current = newScore;
 
-              // Check for checkpoint (after waves 5, 10, 15, etc.) BEFORE incrementing
+              // Every boss defeat is a checkpoint - save progress and restore health
               const completedWave = waveRef.current;
-              const isCheckpointWave = completedWave % 5 === 0 && completedWave > 0;
+              const isCheckpointWave = true; // All boss defeats are checkpoints
               // Victory condition depends on game mode
               const mode = gameModeRef.current;
               let isVictoryWave = false;
@@ -19361,26 +19343,8 @@ const SpaceShooter = () => {
                 spawnPowerup(defeatedBoss.x + defeatedBoss.width / 2, defeatedBoss.y + defeatedBoss.height / 2);
               }
 
-              if (isCheckpointWave) {
-                // Start smooth checkpoint transition with boss explosion sequence
-                startCheckpointTransition(defeatedBoss, completedWave);
-              } else {
-                // Play level complete sound for regular wave completions
-                try {
-                  const levelCompleteSound = new Audio(asset('mixkit-completion-of-a-level-2063.wav'));
-                  levelCompleteSound.volume = 0.5;
-                  levelCompleteSound.play().catch(() => {});
-                } catch (e) {}
-                // Resume normal gameplay music
-                resumeGameplayMusic();
-                // Trigger wave intro fade effect
-                levelFadeRef.current = {
-                  active: true,
-                  fadeIn: true,
-                  alpha: 0.8,
-                  showText: waveRef.current
-                };
-              }
+              // Always start checkpoint transition after boss defeat
+              startCheckpointTransition(defeatedBoss, completedWave);
             }
             return false; // Remove bullet that hit boss
           }
@@ -19943,9 +19907,9 @@ const SpaceShooter = () => {
               setScore(newScore);
               scoreRef.current = newScore;
 
-              // Check for checkpoint (after waves 5, 10, 15, etc.) BEFORE incrementing
+              // Every boss defeat is a checkpoint - save progress and restore health
               const completedWave = waveRef.current;
-              const isCheckpointWave = completedWave % 5 === 0 && completedWave > 0;
+              const isCheckpointWave = true; // All boss defeats are checkpoints
               // Victory condition depends on game mode
               const mode = gameModeRef.current;
               let isVictoryWave = false;
@@ -20021,26 +19985,8 @@ const SpaceShooter = () => {
               // Clear boss bullets to avoid clutter
               enemyBulletsRef.current = [];
 
-              if (isCheckpointWave) {
-                // Start smooth checkpoint transition with boss explosion sequence
-                startCheckpointTransition(defeatedBoss, completedWave);
-              } else {
-                // Play level complete sound for regular wave completions
-                try {
-                  const levelCompleteSound = new Audio(asset('mixkit-completion-of-a-level-2063.wav'));
-                  levelCompleteSound.volume = 0.5;
-                  levelCompleteSound.play().catch(() => {});
-                } catch (e) {}
-                // Resume normal gameplay music
-                resumeGameplayMusic();
-                // Trigger wave intro fade effect
-                levelFadeRef.current = {
-                  active: true,
-                  fadeIn: true,
-                  alpha: 0.8,
-                  showText: waveRef.current
-                };
-              }
+              // Always start checkpoint transition after boss defeat
+              startCheckpointTransition(defeatedBoss, completedWave);
             }
           }
           return false; // Remove bullet
