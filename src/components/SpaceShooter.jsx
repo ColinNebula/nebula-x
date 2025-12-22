@@ -15353,6 +15353,17 @@ const SpaceShooter = () => {
         gamepadButtonsRef.current.force = gpForce;
       }
 
+      // Movement physics constants (used throughout game loop)
+      const ACCELERATION = 0.8;  // How quickly ship speeds up
+      const MAX_SPEED = SPEED_LEVELS[speedSettingRef.current - 1] || 5;  // Speed based on setting (1-4)
+      const FRICTION = 0.88;     // How quickly ship slows down (0-1, lower = more friction)
+      const TILT_SPEED = 0.15;   // How quickly the ship tilts
+      const MAX_TILT = 0.25;     // Maximum tilt angle in radians
+
+      // Track movement direction for force pod (used later)
+      let movingRight = false;
+      let movingLeft = false;
+
       // Combined keyboard + gamepad movement with velocity-based physics
       // Disable player control during carrier intro sequence
       if (carrierIntroActive) {
@@ -15361,14 +15372,6 @@ const SpaceShooter = () => {
         player.vy = 0;
         player.tilt = 0;
       } else {
-        let movingRight = false;
-        let movingLeft = false;
-
-      const ACCELERATION = 0.8;  // How quickly ship speeds up
-      const MAX_SPEED = SPEED_LEVELS[speedSettingRef.current - 1] || 5;  // Speed based on setting (1-4)
-      const FRICTION = 0.88;     // How quickly ship slows down (0-1, lower = more friction)
-      const TILT_SPEED = 0.15;   // How quickly the ship tilts
-      const MAX_TILT = 0.25;     // Maximum tilt angle in radians
 
       // Update dash cooldown
       const dash = dashRef.current;
