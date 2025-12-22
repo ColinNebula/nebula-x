@@ -13357,6 +13357,7 @@ const SpaceShooter = () => {
 
       // === TOP CENTER: Wave Indicator ===
       ctx.save();
+      ctx.globalAlpha = 1; // Ensure full opacity for HUD elements
       const waveCenterX = GAME_WIDTH / 2;
 
       // Wave panel background
