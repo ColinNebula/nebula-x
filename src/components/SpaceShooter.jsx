@@ -1839,6 +1839,7 @@ const SpaceShooter = () => {
   const miniBossSpawnedRef = useRef(false); // Track if mini-boss was spawned this wave
   const carrierRef = useRef(null); // Giant space carrier that drops enemies
   const lastCarrierSpawnRef = useRef(0); // Cooldown for carrier spawns
+  const carrierIntroRef = useRef(null); // Carrier intro at wave start (drops off player)
   const lastSpawnRef = useRef(0); // Last enemy spawn timestamp
   const waveStartTimeRef = useRef(0); // Wave start time for grace period
   const graceWarningShownRef = useRef(false); // Grace period warning shown flag
@@ -10815,6 +10816,137 @@ const SpaceShooter = () => {
         ctx.restore();
       }
 
+      // ========== Draw Carrier Intro (Player Drop-off) ==========
+      const carrierIntro = carrierIntroRef.current;
+      if (carrierIntro && carrierIntro.active) {
+        const carrier = carrierIntro.carrier;
+        ctx.save();
+
+        const cx = carrier.x;
+        const cy = carrier.y;
+        const cw = carrier.width;
+        const ch = carrier.height;
+        const centerY = cy + ch / 2;
+        const pulse = Math.sin(carrierIntro.timer * 0.1);
+
+        // Massive engine glow
+        ctx.shadowColor = '#ff6600';
+        ctx.shadowBlur = 35;
+        for (let i = 0; i < 10; i++) {
+          const engineY = cy + ch * (0.08 + i * 0.1);
+          const flameLen = 30 + pulse * 10;
+
+          // Engine flame
+          ctx.fillStyle = '#ff8800';
+          ctx.beginPath();
+          ctx.ellipse(cx - flameLen, engineY, flameLen, 10, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Engine core
+          ctx.fillStyle = '#ffff88';
+          ctx.beginPath();
+          ctx.ellipse(cx - 5, engineY, 12, 6, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+
+        // Main hull - massive military carrier
+        const hullGrad = ctx.createLinearGradient(cx, cy, cx, cy + ch);
+        hullGrad.addColorStop(0, '#1a1a2e');
+        hullGrad.addColorStop(0.2, '#303050');
+        hullGrad.addColorStop(0.5, '#404070');
+        hullGrad.addColorStop(0.8, '#303050');
+        hullGrad.addColorStop(1, '#1a1a2e');
+        ctx.fillStyle = hullGrad;
+
+        // Main body (massive rectangular fortress)
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 20);
+        ctx.lineTo(cx + cw - 30, cy);
+        ctx.lineTo(cx + cw, cy + ch * 0.2);
+        ctx.lineTo(cx + cw, cy + ch * 0.8);
+        ctx.lineTo(cx + cw - 30, cy + ch);
+        ctx.lineTo(cx, cy + ch - 20);
+        ctx.lineTo(cx, cy + 20);
+        ctx.closePath();
+        ctx.fill();
+
+        // Hull plating
+        ctx.strokeStyle = '#252540';
+        ctx.lineWidth = 3;
+        for (let i = 1; i < 10; i++) {
+          const plateX = cx + i * cw / 10;
+          ctx.beginPath();
+          ctx.moveTo(plateX, cy + 25);
+          ctx.lineTo(plateX, cy + ch - 25);
+          ctx.stroke();
+        }
+
+        // Hangar bay (visible in center)
+        ctx.fillStyle = '#000000';
+        const hangarY = centerY - 40;
+        const hangarH = 80;
+        ctx.fillRect(cx + 150, hangarY, 120, hangarH);
+
+        // Hangar bay opening glow
+        ctx.strokeStyle = '#ff6600';
+        ctx.shadowColor = '#ff6600';
+        ctx.shadowBlur = 20;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(cx + 150, hangarY, 120, hangarH);
+        ctx.shadowBlur = 0;
+
+        // Warning lights around hangar
+        const lightPhase = Math.floor(carrierIntro.timer / 10) % 2;
+        ctx.fillStyle = lightPhase ? '#ff3300' : '#660000';
+        for (let i = 0; i < 6; i++) {
+          ctx.beginPath();
+          ctx.arc(cx + 150 + i * 24, hangarY - 5, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(cx + 150 + i * 24, hangarY + hangarH + 5, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Command bridge
+        ctx.fillStyle = '#2a2a50';
+        ctx.fillRect(cx + cw * 0.65, cy - 45, 80, 45);
+        ctx.fillRect(cx + cw * 0.65 + 15, cy - 65, 50, 25);
+
+        // Bridge windows
+        ctx.fillStyle = '#6688ff';
+        ctx.shadowColor = '#6688ff';
+        ctx.shadowBlur = 8;
+        for (let i = 0; i < 5; i++) {
+          ctx.fillRect(cx + cw * 0.65 + 10 + i * 14, cy - 55, 10, 12);
+        }
+        ctx.shadowBlur = 0;
+
+        // Carrier designation
+        ctx.fillStyle = '#888aaa';
+        ctx.font = "bold 16px \"Press Start 2P\", monospace";
+        ctx.textAlign = 'center';
+        ctx.fillText('MOTHERSHIP', cx + cw / 2, centerY - 60);
+        ctx.font = "10px \"Press Start 2P\", monospace";
+        ctx.fillText(`WAVE ${waveRef.current} DEPLOYMENT`, cx + cw / 2, centerY + 70);
+
+        // Drop animation effects
+        if (carrierIntro.phase === 'dropping' && carrierIntro.player.attached) {
+          // Deployment tractor beam
+          ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+          ctx.lineWidth = 20;
+          ctx.shadowColor = '#00ffff';
+          ctx.shadowBlur = 30;
+          ctx.beginPath();
+          ctx.moveTo(cx + 210, hangarY + hangarH / 2);
+          ctx.lineTo(playerRef.current.x + PLAYER_WIDTH / 2, playerRef.current.y + PLAYER_HEIGHT / 2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
+
+        ctx.restore();
+      }
+
       // Draw Boss
       if (bossRef.current) {
         const boss = bossRef.current;
@@ -14548,6 +14680,84 @@ const SpaceShooter = () => {
         }
       }
 
+      // Update carrier intro sequence (drops off player at wave start)
+      const carrierIntro = carrierIntroRef.current;
+      if (carrierIntro && carrierIntro.active) {
+        carrierIntro.timer++;
+        const c = carrierIntro.carrier;
+
+        if (carrierIntro.phase === 'approaching') {
+          // Carrier flies in from left
+          c.x += c.speed;
+
+          // Keep player attached to carrier
+          if (carrierIntro.player.attached) {
+            playerRef.current.x = c.x + 200;
+            playerRef.current.y = c.y + 80;
+          }
+
+          // When carrier reaches center, start drop sequence
+          if (c.x >= c.targetX) {
+            carrierIntro.phase = 'dropping';
+            carrierIntro.timer = 0;
+            carrierIntro.player.dropStartY = playerRef.current.y;
+            carrierIntro.player.dropSpeed = 0;
+
+            // Show drop-off message
+            floatingTextsRef.current.push({
+              x: GAME_WIDTH / 2,
+              y: 120,
+              text: `🚀 WAVE ${waveRef.current} - DEPLOYING! 🚀`,
+              color: '#00ffff',
+              lifetime: 120,
+              vy: 0,
+              scale: 1.5
+            });
+            soundSystem.playPowerup(); // Deployment sound
+          }
+        } else if (carrierIntro.phase === 'dropping') {
+          // Hold position while dropping player
+
+          if (carrierIntro.player.attached) {
+            // Player drops from carrier bay
+            carrierIntro.player.dropSpeed += 0.3; // Gravity
+            playerRef.current.y += carrierIntro.player.dropSpeed;
+
+            // When player falls below carrier, detach
+            if (playerRef.current.y >= c.y + c.height + 20) {
+              carrierIntro.player.attached = false;
+
+              // Add some downward momentum then player can control
+              playerRef.current.vy = 3;
+
+              // Trigger fade effect for wave start
+              levelFadeRef.current = {
+                active: true,
+                fadeIn: true,
+                alpha: 1,
+                showText: waveRef.current
+              };
+            }
+          } else {
+            // Player is falling - wait a bit then carrier departs
+            if (carrierIntro.timer > 30) {
+              carrierIntro.phase = 'departing';
+              carrierIntro.timer = 0;
+            }
+          }
+        } else if (carrierIntro.phase === 'departing') {
+          // Carrier exits to the right
+          c.x += c.speed;
+
+          // When carrier is off-screen, end intro
+          if (c.x > GAME_WIDTH + 100) {
+            carrierIntroRef.current = null;
+            // Remove invincibility
+            playerInvincibleRef.current = 60; // Give 1 second buffer
+          }
+        }
+      }
+
       // Update victory sequence
       const victory = victoryRef.current;
       if (victory.active) {
@@ -14662,8 +14872,9 @@ const SpaceShooter = () => {
         scoreMultiplierRef.current = Math.max(1.0, scoreMultiplierRef.current - MULTIPLIER_DECAY_RATE);
       }
 
-      // Player movement
+      // Player movement (disable during carrier intro)
       const player = playerRef.current;
+      const carrierIntroActive = carrierIntroRef.current && carrierIntroRef.current.active;
 
       // Poll gamepad
       const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -15143,8 +15354,15 @@ const SpaceShooter = () => {
       }
 
       // Combined keyboard + gamepad movement with velocity-based physics
-      let movingRight = false;
-      let movingLeft = false;
+      // Disable player control during carrier intro sequence
+      if (carrierIntroActive) {
+        // Player follows carrier or falls - no manual control
+        player.vx = 0;
+        player.vy = 0;
+        player.tilt = 0;
+      } else {
+        let movingRight = false;
+        let movingLeft = false;
 
       const ACCELERATION = 0.8;  // How quickly ship speeds up
       const MAX_SPEED = SPEED_LEVELS[speedSettingRef.current - 1] || 5;  // Speed based on setting (1-4)
@@ -15453,6 +15671,7 @@ const SpaceShooter = () => {
       // Stop completely if very slow
       if (Math.abs(player.vx) < 0.1) player.vx = 0;
       if (Math.abs(player.vy) < 0.1) player.vy = 0;
+      } // End of movement control block (skip during carrier intro)
 
       // === DODGE ROLL/DASH SYSTEM ===
       const dashState = dashRef.current;
@@ -15756,6 +15975,8 @@ const SpaceShooter = () => {
       // Auto-fire with space held down or gamepad shoot button (respects fire rate upgrade) - only if not charging
       const fireRate = BASE_FIRE_RATE / (1 + upgradesRef.current.rapidFire * 0.5);
 
+      // Disable shooting during carrier intro
+      if (!carrierIntroActive) {
       // Player laser beam - available when rapidFire is at max (level 3)
       // Activated by Triangle button or L key (separate from regular shooting)
       const canUseLaser = upgradesRef.current.rapidFire >= 3;
@@ -16453,6 +16674,7 @@ const SpaceShooter = () => {
           return bullet.x < GAME_WIDTH;
         }
       });
+      } // End of shooting control block (skip during carrier intro)
 
       // Update missiles (homing behavior)
       missilesRef.current = missilesRef.current.filter(missile => {
@@ -23640,13 +23862,34 @@ const SpaceShooter = () => {
                     soundSystem.playUISparkle();
                     waveStartTimeRef.current = performance.now();
                     graceWarningShownRef.current = false;
-                    // Trigger fade from black for level intro
-                    levelFadeRef.current = {
+
+                    // Start carrier intro - massive carrier drops off player ship
+                    carrierIntroRef.current = {
                       active: true,
-                      fadeIn: true,
-                      alpha: 1,
-                      showText: waveRef.current
+                      phase: 'approaching', // approaching → dropping → departing
+                      timer: 0,
+                      carrier: {
+                        x: -500, // Start off-screen left
+                        y: GAME_HEIGHT / 2 - 120,
+                        width: 500,
+                        height: 240,
+                        targetX: GAME_WIDTH / 2 - 150,
+                        speed: 8
+                      },
+                      player: {
+                        attached: true, // Player attached to carrier
+                        dropStartY: null,
+                        dropSpeed: 0
+                      }
                     };
+
+                    // Position player above carrier bay
+                    playerRef.current.x = carrierIntroRef.current.carrier.x + 200;
+                    playerRef.current.y = carrierIntroRef.current.carrier.y + 80;
+
+                    // Make player invincible during intro
+                    playerInvincibleRef.current = 999;
+
                     gameStateRef.current = 'playing';
                   }}
                   className={`start-button ${checkpointSelection === 0 ? 'gamepad-selected' : ''}`}
