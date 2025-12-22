@@ -15153,7 +15153,14 @@ const SpaceShooter = () => {
               if (menuSelectionRef.current === 0) {
                 startGame();
               } else if (menuSelectionRef.current === 1 && saveExists) {
-                loadGame();
+                const loaded = loadGame();
+                if (loaded) {
+                  soundSystem.init();
+                  soundSystem.resume();
+                  soundSystem.startMusic();
+                  setGameState('playing');
+                  gameStateRef.current = 'playing';
+                }
               } else if ((menuSelectionRef.current === 1 && !saveExists) || (menuSelectionRef.current === 2 && saveExists)) {
                 setShowCustomize(true);
               } else {
@@ -22260,7 +22267,17 @@ const SpaceShooter = () => {
                 </button>
                 {hasSaveGame() && (
                   <button
-                    onClick={() => { soundSystem.playUISparkle(); loadGame(); }}
+                    onClick={() => { 
+                      soundSystem.playUISparkle(); 
+                      const loaded = loadGame();
+                      if (loaded) {
+                        soundSystem.init();
+                        soundSystem.resume();
+                        soundSystem.startMusic();
+                        setGameState('playing');
+                        gameStateRef.current = 'playing';
+                      }
+                    }}
                     className={`start-button continue-button ${menuSelection === 1 ? 'gamepad-selected' : ''}`}
                     onMouseEnter={() => setMenuSelection(1)}
                   >
