@@ -3340,12 +3340,12 @@ const SpaceShooter = () => {
     };
 
     // Position player in carrier bay (will be updated by carrier movement)
-    playerRef.current = { 
-      x: carrierIntroRef.current.carrier.x + 200, 
-      y: carrierIntroRef.current.carrier.y + 80, 
-      vx: 0, 
-      vy: 0, 
-      tilt: 0 
+    playerRef.current = {
+      x: carrierIntroRef.current.carrier.x + 200,
+      y: carrierIntroRef.current.carrier.y + 80,
+      vx: 0,
+      vy: 0,
+      tilt: 0
     };
     playerSpawnGlowRef.current = 90; // 1.5 second spawn glow animation
 
@@ -3592,12 +3592,12 @@ const SpaceShooter = () => {
       };
 
       // Reset everything first - position player in carrier bay
-      playerRef.current = { 
-        x: carrierIntroRef.current.carrier.x + 200, 
-        y: carrierIntroRef.current.carrier.y + 80, 
-        vx: 0, 
-        vy: 0, 
-        tilt: 0 
+      playerRef.current = {
+        x: carrierIntroRef.current.carrier.x + 200,
+        y: carrierIntroRef.current.carrier.y + 80,
+        vx: 0,
+        vy: 0,
+        tilt: 0
       };
       bulletsRef.current = [];
       missilesRef.current = [];
@@ -23897,11 +23897,11 @@ const SpaceShooter = () => {
                   <div className="loadout-stats">
                     <div className="loadout-stat">
                       <span className="stat-label">Weapon Level:</span>
-                      <span className="stat-value">{weaponLevel}</span>
+                      <span className="stat-value">{weaponLevelRef.current.level}</span>
                     </div>
                     <div className="loadout-stat">
-                      <span className="stat-label">Special Weapon:</span>
-                      <span className="stat-value">{specialWeaponRef.current || 'None'}</span>
+                      <span className="stat-label">Rapid Fire:</span>
+                      <span className="stat-value">Level {upgradesRef.current.rapidFire}</span>
                     </div>
                     <div className="loadout-stat">
                       <span className="stat-label">Force Pod:</span>
@@ -23909,7 +23909,7 @@ const SpaceShooter = () => {
                     </div>
                     <div className="loadout-stat">
                       <span className="stat-label">Bombs:</span>
-                      <span className="stat-value">{bombsRef.current}</span>
+                      <span className="stat-value">{bombRef.current.stock}/{bombRef.current.maxStock}</span>
                     </div>
                   </div>
                 </div>
