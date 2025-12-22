@@ -23896,6 +23896,8 @@ const SpaceShooter = () => {
                     // Make player invincible during intro
                     playerInvincibleRef.current = 999;
 
+                    // Resume gameplay and hide checkpoint screen
+                    setGameState('playing');
                     gameStateRef.current = 'playing';
                   }}
                   className={`start-button ${checkpointSelection === 0 ? 'gamepad-selected' : ''}`}
