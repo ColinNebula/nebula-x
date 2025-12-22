@@ -3319,7 +3319,34 @@ const SpaceShooter = () => {
     soundSystem.resume();
     soundSystem.startMusic();
 
-    playerRef.current = { x: 50, y: GAME_HEIGHT / 2 - PLAYER_HEIGHT / 2, vx: 0, vy: 0, tilt: 0 };
+    // Start with carrier intro sequence - massive carrier drops off player ship
+    carrierIntroRef.current = {
+      active: true,
+      phase: 'approaching', // approaching → dropping → departing
+      timer: 0,
+      carrier: {
+        x: -500, // Start off-screen left
+        y: GAME_HEIGHT / 2 - 120,
+        width: 500,
+        height: 240,
+        targetX: GAME_WIDTH / 2 - 150,
+        speed: 8
+      },
+      player: {
+        attached: true, // Player attached to carrier
+        dropStartY: null,
+        dropSpeed: 0
+      }
+    };
+
+    // Position player in carrier bay (will be updated by carrier movement)
+    playerRef.current = { 
+      x: carrierIntroRef.current.carrier.x + 200, 
+      y: carrierIntroRef.current.carrier.y + 80, 
+      vx: 0, 
+      vy: 0, 
+      tilt: 0 
+    };
     playerSpawnGlowRef.current = 90; // 1.5 second spawn glow animation
 
     // Play ship spawn sound
@@ -3353,7 +3380,7 @@ const SpaceShooter = () => {
     waveStartTimeRef.current = performance.now(); // Start grace period
     graceWarningShownRef.current = false; // Reset warning flag
     lastShotRef.current = 0;
-    playerInvincibleRef.current = 0;
+    playerInvincibleRef.current = 999; // Invincible during carrier intro
     waveRef.current = 1;
     waveKillsRef.current = 0;
     waveKillsNeededRef.current = 10;
@@ -3544,8 +3571,34 @@ const SpaceShooter = () => {
     try {
       const saveData = JSON.parse(saveDataStr);
 
-      // Reset everything first
-      playerRef.current = { x: 50, y: GAME_HEIGHT / 2 - PLAYER_HEIGHT / 2, vx: 0, vy: 0, tilt: 0 };
+      // Start with carrier intro sequence when loading save
+      carrierIntroRef.current = {
+        active: true,
+        phase: 'approaching',
+        timer: 0,
+        carrier: {
+          x: -500,
+          y: GAME_HEIGHT / 2 - 120,
+          width: 500,
+          height: 240,
+          targetX: GAME_WIDTH / 2 - 150,
+          speed: 8
+        },
+        player: {
+          attached: true,
+          dropStartY: null,
+          dropSpeed: 0
+        }
+      };
+
+      // Reset everything first - position player in carrier bay
+      playerRef.current = { 
+        x: carrierIntroRef.current.carrier.x + 200, 
+        y: carrierIntroRef.current.carrier.y + 80, 
+        vx: 0, 
+        vy: 0, 
+        tilt: 0 
+      };
       bulletsRef.current = [];
       missilesRef.current = [];
       enemiesRef.current = [];
@@ -3562,7 +3615,7 @@ const SpaceShooter = () => {
       debrisParticlesRef.current = [];
       lastSpawnRef.current = 0;
       lastShotRef.current = 0;
-      playerInvincibleRef.current = 60; // Brief invincibility on load
+      playerInvincibleRef.current = 999; // Invincible during carrier intro
       bossRef.current = null;
       bossActiveRef.current = false;
       waveCannonChargeRef.current = 0;
