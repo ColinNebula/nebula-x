@@ -22267,8 +22267,8 @@ const SpaceShooter = () => {
                 </button>
                 {hasSaveGame() && (
                   <button
-                    onClick={() => { 
-                      soundSystem.playUISparkle(); 
+                    onClick={() => {
+                      soundSystem.playUISparkle();
                       const loaded = loadGame();
                       if (loaded) {
                         soundSystem.init();
