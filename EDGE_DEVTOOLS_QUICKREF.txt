@@ -1,0 +1,288 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║            🔧 MICROSOFT EDGE DEVTOOLS - GAME DEVELOPMENT GUIDE              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ⚡ QUICK START                                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Open Nebula X in Microsoft Edge: http://localhost:5173                  │
+│  2. Press F12 to open DevTools                                               │
+│  3. Settings (⚙️) → Experiments → ✅ Enable "3D View"                       │
+│  4. Start profiling!                                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  🎮 1. 3D CANVAS INSPECTION                                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Purpose: Visualize Canvas layers, debug z-index stacking                   │
+│                                                                              │
+│  HOW TO USE:                                                                 │
+│  1. Ctrl+Shift+P → "Show 3D View"                                           │
+│  2. Rotate/zoom the 3D page visualization                                    │
+│  3. Click Canvas element to inspect                                          │
+│                                                                              │
+│  WHAT TO CHECK:                                                              │
+│  ✅ Canvas is topmost layer                                                 │
+│  ✅ Green highlight = GPU-accelerated ✅                                    │
+│  ❌ Red highlight = CPU rendering ⚠️                                        │
+│  ✅ UI overlays positioned correctly                                        │
+│                                                                              │
+│  OPTIMIZE:                                                                   │
+│  If Canvas is red (CPU rendering):                                           │
+│  canvas {                                                                    │
+│    will-change: transform;                                                   │
+│    transform: translateZ(0);  /* Force GPU acceleration */                  │
+│  }                                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ⚡ 2. PERFORMANCE PROFILING                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Purpose: Find FPS drops, identify bottlenecks, optimize game loop          │
+│                                                                              │
+│  REAL-TIME MONITORING:                                                       │
+│  1. Ctrl+Shift+P → "Show Performance monitor"                               │
+│  2. Watch these metrics:                                                     │
+│     - FPS: 60 ✅ | 30-60 ⚠️ | <30 ❌                                       │
+│     - CPU: <50% ✅ | 50-80% ⚠️ | >80% ❌                                   │
+│     - JS Heap Size: Should stabilize, not grow continuously                 │
+│     - DOM Nodes: Should stay constant                                        │
+│                                                                              │
+│  DETAILED PROFILING:                                                         │
+│  1. Performance tab → Record (⏺️)                                            │
+│  2. Play game for 10-30 seconds                                              │
+│  3. Stop recording (⏹️)                                                      │
+│  4. Analyze:                                                                 │
+│     - FPS Chart: Green=60fps, Yellow=30-60, Red=<30                         │
+│     - Main Thread: Look for long tasks (>50ms = frame drop)                 │
+│     - Bottom-Up: Sort by "Self Time" to find slowest functions              │
+│                                                                              │
+│  COMMON BOTTLENECKS IN NEBULA X:                                             │
+│  ⚠️ collision detection (too many checks)                                   │
+│  ⚠️ particle rendering (too many particles)                                 │
+│  ⚠️ array operations (filter/map in game loop)                              │
+│  ⚠️ Math.sqrt in distance calculations                                      │
+│                                                                              │
+│  OPTIMIZATION TIPS:                                                          │
+│  ❌ BAD:  enemies.filter(e => e.health > 0).forEach(update)                │
+│  ✅ GOOD: for (let i = 0; i < enemies.length; i++) { ... }                 │
+│                                                                              │
+│  ❌ BAD:  Math.sqrt((x1-x2)**2 + (y1-y2)**2)                               │
+│  ✅ GOOD: (x1-x2)**2 + (y1-y2)**2 < radius**2  (skip sqrt!)                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  🧠 3. MEMORY LEAK DETECTION                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Purpose: Find and fix memory leaks causing slowdown over time              │
+│                                                                              │
+│  HEAP SNAPSHOT METHOD:                                                       │
+│  1. Memory tab → Heap snapshot                                               │
+│  2. Take snapshot #1 (game at menu)                                          │
+│  3. Play for 5 minutes                                                       │
+│  4. Take snapshot #2 (game still running)                                    │
+│  5. Return to menu                                                           │
+│  6. Take snapshot #3 (game at menu again)                                    │
+│  7. Compare #3 with #1:                                                      │
+│     - Similar size = No leak ✅                                             │
+│     - #3 >> #1 = Memory leak! ❌                                            │
+│                                                                              │
+│  ALLOCATION TIMELINE METHOD:                                                 │
+│  1. Memory → Allocation instrumentation on timeline                          │
+│  2. Start recording                                                          │
+│  3. Menu → Play → Menu (complete cycle)                                      │
+│  4. Stop recording                                                           │
+│  5. Look for:                                                                │
+│     - Blue bars = allocated memory                                           │
+│     - Gray bars = garbage collected                                          │
+│     - More gray = good! ✅                                                  │
+│     - All blue = leak! ❌                                                   │
+│                                                                              │
+│  COMMON LEAKS IN GAMES:                                                      │
+│  ❌ Event listeners not removed                                             │
+│  ❌ Intervals/timeouts not cleared                                          │
+│  ❌ Destroyed enemies/bullets still in arrays                               │
+│  ❌ Canvas contexts not released                                            │
+│                                                                              │
+│  FIX EXAMPLES:                                                               │
+│  // Event listeners:                                                         │
+│  useEffect(() => {                                                           │
+│    window.addEventListener('keydown', handler);                              │
+│    return () => window.removeEventListener('keydown', handler); // ✅       │
+│  }, []);                                                                     │
+│                                                                              │
+│  // Clean up arrays:                                                         │
+│  for (let i = enemies.length - 1; i >= 0; i--) {                            │
+│    if (enemies[i].health <= 0) {                                            │
+│      enemies.splice(i, 1); // Remove dead enemies ✅                        │
+│    }                                                                         │
+│  }                                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  📱 4. NETWORK THROTTLING - MOBILE TESTING                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Purpose: Simulate slow mobile connections, test loading performance        │
+│                                                                              │
+│  HOW TO USE:                                                                 │
+│  1. Network tab → Throttling dropdown                                        │
+│  2. Select preset:                                                           │
+│     - Slow 3G:  400kb/s, 400ms latency (worst case)                         │
+│     - Fast 3G:  1.6Mb/s, 562ms latency                                      │
+│     - Fast 4G:  20Mb/s, 5ms latency                                         │
+│  3. Reload page                                                              │
+│  4. Measure time until game is playable                                      │
+│                                                                              │
+│  TARGET LOAD TIMES:                                                          │
+│  Desktop WiFi:      <2 seconds  ✅                                          │
+│  Fast 4G:           <3 seconds  ✅                                          │
+│  Slow 3G:           <5 seconds  ⚠️                                          │
+│                                                                              │
+│  CUSTOM PROFILE (Mobile Gaming):                                             │
+│  Download: 2 Mb/s                                                            │
+│  Upload:   1 Mb/s                                                            │
+│  Latency:  100ms                                                             │
+│                                                                              │
+│  ASSET OPTIMIZATION:                                                         │
+│  1. Network tab → Sort by Size (descending)                                  │
+│  2. Look for files >500KB                                                    │
+│  3. Optimize:                                                                │
+│     - Images: Compress, use WebP                                             │
+│     - Audio: Use MP3/OGG, reduce bitrate                                     │
+│     - JavaScript: Code split, lazy load                                      │
+│     - Fonts: Subset, use system fonts                                        │
+│                                                                              │
+│  SERVICE WORKER CHECK:                                                       │
+│  1. Application tab → Service Workers                                        │
+│  2. ✅ Offline checkbox                                                     │
+│  3. Reload page → Should load from cache                                     │
+│  4. Network tab shows "(from ServiceWorker)" ✅                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  🎯 EDGE-EXCLUSIVE FEATURES (Not in Chrome)                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ✅ 3D View - Visualize Canvas layers in 3D                                 │
+│  ✅ Issues Panel - Automatic performance warnings                           │
+│  ✅ Enhanced PWA Testing - Better manifest/service worker tools             │
+│  ✅ WebView2 Debugging - Debug Electron/native apps                         │
+│  ✅ Better Memory Tools - More detailed heap analysis                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  📊 PERFORMANCE TARGETS FOR NEBULA X                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Desktop (Recommended):                                                      │
+│  - FPS: 60                   ✅                                             │
+│  - Load Time: <2 seconds     ✅                                             │
+│  - Memory: <200MB            ✅                                             │
+│  - CPU: <50%                 ✅                                             │
+│                                                                              │
+│  Mobile (Minimum):                                                           │
+│  - FPS: 30                   ⚠️                                             │
+│  - Load Time: <5 seconds     ✅                                             │
+│  - Memory: <150MB            ✅                                             │
+│  - CPU: <80%                 ⚠️                                             │
+│                                                                              │
+│  Low-End Device:                                                             │
+│  - FPS: 24 (playable)        ⚠️                                             │
+│  - Load Time: <10 seconds    ⚠️                                             │
+│  - Memory: <100MB            ✅                                             │
+│  - Reduce particles/effects  ⚠️                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  🔍 DEBUGGING WORKFLOWS                                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Problem: Game slows down over time                                          │
+│  → Memory tab → Record allocations → Find leak → Fix cleanup               │
+│                                                                              │
+│  Problem: FPS drops during boss battles                                      │
+│  → Performance tab → Record → Find slowest functions → Optimize             │
+│                                                                              │
+│  Problem: Slow loading on mobile                                             │
+│  → Network tab → Throttle Slow 3G → Optimize large assets                   │
+│                                                                              │
+│  Problem: Memory leak from event listeners                                   │
+│  → Memory snapshots → Find detached DOM → Add useEffect cleanup             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ⌨️ KEYBOARD SHORTCUTS                                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  F12                         Open DevTools                                   │
+│  Ctrl+Shift+I                Open DevTools (alternative)                    │
+│  Ctrl+Shift+P                Command Menu                                    │
+│  Ctrl+Shift+C                Inspect Element                                │
+│  Ctrl+R                      Reload page                                     │
+│  Ctrl+Shift+R                Hard reload (bypass cache)                     │
+│  Ctrl+Shift+E                Network tab                                     │
+│  Ctrl+Shift+M                Device emulation                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  📚 PRE-RELEASE CHECKLIST                                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Performance:                                                                │
+│  □ 60 FPS during heavy combat                                                │
+│  □ No FPS drops during boss battles                                          │
+│  □ CPU usage <50% on desktop                                                 │
+│  □ Canvas is GPU-accelerated (green in 3D View)                              │
+│                                                                              │
+│  Memory:                                                                     │
+│  □ No memory leaks after 30+ minutes                                         │
+│  □ Memory stabilizes, doesn't grow continuously                              │
+│  □ All event listeners cleaned up                                            │
+│  □ Arrays properly managed (dead objects removed)                            │
+│                                                                              │
+│  Mobile:                                                                     │
+│  □ Loads in <5 seconds on Slow 3G                                            │
+│  □ Playable at 30+ FPS on mobile                                             │
+│  □ All assets <500KB                                                         │
+│  □ Service Worker caches game offline                                        │
+│                                                                              │
+│  Network:                                                                    │
+│  □ <100 requests on initial load                                             │
+│  □ JavaScript bundle <500KB                                                  │
+│  □ Images compressed (WebP preferred)                                        │
+│  □ Audio files optimized                                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  🎮 EDGE DEVTOOLS + APPLICATION INSIGHTS                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Use Together for Complete Monitoring:                                       │
+│                                                                              │
+│  Development (Edge DevTools):                                                │
+│  ✅ Find and fix performance issues                                         │
+│  ✅ Debug memory leaks                                                       │
+│  ✅ Optimize rendering                                                       │
+│  ✅ Test mobile performance                                                  │
+│                                                                              │
+│  Production (Application Insights):                                          │
+│  ✅ Monitor real player performance                                         │
+│  ✅ Track errors in production                                               │
+│  ✅ Analyze player behavior                                                  │
+│  ✅ Performance metrics across devices                                       │
+│                                                                              │
+│  Perfect Workflow:                                                           │
+│  1. Use Edge DevTools to optimize locally                                    │
+│  2. Deploy with Application Insights                                         │
+│  3. Monitor real-world performance                                           │
+│  4. Use Edge DevTools to fix reported issues                                 │
+│  5. Repeat!                                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  📖 RESOURCES                                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Full Guide:         EDGE_DEVTOOLS_GUIDE.md                                  │
+│  Microsoft Docs:     https://learn.microsoft.com/microsoft-edge/devtools/   │
+│  3D View:            https://learn.microsoft.com/.../3d-view/                │
+│  Performance:        https://learn.microsoft.com/.../evaluate-performance/   │
+│  Memory:             https://learn.microsoft.com/.../memory-problems/        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  🔧 OPTIMIZE YOUR GAME WITH EDGE DEVTOOLS! Test locally, monitor globally!  ║
+╚══════════════════════════════════════════════════════════════════════════════╝

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+﻿import React, { useEffect, useRef, useState, useCallback } from 'react';
 import './SpaceShooter.css';
 import { getPhysicsEngine } from '../utils/wasmLoader';
 
@@ -1170,7 +1170,8 @@ const SpaceShooter = () => {
     invincible: false,
     maxPower: false,    // Start with max weapon level
     slowBullets: false, // Enemy bullets move 50% slower
-    showHitboxes: false // Show player/enemy hitboxes for learning
+    showHitboxes: false, // Show player/enemy hitboxes for learning
+    showHealthBars: true // Show health bars above enemies
   });
   const practiceSettingsRef = useRef({
     startWave: 1,
@@ -1178,7 +1179,8 @@ const SpaceShooter = () => {
     invincible: false,
     maxPower: false,
     slowBullets: false,
-    showHitboxes: false
+    showHitboxes: false,
+    showHealthBars: true
   });
   const highestWaveReachedRef = useRef(() => {
     const saved = localStorage.getItem('nebulaXHighestWave');
@@ -1199,6 +1201,7 @@ const SpaceShooter = () => {
 
   // Mobile touch controls
   const [showMobileControls, setShowMobileControls] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const touchJoystickRef = useRef({ active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 });
   const touchButtonsRef = useRef({
     shoot: false,
@@ -1206,6 +1209,18 @@ const SpaceShooter = () => {
     bomb: false,
     special: false
   });
+
+  // Haptic feedback helper (industry standard for PWA games)
+  const hapticFeedback = useCallback((intensity = 'medium') => {
+    if ('vibrate' in navigator) {
+      const patterns = {
+        light: 10,
+        medium: 20,
+        heavy: 50
+      };
+      navigator.vibrate(patterns[intensity] || 20);
+    }
+  }, []);
 
   // Default user settings
   const DEFAULT_USER_SETTINGS = {
@@ -1423,7 +1438,7 @@ const SpaceShooter = () => {
 
     // Special achievements
     { id: 'shield_max', name: 'FORTRESS', description: 'Get max shields (9)', icon: '\ud83d\udee1\ufe0f', category: 'special', requirement: 9, type: 'maxShield' },
-    { id: 'laser_unlock', name: 'LASER MASTER', description: 'Unlock laser beam (\u22653 rapid)', icon: '\ud83d\udd2b', category: 'special', requirement: 3, type: 'rapidLevel' },
+    { id: 'laser_unlock', name: 'LASER MASTER', description: 'Unlock Laser Beam (Lvâ‰¥3 Rapid)', icon: '\ud83d\udd2b', category: 'special', requirement: 3, type: 'rapidLevel' },
     { id: 'games_10', name: 'DEDICATED', description: 'Play 10 games', icon: '\ud83c\udfae', category: 'special', requirement: 10, type: 'gamesPlayed' },
     { id: 'games_50', name: 'ADDICTED', description: 'Play 50 games', icon: '\ud83d\udc96', category: 'special', requirement: 50, type: 'gamesPlayed' },
   ];
@@ -1465,6 +1480,312 @@ const SpaceShooter = () => {
   const showCustomizeRef = useRef(false);
   const selectedShipRef = useRef(0);
   const shipPartsRef = useRef({ booster: 0, wings: 0, shield: 0, trail: 0 });
+
+  // ==================== META-PROGRESSION SYSTEM ====================
+  // Persistent pilot progression across all runs
+  const [pilotProgression, setPilotProgression] = useState(() => {
+    const saved = localStorage.getItem('nebulaXPilotProgression');
+    return saved ? JSON.parse(saved) : {
+      level: 1,
+      xp: 0,
+      totalXP: 0,
+      credits: 0,
+      totalCreditsEarned: 0,
+      runsCompleted: 0,
+      bestWave: 0,
+      bestScore: 0
+    };
+  });
+
+  // Purchased permanent upgrades
+  const [permanentUpgrades, setPermanentUpgrades] = useState(() => {
+    const saved = localStorage.getItem('nebulaXPermanentUpgrades');
+    return saved ? JSON.parse(saved) : {
+      // Starting bonuses
+      startingLives: 0,           // +1 life per level (max 3)
+      startingBombs: 0,           // +1 bomb per level (max 3)
+      startingShield: false,      // Start with shield
+      startingWeaponLevel: 0,     // Start at weapon level +1/+2 (max 2)
+
+      // Stat boosts
+      healthBoost: 0,             // +25% max health per level (max 4)
+      damageBoost: 0,             // +20% damage per level (max 5)
+      speedBoost: 0,              // +15% speed per level (max 4)
+      fireRateBoost: 0,           // +15% fire rate per level (max 4)
+
+      // Economic
+      creditMultiplier: 0,        // +25% credits earned per level (max 4)
+      xpMultiplier: 0,            // +25% XP earned per level (max 4)
+      powerupDropBoost: 0,        // +10% drop chance per level (max 3)
+
+      // Special abilities
+      phoenixRevive: false,       // Auto-revive once per run
+      luckyStart: false,          // Start with random rare power-up
+      explosiveEntry: false,      // Carrier intro destroys nearby enemies
+      secondWind: false,          // Restore 50% health at 25% once per run
+      rapidRecovery: 0,           // Shield recharge 25% faster per level (max 3)
+
+      // Advanced unlocks
+      dualPolarity: false,        // Damage both polarities (costs 2000 credits)
+      timeSlowMastery: false,     // Grazing slows time (costs 3000 credits)
+      weaponMastery: false        // Start at max weapon level (costs 5000 credits)
+    };
+  });
+
+  // Upgrade shop visibility
+  const [showUpgradeShop, setShowUpgradeShop] = useState(false);
+  const showUpgradeShopRef = useRef(false);
+
+  // Session rewards (earned this run, awarded on game over)
+  const sessionRewardsRef = useRef({ xp: 0, credits: 0 });
+
+  // Ref to access permanent upgrades during gameplay
+  const permanentUpgradesRef = useRef(permanentUpgrades);
+
+  // Upgrade definitions with costs and requirements
+  const PERMANENT_UPGRADES_CATALOG = {
+    // === STARTING BONUSES ===
+    startingLives: {
+      name: 'Extra Life',
+      description: 'Start each run with +1 life',
+      category: 'starting',
+      icon: '❤️',
+      maxLevel: 3,
+      baseCost: 300,
+      costIncrease: 200,
+      requiresPilotLevel: 1
+    },
+    startingBombs: {
+      name: 'Bomb Cache',
+      description: 'Start each run with +1 bomb',
+      category: 'starting',
+      icon: '💣',
+      maxLevel: 3,
+      baseCost: 250,
+      costIncrease: 150,
+      requiresPilotLevel: 1
+    },
+    startingShield: {
+      name: 'Shield Generator',
+      description: 'Start with a shield active',
+      category: 'starting',
+      icon: '🛡️',
+      maxLevel: 1,
+      baseCost: 500,
+      requiresPilotLevel: 3
+    },
+    startingWeaponLevel: {
+      name: 'Advanced Arsenal',
+      description: 'Start at weapon level +1',
+      category: 'starting',
+      icon: '⚡',
+      maxLevel: 2,
+      baseCost: 600,
+      costIncrease: 400,
+      requiresPilotLevel: 5
+    },
+
+    // === STAT BOOSTS ===
+    healthBoost: {
+      name: 'Hull Reinforcement',
+      description: '+25% maximum health',
+      category: 'stats',
+      icon: '🔧',
+      maxLevel: 4,
+      baseCost: 400,
+      costIncrease: 250,
+      requiresPilotLevel: 2
+    },
+    damageBoost: {
+      name: 'Weapon Calibration',
+      description: '+20% bullet damage',
+      category: 'stats',
+      icon: '🔥',
+      maxLevel: 5,
+      baseCost: 350,
+      costIncrease: 200,
+      requiresPilotLevel: 2
+    },
+    speedBoost: {
+      name: 'Engine Tuning',
+      description: '+15% movement speed',
+      category: 'stats',
+      icon: '⚡',
+      maxLevel: 4,
+      baseCost: 300,
+      costIncrease: 200,
+      requiresPilotLevel: 1
+    },
+    fireRateBoost: {
+      name: 'Auto-Loader',
+      description: '+15% fire rate',
+      category: 'stats',
+      icon: '🎯',
+      maxLevel: 4,
+      baseCost: 400,
+      costIncrease: 250,
+      requiresPilotLevel: 3
+    },
+
+    // === ECONOMIC ===
+    creditMultiplier: {
+      name: 'Salvage Expert',
+      description: '+25% credits earned',
+      category: 'economic',
+      icon: '💰',
+      maxLevel: 4,
+      baseCost: 500,
+      costIncrease: 300,
+      requiresPilotLevel: 4
+    },
+    xpMultiplier: {
+      name: 'Combat Veteran',
+      description: '+25% XP earned',
+      category: 'economic',
+      icon: '📈',
+      maxLevel: 4,
+      baseCost: 450,
+      costIncrease: 250,
+      requiresPilotLevel: 4
+    },
+    powerupDropBoost: {
+      name: 'Lucky Charm',
+      description: '+10% power-up drop rate',
+      category: 'economic',
+      icon: '🍀',
+      maxLevel: 3,
+      baseCost: 600,
+      costIncrease: 400,
+      requiresPilotLevel: 5
+    },
+
+    // === SPECIAL ABILITIES ===
+    phoenixRevive: {
+      name: 'Phoenix Protocol',
+      description: 'Auto-revive once per run',
+      category: 'special',
+      icon: '🔥',
+      maxLevel: 1,
+      baseCost: 1000,
+      requiresPilotLevel: 6
+    },
+    luckyStart: {
+      name: 'Fortune Favors',
+      description: 'Start with a random rare power-up',
+      category: 'special',
+      icon: '🎲',
+      maxLevel: 1,
+      baseCost: 800,
+      requiresPilotLevel: 5
+    },
+    explosiveEntry: {
+      name: 'Shock & Awe',
+      description: 'Carrier intro creates explosion',
+      category: 'special',
+      icon: '💥',
+      maxLevel: 1,
+      baseCost: 750,
+      requiresPilotLevel: 4
+    },
+    secondWind: {
+      name: 'Second Wind',
+      description: 'Restore 50% health at low HP once',
+      category: 'special',
+      icon: '💚',
+      maxLevel: 1,
+      baseCost: 900,
+      requiresPilotLevel: 7
+    },
+    rapidRecovery: {
+      name: 'Rapid Recovery',
+      description: 'Shield recharges 25% faster',
+      category: 'special',
+      icon: '⚡',
+      maxLevel: 3,
+      baseCost: 550,
+      costIncrease: 350,
+      requiresPilotLevel: 5
+    },
+
+    // === ADVANCED UNLOCKS (expensive game-changers) ===
+    dualPolarity: {
+      name: 'Dual Polarity Matrix',
+      description: 'Damage both light & dark enemies',
+      category: 'advanced',
+      icon: '☯️',
+      maxLevel: 1,
+      baseCost: 2000,
+      requiresPilotLevel: 10
+    },
+    timeSlowMastery: {
+      name: 'Chrono Mastery',
+      description: 'Grazing slows down time',
+      category: 'advanced',
+      icon: '⏱️',
+      maxLevel: 1,
+      baseCost: 3000,
+      requiresPilotLevel: 12
+    },
+    weaponMastery: {
+      name: 'Weapon Mastery',
+      description: 'Start at maximum weapon level',
+      category: 'advanced',
+      icon: '👑',
+      maxLevel: 1,
+      baseCost: 5000,
+      requiresPilotLevel: 15
+    }
+  };
+
+  // Calculate XP needed for next pilot level (exponential curve)
+  const getXPForLevel = useCallback((level) => {
+    return Math.floor(100 * Math.pow(1.5, level - 1));
+  }, []);
+
+  // Calculate cost for an upgrade at a specific level
+  const getUpgradeCost = useCallback((upgradeKey, currentLevel) => {
+    const upgrade = PERMANENT_UPGRADES_CATALOG[upgradeKey];
+    if (!upgrade) return 0;
+
+    const increase = upgrade.costIncrease || 0;
+    return upgrade.baseCost + (increase * currentLevel);
+  }, []);
+
+  // Purchase a permanent upgrade
+  const purchaseUpgrade = useCallback((upgradeKey) => {
+    const upgrade = PERMANENT_UPGRADES_CATALOG[upgradeKey];
+    const currentLevel = permanentUpgrades[upgradeKey] || 0;
+
+    // Validate purchase
+    if (currentLevel >= upgrade.maxLevel) return false;
+    if (pilotProgression.level < upgrade.requiresPilotLevel) return false;
+
+    const cost = getUpgradeCost(upgradeKey, currentLevel);
+    if (pilotProgression.credits < cost) return false;
+
+    // Execute purchase
+    const newUpgrades = { ...permanentUpgrades };
+    if (upgrade.maxLevel === 1) {
+      newUpgrades[upgradeKey] = true;
+    } else {
+      newUpgrades[upgradeKey] = currentLevel + 1;
+    }
+
+    const newProgression = {
+      ...pilotProgression,
+      credits: pilotProgression.credits - cost
+    };
+
+    setPermanentUpgrades(newUpgrades);
+    setPilotProgression(newProgression);
+    localStorage.setItem('nebulaXPermanentUpgrades', JSON.stringify(newUpgrades));
+    localStorage.setItem('nebulaXPilotProgression', JSON.stringify(newProgression));
+
+    // Visual feedback
+    soundSystem.playPowerup?.();
+    return true;
+  }, [permanentUpgrades, pilotProgression, getUpgradeCost]);
+  // ==================== END META-PROGRESSION ====================
 
   // Ship part options
   const BOOSTER_OPTIONS = [
@@ -1805,6 +2126,8 @@ const SpaceShooter = () => {
   const explosionSpriteLoadedRef = useRef(false);
   const explosionAtlasRef = useRef(null); // TexturePacker JSON data
   const explosionAtlasLoadedRef = useRef(false);
+  const asteroidImageRef = useRef(null); // Asteroid sprite image
+  const asteroidImageLoadedRef = useRef(false);
   const pickupEffectsRef = useRef([]);
   const floatingTextsRef = useRef([]);
   const specialEffectsRef = useRef([]); // Special visual effects
@@ -2201,6 +2524,114 @@ const SpaceShooter = () => {
     terrainObstacles: []  // { x, y, width, height, type, vx }
   });
   const lastHazardSpawnRef = useRef(0);
+
+  // ==================== ENVIRONMENTAL STORYTELLING SYSTEM ====================
+  // Parallax planet backdrops
+  const planetBackdropsRef = useRef([]);
+  const PLANET_TYPES = [
+    { name: 'Volcanic', color: '#ff4400', secondaryColor: '#ff8800', atmosphere: '#ff6600', hazard: 'lava_rain', size: 'large' },
+    { name: 'Ice Giant', color: '#00aaff', secondaryColor: '#88ddff', atmosphere: '#aaeeff', hazard: 'ice_storm', size: 'huge' },
+    { name: 'Gas Giant', color: '#ff88ff', secondaryColor: '#ffaaff', atmosphere: '#ffccff', hazard: 'wind_shear', size: 'huge' },
+    { name: 'Desert', color: '#ffaa44', secondaryColor: '#ffcc88', atmosphere: '#ffdd99', hazard: 'dust_storm', size: 'medium' },
+    { name: 'Ocean World', color: '#0088ff', secondaryColor: '#00ccff', atmosphere: '#88ddff', hazard: 'water_vapor', size: 'large' },
+    { name: 'Rocky', color: '#888888', secondaryColor: '#aaaaaa', atmosphere: '#cccccc', hazard: 'meteor_shower', size: 'small' },
+    { name: 'Jungle', color: '#00ff44', secondaryColor: '#44ff88', atmosphere: '#88ffaa', hazard: 'spore_cloud', size: 'medium' },
+    { name: 'Dead Moon', color: '#444444', secondaryColor: '#666666', atmosphere: null, hazard: 'debris_field', size: 'small' }
+  ];
+
+  // Dynamic weather system
+  const weatherSystemRef = useRef({
+    active: false,
+    type: null,           // 'nebula_storm', 'asteroid_field', 'solar_flare', 'void_rift', 'ion_storm'
+    intensity: 0,         // 0-1
+    duration: 0,          // frames remaining
+    particles: [],        // Weather particles
+    effects: {            // Gameplay effects
+      visibilityReduction: 0,
+      speedModifier: 1,
+      damageOverTime: 0,
+      heatSeeking: false
+    },
+    lastDamageTime: 0     // Timestamp of last damage application
+  });
+
+  // Destructible environment objects
+  const destructiblesRef = useRef([]);
+  const DESTRUCTIBLE_TYPES = {
+    satellite: {
+      width: 40, height: 40, health: 15, points: 100,
+      debris: 8, color: '#888888', icon: '🛰️',
+      dropChance: 0.3
+    },
+    spaceStation: {
+      width: 120, height: 80, health: 50, points: 500,
+      debris: 20, color: '#00aaff', icon: '🏗️',
+      dropChance: 0.6, shieldSegments: 4
+    },
+    cargoContainer: {
+      width: 30, height: 30, health: 10, points: 50,
+      debris: 5, color: '#ffaa00', icon: '📦',
+      dropChance: 0.8, loot: true
+    },
+    commsArray: {
+      width: 50, height: 60, health: 20, points: 150,
+      debris: 10, color: '#ff00ff', icon: '📡',
+      dropChance: 0.4
+    },
+    miningRig: {
+      width: 80, height: 70, health: 35, points: 300,
+      debris: 15, color: '#ff8800', icon: '⚒️',
+      dropChance: 0.5, explosion: 'large'
+    }
+  };
+
+  const WEATHER_TYPES = {
+    nebula_storm: {
+      name: 'Nebula Storm',
+      color: '#ff00ff',
+      particleCount: 150,
+      visibilityReduction: 0.4,
+      speedModifier: 0.85,
+      duration: 600,
+      waveRequirement: 3
+    },
+    asteroid_field: {
+      name: 'Asteroid Field',
+      color: '#aaaaaa',
+      particleCount: 80,
+      spawnAsteroids: true,
+      speedModifier: 0.9,
+      duration: 450,
+      waveRequirement: 2
+    },
+    solar_flare: {
+      name: 'Solar Flare',
+      color: '#ffaa00',
+      particleCount: 200,
+      damageOverTime: 0.1,
+      duration: 300,
+      waveRequirement: 5
+    },
+    void_rift: {
+      name: 'Void Rift',
+      color: '#000088',
+      particleCount: 100,
+      heatSeeking: true,
+      speedModifier: 1.2,
+      duration: 400,
+      waveRequirement: 7
+    },
+    ion_storm: {
+      name: 'Ion Storm',
+      color: '#00ffff',
+      particleCount: 120,
+      disruptWeapons: true,
+      speedModifier: 0.95,
+      duration: 500,
+      waveRequirement: 4
+    }
+  };
+  // ==================== END ENVIRONMENTAL STORYTELLING ====================
 
   const FORCE_FIRE_RATE = 400; // ms between shots
   const FORCE_BULLET_SPEED = 10;
@@ -2609,8 +3040,11 @@ const SpaceShooter = () => {
   // Initialize stars for parallax background (3 layers)
   useEffect(() => {
     const stars = [];
+    const performanceMode = userSettingsRef.current?.performanceMode || false;
+    const starMultiplier = performanceMode ? 0.5 : 1; // Reduce stars on mobile
+
     // Far layer - small, slow stars
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < Math.floor(60 * starMultiplier); i++) {
       stars.push({
         x: Math.random() * GAME_WIDTH,
         y: Math.random() * GAME_HEIGHT,
@@ -2621,7 +3055,7 @@ const SpaceShooter = () => {
       });
     }
     // Mid layer - medium stars
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < Math.floor(40 * starMultiplier); i++) {
       stars.push({
         x: Math.random() * GAME_WIDTH,
         y: Math.random() * GAME_HEIGHT,
@@ -2632,7 +3066,7 @@ const SpaceShooter = () => {
       });
     }
     // Near layer - large, fast stars (streaks)
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < Math.floor(25 * starMultiplier); i++) {
       stars.push({
         x: Math.random() * GAME_WIDTH,
         y: Math.random() * GAME_HEIGHT,
@@ -2696,15 +3130,24 @@ const SpaceShooter = () => {
         bossSpawnSoundRef.current.pause();
         bossSpawnSoundRef.current = null;
       }
-      // Start menu music if not already playing
-      if (!menuMusicRef.current) {
-        menuMusicRef.current = new Audio(asset('Under_Cover_of_the_Myst.mp3'));
-        menuMusicRef.current.loop = true;
-        menuMusicRef.current.volume = 0.3;
-      }
-      if (menuMusicRef.current.paused) {
-        menuMusicRef.current.play().catch(() => {});
-      }
+      // Start menu music if not already playing (delay for performance on mobile)
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        || ('ontouchstart' in window)
+        || (navigator.maxTouchPoints > 0);
+
+      const loadDelay = isMobileDevice ? 500 : 0; // Delay music load on mobile
+
+      setTimeout(() => {
+        if (!menuMusicRef.current) {
+          menuMusicRef.current = new Audio(asset('Under_Cover_of_the_Myst.mp3'));
+          menuMusicRef.current.loop = true;
+          menuMusicRef.current.volume = 0.3;
+          menuMusicRef.current.preload = 'none'; // Don't preload
+        }
+        if (menuMusicRef.current.paused) {
+          menuMusicRef.current.play().catch(() => {});
+        }
+      }, loadDelay);
     } else if (gameState === 'playing') {
       // Stop menu music when playing
       if (menuMusicRef.current && !menuMusicRef.current.paused) {
@@ -2851,29 +3294,103 @@ const SpaceShooter = () => {
 
   // Detect mobile device and show touch controls
   useEffect(() => {
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    // Improved detection for iPads (iPadOS 13+ reports as desktop)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isIPadOS = navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform);
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       || ('ontouchstart' in window)
-      || (navigator.maxTouchPoints > 0);
+      || (navigator.maxTouchPoints > 0)
+      || isIOS
+      || isIPadOS;
 
-    setShowMobileControls(isMobileDevice);
+    console.log('Mobile device detected:', isMobile, {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      touchSupport: 'ontouchstart' in window,
+      maxTouchPoints: navigator.maxTouchPoints,
+      isIPadOS: isIPadOS
+    });
 
-    // Also check for landscape orientation on mobile
+    setIsMobileDevice(isMobile);
+    setShowMobileControls(isMobile);
+
+    // Enable performance mode automatically for mobile devices
+    if (isMobile) {
+      setUserSettings(prev => ({
+        ...prev,
+        performanceMode: true
+      }));
+      console.log('Performance mode enabled for mobile device');
+    }
+
+    // Handle orientation changes
     const handleOrientationChange = () => {
-      if (isMobileDevice && window.innerHeight < window.innerWidth) {
-        // Landscape mode - optimal for game
-        console.log('Landscape mode detected');
-      }
+      // Recalculate control positions on orientation change
+      setTimeout(() => {
+        console.log('Orientation changed:', window.orientation || screen.orientation?.angle);
+      }, 100);
     };
 
     window.addEventListener('orientationchange', handleOrientationChange);
-    window.addEventListener('resize', handleOrientationChange);
-    handleOrientationChange();
+    screen.orientation?.addEventListener('change', handleOrientationChange);
 
     return () => {
       window.removeEventListener('orientationchange', handleOrientationChange);
-      window.removeEventListener('resize', handleOrientationChange);
+      screen.orientation?.removeEventListener('change', handleOrientationChange);
     };
   }, []);
+
+  // Screen Wake Lock for PWA (prevents screen from sleeping during gameplay)
+  useEffect(() => {
+    let wakeLock = null;
+
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator && isMobileDevice && gameState === 'playing') {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('Screen wake lock activated');
+
+          wakeLock.addEventListener('release', () => {
+            console.log('Screen wake lock released');
+          });
+        } catch (err) {
+          console.log('Wake lock error:', err);
+        }
+      }
+    };
+
+    const releaseWakeLock = async () => {
+      if (wakeLock !== null) {
+        try {
+          await wakeLock.release();
+          wakeLock = null;
+        } catch (err) {
+          console.log('Wake lock release error:', err);
+        }
+      }
+    };
+
+    // Request wake lock when playing
+    if (gameState === 'playing') {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+
+    // Handle visibility change
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && gameState === 'playing') {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      releaseWakeLock();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [gameState, isMobileDevice]);
 
   // Check and unlock achievements
   const checkAchievements = useCallback((currentScore, currentWave, currentShield, currentRapidLevel) => {
@@ -2999,11 +3516,78 @@ const SpaceShooter = () => {
         localStorage.setItem('spaceShooterHighScore', scoreRef.current);
         setHighScore(scoreRef.current);
       }
+
+      // ==================== AWARD META-PROGRESSION REWARDS ====================
+      // Calculate XP earned (based on wave reached and performance)
+      const baseXP = waveRef.current * 10; // 10 XP per wave reached
+      const scoreXP = Math.floor(scoreRef.current / 1000); // 1 XP per 1000 points
+      const killXP = sessionStatsRef.current.kills * 2; // 2 XP per kill
+      const bossXP = sessionStatsRef.current.bosses * 50; // 50 XP per boss
+      let totalXP = baseXP + scoreXP + killXP + bossXP;
+
+      // Apply XP multiplier from upgrades
+      const xpMultiplier = 1 + (permanentUpgrades.xpMultiplier * 0.25);
+      totalXP = Math.floor(totalXP * xpMultiplier);
+
+      // Calculate credits earned (10% of score + bonuses)
+      const baseCredits = Math.floor(scoreRef.current * 0.1);
+      const waveCredits = waveRef.current * 5; // 5 credits per wave
+      const bossCredits = sessionStatsRef.current.bosses * 25; // 25 credits per boss
+      let totalCredits = baseCredits + waveCredits + bossCredits;
+
+      // Apply credit multiplier from upgrades
+      const creditMultiplier = 1 + (permanentUpgrades.creditMultiplier * 0.25);
+      totalCredits = Math.floor(totalCredits * creditMultiplier);
+
+      // Store session rewards for display
+      sessionRewardsRef.current = { xp: totalXP, credits: totalCredits };
+
+      // Award XP and check for level up
+      let newProgression = { ...pilotProgression };
+      newProgression.xp += totalXP;
+      newProgression.totalXP += totalXP;
+      newProgression.credits += totalCredits;
+      newProgression.totalCreditsEarned += totalCredits;
+      newProgression.runsCompleted += 1;
+
+      // Update best stats
+      if (waveRef.current > newProgression.bestWave) {
+        newProgression.bestWave = waveRef.current;
+      }
+      if (scoreRef.current > newProgression.bestScore) {
+        newProgression.bestScore = scoreRef.current;
+      }
+
+      // Level up loop
+      let leveledUp = false;
+      while (newProgression.xp >= getXPForLevel(newProgression.level)) {
+        newProgression.xp -= getXPForLevel(newProgression.level);
+        newProgression.level += 1;
+        leveledUp = true;
+      }
+
+      // Save progression
+      setPilotProgression(newProgression);
+      localStorage.setItem('nebulaXPilotProgression', JSON.stringify(newProgression));
+
+      // Show level up notification if leveled up
+      if (leveledUp) {
+        floatingTextsRef.current.push({
+          x: GAME_WIDTH / 2,
+          y: GAME_HEIGHT / 2 - 100,
+          text: `🎖️ PILOT LEVEL ${newProgression.level}! 🎖️`,
+          color: '#ffaa00',
+          lifetime: 200,
+          scale: 2.5,
+          pulse: true
+        });
+      }
+      // ==================== END REWARD CALCULATION ====================
     }
     soundSystem.stopMusic();
     saveSessionStats();
     setGameState('gameOver');
-  }, [saveSessionStats]);
+  }, [saveSessionStats, permanentUpgrades, pilotProgression, getXPForLevel]);
 
   // Sync new feature refs
   useEffect(() => {
@@ -3017,6 +3601,10 @@ const SpaceShooter = () => {
   useEffect(() => {
     branchSelectionRef.current = branchSelection;
   }, [branchSelection]);
+
+  useEffect(() => {
+    permanentUpgradesRef.current = permanentUpgrades;
+  }, [permanentUpgrades]);
 
   // Helper function to check if a key matches a control
   const isKeyPressed = useCallback((controlName) => {
@@ -3056,8 +3644,15 @@ const SpaceShooter = () => {
       if (gameStateRef.current === 'brand') {
         soundSystem.init();
         soundSystem.resume();
-        setGameState('cinematic');
-        gameStateRef.current = 'cinematic';
+
+        // Skip cinematic on mobile devices
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+          || ('ontouchstart' in window)
+          || (navigator.maxTouchPoints > 0);
+
+        const nextState = isMobileDevice ? 'splash' : 'cinematic';
+        setGameState(nextState);
+        gameStateRef.current = nextState;
         return;
       }
 
@@ -3329,6 +3924,50 @@ const SpaceShooter = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Gamepad connection event listeners
+  useEffect(() => {
+    const handleGamepadConnected = (e) => {
+      console.log('🎮 GAMEPAD CONNECTED EVENT:', e.gamepad.id, 'Index:', e.gamepad.index);
+      console.log('   Buttons:', e.gamepad.buttons.length, 'Axes:', e.gamepad.axes.length);
+      gamepadRef.current = e.gamepad;
+
+      // Show user-friendly notification
+      floatingTextsRef.current.push({
+        x: GAME_WIDTH / 2,
+        y: GAME_HEIGHT / 2,
+        text: '🎮 Controller Connected!',
+        color: '#00ff00',
+        lifetime: 120,
+        vy: -0.5
+      });
+    };
+
+    const handleGamepadDisconnected = (e) => {
+      console.log('🎮 GAMEPAD DISCONNECTED:', e.gamepad.id);
+      if (gamepadRef.current && gamepadRef.current.index === e.gamepad.index) {
+        gamepadRef.current = null;
+      }
+    };
+
+    window.addEventListener('gamepadconnected', handleGamepadConnected);
+    window.addEventListener('gamepaddisconnected', handleGamepadDisconnected);
+
+    // Check if gamepad is already connected
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (let i = 0; i < gamepads.length; i++) {
+      if (gamepads[i] && gamepads[i].buttons && gamepads[i].buttons.length > 0) {
+        console.log('🎮 GAMEPAD ALREADY CONNECTED AT STARTUP:', gamepads[i].id);
+        gamepadRef.current = gamepads[i];
+        break;
+      }
+    }
+
+    return () => {
+      window.removeEventListener('gamepadconnected', handleGamepadConnected);
+      window.removeEventListener('gamepaddisconnected', handleGamepadDisconnected);
+    };
+  }, []);
+
   const startGame = useCallback(() => {
     // Initialize audio and start music
     soundSystem.init();
@@ -3414,6 +4053,71 @@ const SpaceShooter = () => {
     playerLaserRef.current = { charging: false, charge: 0, firing: false, duration: 0 };
     hazardsRef.current = { asteroids: [], laserBarriers: [], gravityWells: [], atmosphericParticles: [], terrainObstacles: [] };
     lastHazardSpawnRef.current = 0;
+
+    // ==================== INITIALIZE ENVIRONMENTAL STORYTELLING ====================
+    // Initialize parallax planet backdrops (1-2 planets per run)
+    planetBackdropsRef.current = [];
+    const planetCount = Math.random() < 0.7 ? 2 : 1;
+    for (let i = 0; i < planetCount; i++) {
+      const typeIndex = Math.floor(Math.random() * PLANET_TYPES.length);
+      const planetType = PLANET_TYPES[typeIndex];
+      const size = planetType.size === 'huge' ? 400 : (planetType.size === 'large' ? 300 : (planetType.size === 'medium' ? 200 : 120));
+
+      planetBackdropsRef.current.push({
+        type: planetType,
+        x: -200 + Math.random() * (GAME_WIDTH - size + 400),
+        y: i === 0 ? -size * 0.6 : GAME_HEIGHT - size * 0.4,
+        size: size,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.002,
+        parallaxSpeed: 0.2 + Math.random() * 0.3,
+        cloudRotation: 0,
+        rings: Math.random() < 0.3, // 30% chance of rings
+        ringAngle: Math.random() * Math.PI
+      });
+    }
+
+    // Initialize weather system (inactive at start)
+    weatherSystemRef.current = {
+      active: false,
+      type: null,
+      intensity: 0,
+      duration: 0,
+      particles: [],
+      effects: {
+        visibilityReduction: 0,
+        speedModifier: 1,
+        damageOverTime: 0,
+        heatSeeking: false
+      },
+      nextWeatherWave: 3 + Math.floor(Math.random() * 3) // Random wave between 3-5
+    };
+
+    // Initialize destructible objects (spawn some at start)
+    destructiblesRef.current = [];
+    if (gameMode !== 'practice') {
+      const destructibles = ['satellite', 'cargoContainer', 'commsArray'];
+      for (let i = 0; i < 3; i++) {
+        const type = destructibles[Math.floor(Math.random() * destructibles.length)];
+        const def = DESTRUCTIBLE_TYPES[type];
+        destructiblesRef.current.push({
+          type: type,
+          x: Math.random() * (GAME_WIDTH - def.width),
+          y: -100 - Math.random() * 200,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: 0.3 + Math.random() * 0.5,
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: (Math.random() - 0.5) * 0.05,
+          health: def.health,
+          maxHealth: def.health,
+          damaged: false,
+          sparking: false,
+          sparkTimer: 0
+        });
+      }
+    }
+    // ==================== END ENVIRONMENTAL INIT ====================
+
     // Reset graze system
     grazeRef.current = { count: 0, meter: 0, lastGrazeTime: 0, displayTimer: 0, combo: 0, comboTimer: 0 };
     // Reset bomb system
@@ -3538,6 +4242,83 @@ const SpaceShooter = () => {
 
     // Reset session stats for this game
     sessionStatsRef.current = { kills: 0, bosses: 0, powerups: 0 };
+
+    // ==================== APPLY PERMANENT UPGRADES ====================
+    // Apply starting bonuses (not in practice mode)
+    if (gameMode !== 'practice') {
+      // Extra starting lives
+      if (permanentUpgrades.startingLives) {
+        livesRef.current += permanentUpgrades.startingLives;
+        setLives(livesRef.current);
+      }
+
+      // Extra starting bombs
+      if (permanentUpgrades.startingBombs) {
+        bombRef.current.stock += permanentUpgrades.startingBombs;
+        bombRef.current.maxStock += permanentUpgrades.startingBombs;
+      }
+
+      // Starting shield
+      if (permanentUpgrades.startingShield) {
+        upgradesRef.current.shield = true;
+        upgradesRef.current.shieldHits = 0;
+      }
+
+      // Starting weapon level
+      if (permanentUpgrades.startingWeaponLevel) {
+        const startLevel = Math.min(3, 1 + permanentUpgrades.startingWeaponLevel);
+        weaponLevelRef.current.level = startLevel;
+      }
+
+      // Weapon Mastery (max level start)
+      if (permanentUpgrades.weaponMastery) {
+        weaponLevelRef.current = { level: 5, xp: 0, maxXP: 100, levelUpTimer: 60 };
+        upgradesRef.current.rapidFire = 3;
+        upgradesRef.current.spreadShot = true;
+      }
+
+      // Phoenix auto-revive
+      if (permanentUpgrades.phoenixRevive) {
+        upgradesRef.current.phoenix = true;
+      }
+
+      // Lucky Start - random rare power-up
+      if (permanentUpgrades.luckyStart) {
+        // Spawn a rare power-up after carrier intro (delayed)
+        setTimeout(() => {
+          const rarePowerups = ['invincible', 'laser', 'chainLightning', 'timeWarp'];
+          const chosen = rarePowerups[Math.floor(Math.random() * rarePowerups.length)];
+          spawnPowerup(GAME_WIDTH / 2, GAME_HEIGHT / 2, chosen);
+        }, 3000);
+      }
+
+      // Explosive Entry - carrier creates explosion
+      if (permanentUpgrades.explosiveEntry) {
+        // Will be triggered during carrier intro animation
+        setTimeout(() => {
+          createExplosion(carrierIntroRef.current.carrier.x + 250,
+                         carrierIntroRef.current.carrier.y + 120,
+                         'mega', true);
+          // Destroy nearby enemies
+          enemiesRef.current = enemiesRef.current.filter(enemy => {
+            const dx = enemy.x - carrierIntroRef.current.carrier.x - 250;
+            const dy = enemy.y - carrierIntroRef.current.carrier.y - 120;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 200) {
+              createExplosion(enemy.x, enemy.y, 'normal', true);
+              scoreRef.current += enemy.points || 10;
+              return false;
+            }
+            return true;
+          });
+        }, 2000);
+      }
+    }
+
+    // Store stat boost multipliers for use during gameplay
+    // These are accessed throughout the game loop
+    permanentUpgradesRef.current = permanentUpgrades;
+    // ==================== END PERMANENT UPGRADES ====================
 
     // Increment games played
     setGameStats(prev => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
@@ -3710,65 +4491,105 @@ const SpaceShooter = () => {
   useEffect(() => {
     let mounted = true;
 
-    // First, try to load the TexturePacker JSON
-    fetch(asset('explosions.json'))
-      .then(response => response.json())
-      .then(atlasData => {
-        if (!mounted) return;
+    // Delay loading on mobile devices for faster initial load
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      || ('ontouchstart' in window)
+      || (navigator.maxTouchPoints > 0);
 
-        explosionAtlasRef.current = atlasData;
-        explosionAtlasLoadedRef.current = true;
-        console.log('[EXPLOSION] Atlas JSON loaded:', {
-          frames: Object.keys(atlasData.frames).length,
-          imageSize: atlasData.meta.size
-        });
+    const loadDelay = isMobileDevice ? 800 : 0;
 
-        // Now load the sprite image
-        const img = new Image();
-        img.onload = () => {
+    const loadExplosionAssets = () => {
+      // First, try to load the TexturePacker JSON
+      fetch(asset('explosions.json'))
+        .then(response => response.json())
+        .then(atlasData => {
           if (!mounted) return;
-          explosionSpriteRef.current = img;
-          explosionSpriteLoadedRef.current = true;
-          console.log('[EXPLOSION] Sprite loaded successfully:', {
-            size: `${img.width}x${img.height}`,
-            atlasFrames: Object.keys(atlasData.frames).length
+
+          explosionAtlasRef.current = atlasData;
+          explosionAtlasLoadedRef.current = true;
+          console.log('[EXPLOSION] Atlas JSON loaded:', {
+            frames: Object.keys(atlasData.frames).length,
+            imageSize: atlasData.meta.size
           });
-        };
-        img.onerror = () => {
-          console.warn('[EXPLOSION] Failed to load sprite image');
-          explosionSpriteLoadedRef.current = false;
-        };
-        img.src = asset('explosions.png');
-      })
-      .catch(err => {
-        console.warn('[EXPLOSION] Failed to load atlas JSON, falling back to legacy sprite:', err);
 
-        // Fallback to legacy explosion2.png without atlas
-        const img = new Image();
-        img.onload = () => {
-          if (!mounted) return;
-          explosionSpriteRef.current = img;
-          explosionSpriteLoadedRef.current = true;
-          explosionAtlasLoadedRef.current = false;
-          console.log('[EXPLOSION] Legacy sprite loaded (no atlas)');
-        };
-        img.onerror = () => {
-          console.warn('[EXPLOSION] Failed to load sprite, using particle effects only');
-          explosionSpriteLoadedRef.current = false;
-        };
-        img.src = asset('explosion2.png');
-      });
+          // Now load the sprite image
+          const img = new Image();
+          img.onload = () => {
+            if (!mounted) return;
+            explosionSpriteRef.current = img;
+            explosionSpriteLoadedRef.current = true;
+            console.log('[EXPLOSION] Sprite loaded successfully:', {
+              size: `${img.width}x${img.height}`,
+              atlasFrames: Object.keys(atlasData.frames).length
+            });
+          };
+          img.onerror = () => {
+            console.warn('[EXPLOSION] Failed to load sprite image');
+            explosionSpriteLoadedRef.current = false;
+          };
+          img.src = asset('explosions.png');
+        })
+        .catch(err => {
+          console.warn('[EXPLOSION] Failed to load atlas JSON, falling back to legacy sprite:', err);
+
+          // Fallback to legacy explosion2.png without atlas
+          const img = new Image();
+          img.onload = () => {
+            if (!mounted) return;
+            explosionSpriteRef.current = img;
+            explosionSpriteLoadedRef.current = true;
+            explosionAtlasLoadedRef.current = false;
+            console.log('[EXPLOSION] Legacy sprite loaded (no atlas)');
+          };
+          img.onerror = () => {
+            console.warn('[EXPLOSION] Failed to load sprite, using particle effects only');
+            explosionSpriteLoadedRef.current = false;
+          };
+          img.src = asset('explosion2.png');
+        });
+    };
+
+    const timeout = setTimeout(loadExplosionAssets, loadDelay);
 
     // Set a timeout to mark as failed if not loaded within 5 seconds
-    const timeout = setTimeout(() => {
+    const failTimeout = setTimeout(() => {
       if (!explosionSpriteLoadedRef.current) {
         console.warn('[EXPLOSION] Sprite load timeout, using particle effects');
       }
-    }, 5000);
+    }, 5000 + loadDelay);
 
     return () => {
       mounted = false;
       clearTimeout(timeout);
+      clearTimeout(failTimeout);
+    };
+  }, []);
+
+  // Load asteroid sprite image
+  useEffect(() => {
+    let mounted = true;
+
+    const loadAsteroidImage = () => {
+      const img = new Image();
+      img.onload = () => {
+        if (!mounted) return;
+        asteroidImageRef.current = img;
+        asteroidImageLoadedRef.current = true;
+        console.log('[ASTEROID] Sprite loaded successfully:', {
+          size: `${img.width}x${img.height}`
+        });
+      };
+      img.onerror = () => {
+        console.warn('[ASTEROID] Failed to load sprite image, using procedural rendering');
+        asteroidImageLoadedRef.current = false;
+      };
+      img.src = asset('astroids_01.png');
+    };
+
+    loadAsteroidImage();
+
+    return () => {
+      mounted = false;
     };
   }, []);
 
@@ -4268,7 +5089,12 @@ const SpaceShooter = () => {
 
     const isMissile = size === 'missile';
     const isBoss = size === 'boss';
-    const particleCount = isBoss ? 50 : isMissile ? 35 : size === 'large' ? 25 : size === 'small' ? 8 : 15;
+
+    // Reduce particles for performance mode (mobile devices)
+    const performanceMode = userSettingsRef.current?.performanceMode || false;
+    const baseParticleCount = isBoss ? 50 : isMissile ? 35 : size === 'large' ? 25 : size === 'small' ? 8 : 15;
+    const particleCount = performanceMode ? Math.max(4, Math.floor(baseParticleCount * 0.5)) : baseParticleCount;
+
     const explosion = {
       x,
       y,
@@ -4315,7 +5141,7 @@ const SpaceShooter = () => {
     }
 
     // Add extra fire ring particles for missile explosions
-    if (isMissile) {
+    if (isMissile && !performanceMode) {
       // Inner fast particles
       for (let i = 0; i < 15; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -5105,6 +5931,194 @@ const SpaceShooter = () => {
     }
   };
 
+  // ==================== ENVIRONMENTAL STORYTELLING FUNCTIONS ====================
+
+  // Spawn dynamic weather event
+  const spawnWeatherEvent = useCallback(() => {
+    const waveNum = waveRef.current;
+
+    // Choose available weather types based on wave
+    const availableWeather = Object.entries(WEATHER_TYPES)
+      .filter(([key, weather]) => waveNum >= weather.waveRequirement)
+      .map(([key, weather]) => ({ key, ...weather }));
+
+    if (availableWeather.length === 0) return;
+
+    const chosenWeather = availableWeather[Math.floor(Math.random() * availableWeather.length)];
+
+    weatherSystemRef.current = {
+      active: true,
+      type: chosenWeather.key,
+      intensity: 0, // Will fade in
+      duration: chosenWeather.duration,
+      particles: [],
+      effects: {
+        visibilityReduction: chosenWeather.visibilityReduction || 0,
+        speedModifier: chosenWeather.speedModifier || 1,
+        damageOverTime: chosenWeather.damageOverTime || 0,
+        heatSeeking: chosenWeather.heatSeeking || false
+      }
+    };
+
+    // Generate weather particles
+    for (let i = 0; i < chosenWeather.particleCount; i++) {
+      weatherSystemRef.current.particles.push({
+        x: Math.random() * GAME_WIDTH,
+        y: Math.random() * GAME_HEIGHT,
+        vx: (Math.random() - 0.5) * 2,
+        vy: Math.random() * 2 + 1,
+        size: Math.random() * 3 + 1,
+        alpha: Math.random() * 0.6 + 0.2,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.1
+      });
+    }
+
+    // Show weather warning
+    floatingTextsRef.current.push({
+      x: GAME_WIDTH / 2,
+      y: GAME_HEIGHT / 2 - 50,
+      text: `⚠️ ${chosenWeather.name.toUpperCase()} ⚠️`,
+      color: chosenWeather.color,
+      lifetime: 150,
+      scale: 2,
+      pulse: true
+    });
+
+    soundSystem.playBossWarning?.();
+  }, []);
+
+  // Spawn destructible space object
+  const spawnDestructible = useCallback(() => {
+    const types = Object.keys(DESTRUCTIBLE_TYPES);
+    const typeKey = types[Math.floor(Math.random() * types.length)];
+    const def = DESTRUCTIBLE_TYPES[typeKey];
+
+    destructiblesRef.current.push({
+      type: typeKey,
+      x: Math.random() * (GAME_WIDTH - def.width),
+      y: -def.height - 50,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: 0.5 + Math.random() * 1,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.05,
+      health: def.health,
+      maxHealth: def.health,
+      damaged: false,
+      sparking: false,
+      sparkTimer: 0
+    });
+  }, []);
+
+  // Update environmental systems (called each frame)
+  const updateEnvironment = useCallback(() => {
+    // Update planet rotations
+    planetBackdropsRef.current.forEach(planet => {
+      planet.rotation += planet.rotationSpeed;
+      planet.cloudRotation += planet.rotationSpeed * 1.5;
+    });
+
+    // Update weather system
+    const weather = weatherSystemRef.current;
+    if (weather.active) {
+      // Fade in intensity
+      if (weather.intensity < 1) {
+        weather.intensity = Math.min(1, weather.intensity + 0.01);
+      }
+
+      // Update weather particles
+      weather.particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.rotationSpeed;
+
+        // Wrap around
+        if (p.x < -10) p.x = GAME_WIDTH + 10;
+        if (p.x > GAME_WIDTH + 10) p.x = -10;
+        if (p.y > GAME_HEIGHT + 10) {
+          p.y = -10;
+          p.x = Math.random() * GAME_WIDTH;
+        }
+      });
+
+      // Spawn extra asteroids during asteroid field weather
+      if (weather.type === 'asteroid_field' && Math.random() < 0.02) {
+        hazardsRef.current.asteroids.push({
+          x: Math.random() < 0.5 ? -30 : GAME_WIDTH + 30,
+          y: Math.random() * GAME_HEIGHT,
+          size: 20 + Math.random() * 40,
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: (Math.random() - 0.5) * 0.05,
+          vx: (Math.random() - 0.5) * 3,
+          vy: (Math.random() - 0.5) * 2,
+          health: 3,
+          maxHealth: 3
+        });
+      }
+
+      // Apply damage over time from solar flare
+      if (weather.type === 'solar_flare' && weather.effects.damageOverTime > 0) {
+        if (Math.random() < 0.01 && livesRef.current > 0 && !playerInvincibleRef.current) {
+          // Subtle solar damage
+          if (upgradesRef.current.shield && upgradesRef.current.shieldHits < upgradesRef.current.shieldMaxHits) {
+            upgradesRef.current.shieldHits += 1;
+          }
+        }
+      }
+
+      // Countdown duration
+      weather.duration--;
+      if (weather.duration <= 0) {
+        weather.active = false;
+        weather.intensity = 0;
+        weather.particles = [];
+
+        floatingTextsRef.current.push({
+          x: GAME_WIDTH / 2,
+          y: 50,
+          text: 'Weather Clear',
+          color: '#00ff88',
+          lifetime: 100,
+          scale: 1.2
+        });
+      }
+    }
+
+    // Update destructible objects
+    destructiblesRef.current = destructiblesRef.current.filter(obj => {
+      const def = DESTRUCTIBLE_TYPES[obj.type];
+      obj.x += obj.vx;
+      obj.y += obj.vy;
+      obj.rotation += obj.rotationSpeed;
+
+      // Sparking effect when damaged
+      if (obj.damaged && obj.health < obj.maxHealth * 0.5) {
+        obj.sparkTimer--;
+        if (obj.sparkTimer <= 0) {
+          obj.sparking = !obj.sparking;
+          obj.sparkTimer = 10 + Math.floor(Math.random() * 10);
+
+          if (obj.sparking) {
+            // Spawn spark particle
+            sparkParticlesRef.current.push({
+              x: obj.x + def.width / 2 + (Math.random() - 0.5) * def.width,
+              y: obj.y + def.height / 2 + (Math.random() - 0.5) * def.height,
+              vx: (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 2 - 1,
+              size: 2,
+              lifetime: 20,
+              color: '#ffaa00'
+            });
+          }
+        }
+      }
+
+      // Remove if off-screen
+      return obj.y < GAME_HEIGHT + 100;
+    });
+  }, []);
+  // ==================== END ENVIRONMENTAL FUNCTIONS ====================
+
   // Spawn a mini-boss (elite enemy mid-wave)
   const spawnMiniBoss = useCallback(() => {
     const waveNum = waveRef.current;
@@ -5194,16 +6208,37 @@ const SpaceShooter = () => {
     miniBossRef.current = miniBoss;
     miniBossSpawnedRef.current = true;
 
-    // Show mini-boss name with modifier
+    // Dramatic mini-boss announcement
+    soundSystem.playBossWarning();
+
+    // Screen flash effect
+    hitFlashRef.current = { active: true, timer: 15, color: displayColor, intensity: 0.3 };
+
+    // Large centered announcement
     floatingTextsRef.current.push({
-      x: GAME_WIDTH - 120,
-      y: 60,
-      text: displayName,
+      x: GAME_WIDTH / 2,
+      y: GAME_HEIGHT / 2 - 50,
+      text: '⚠️ ' + displayName + ' ⚠️',
       color: displayColor,
+      lifetime: 150,
+      vy: 0,
+      scale: 1.8,
+      pulse: true
+    });
+
+    // Description text
+    floatingTextsRef.current.push({
+      x: GAME_WIDTH / 2,
+      y: GAME_HEIGHT / 2,
+      text: mbType.description,
+      color: '#ffffff',
       lifetime: 120,
       vy: 0,
-      scale: 1.2
+      scale: 0.8
     });
+
+    // Screen shake
+    screenShakeRef.current = { intensity: 10, duration: 20 };
   }, []);
 
   // Gamepad vibration helper
@@ -5447,6 +6482,82 @@ const SpaceShooter = () => {
         });
         ctx.restore();
       }
+
+      // ========== DRAW PARALLAX PLANET BACKDROPS ==========
+      ctx.save();
+      planetBackdropsRef.current.forEach(planet => {
+        const { type, x, y, size, rotation, cloudRotation, parallaxSpeed, rings, ringAngle } = planet;
+
+        // Parallax scroll (planets move slower than gameplay to create depth)
+        const scrollX = (planetScrollRef.current * parallaxSpeed) % GAME_WIDTH;
+        const drawX = x - scrollX;
+
+        // Draw main planet body
+        ctx.save();
+        ctx.translate(drawX + size / 2, y + size /2);
+        ctx.rotate(rotation);
+
+        // Planet sphere with gradient
+        const planetGrad = ctx.createRadialGradient(-size * 0.2, -size * 0.2, 0, 0, 0, size / 2);
+        planetGrad.addColorStop(0, type.color);
+        planetGrad.addColorStop(0.7, type.secondaryColor);
+        planetGrad.addColorStop(1, 'rgba(0, 0, 0, 0.8)');
+        ctx.fillStyle = planetGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Add cloud layer if planet has atmosphere
+        if (type.atmosphere) {
+          ctx.save();
+          ctx.rotate(cloudRotation);
+          ctx.globalAlpha = 0.3;
+          ctx.fillStyle = type.atmosphere;
+
+          // Draw cloud bands
+          for (let i = 0; i < 5; i++) {
+            const cloudY = -size / 2 + (size / 5) * i;
+            const cloudWidth = size * (0.8 + Math.sin(i + cloudRotation) * 0.2);
+            ctx.fillRect(-cloudWidth / 2, cloudY, cloudWidth, size / 10);
+          }
+          ctx.restore();
+        }
+
+        // Draw rings if planet has them
+        if (rings) {
+          ctx.save();
+          ctx.rotate(ringAngle);
+          ctx.globalAlpha = 0.6;
+
+          // Ring gradient
+          const ringGrad = ctx.createLinearGradient(0, -size * 0.7, 0, size * 0.7);
+          ringGrad.addColorStop(0, 'rgba(200, 180, 150, 0)');
+          ringGrad.addColorStop(0.3, 'rgba(200, 180, 150, 0.8)');
+          ringGrad.addColorStop(0.5, 'rgba(180, 160, 130, 0.9)');
+          ringGrad.addColorStop(0.7, 'rgba(200, 180, 150, 0.8)');
+          ringGrad.addColorStop(1, 'rgba(200, 180, 150, 0)');
+          ctx.fillStyle = ringGrad;
+
+          // Draw ring ellipse
+          ctx.scale(1, 0.3); // Flatten for perspective
+          ctx.beginPath();
+          ctx.arc(0, 0, size * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Ring shadow on planet
+          ctx.globalCompositeOperation = 'multiply';
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+          ctx.beginPath();
+          ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore();
+        }
+
+        ctx.restore();
+      });
+      ctx.restore();
+      // ========== END PARALLAX PLANETS ==========
 
       // ========== DRAW PLANETARY BACKGROUND ==========
       // Determine planet based on current wave
@@ -5931,86 +7042,131 @@ const SpaceShooter = () => {
           ctx.globalAlpha = 1;
         }
 
-        // Asteroid body - irregular polygon
-        const numPoints = asteroid.isGiant ? 12 : 8;
-        const points = [];
-        for (let i = 0; i < numPoints; i++) {
-          const angle = (i / numPoints) * Math.PI * 2;
-          // Use asteroid's rotation as seed for consistent shape
-          const variation = 0.7 + Math.sin(angle * 3 + asteroid.rotationSpeed * 100) * 0.3;
-          const r = asteroid.size * variation;
-          points.push({ x: Math.cos(angle) * r, y: Math.sin(angle) * r });
-        }
+        // Use sprite if loaded, otherwise fall back to procedural rendering
+        if (asteroidImageLoadedRef.current && asteroidImageRef.current) {
+          const img = asteroidImageRef.current;
+          const spriteSize = asteroid.size * 2; // Diameter for drawing
 
-        // Shadow
-        ctx.globalAlpha = 0.3;
-        ctx.fillStyle = '#000000';
-        ctx.beginPath();
-        ctx.moveTo(points[0].x + 4, points[0].y + 4);
-        for (let i = 1; i < points.length; i++) {
-          ctx.lineTo(points[i].x + 4, points[i].y + 4);
-        }
-        ctx.closePath();
-        ctx.fill();
+          // Optimize: Disable image smoothing for better performance
+          ctx.imageSmoothingEnabled = false;
 
-        // Main body gradient
-        ctx.globalAlpha = 1;
-        const gradient = ctx.createRadialGradient(-asteroid.size * 0.3, -asteroid.size * 0.3, 0, 0, 0, asteroid.size);
-        if (asteroid.isGiant) {
-          // Darker, more menacing colors for giant asteroids
-          gradient.addColorStop(0, '#997755');
-          gradient.addColorStop(0.5, '#664433');
-          gradient.addColorStop(1, '#442211');
-        } else {
-          gradient.addColorStop(0, '#888888');
-          gradient.addColorStop(0.5, '#555555');
-          gradient.addColorStop(1, '#333333');
-        }
-        ctx.fillStyle = gradient;
+          // Simple shadow (faster than filter)
+          ctx.globalAlpha = 0.2;
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(-spriteSize / 2 + 3, -spriteSize / 2 + 3, spriteSize, spriteSize);
+          ctx.globalAlpha = 1;
 
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < points.length; i++) {
-          ctx.lineTo(points[i].x, points[i].y);
-        }
-        ctx.closePath();
-        ctx.fill();
+          // Draw asteroid sprite with multiply blend to remove light background
+          ctx.globalCompositeOperation = 'multiply';
+          ctx.drawImage(
+            img,
+            -spriteSize / 2,
+            -spriteSize / 2,
+            spriteSize,
+            spriteSize
+          );
+          ctx.globalCompositeOperation = 'source-over';
 
-        // Edge highlight
-        ctx.strokeStyle = asteroid.isGiant ? '#886644' : '#666666';
-        ctx.lineWidth = asteroid.isGiant ? 3 : 2;
-        ctx.stroke();
+          // Re-enable smoothing for other elements
+          ctx.imageSmoothingEnabled = true;
 
-        // Craters (more for giant asteroids)
-        ctx.fillStyle = asteroid.isGiant ? '#1a1108' : '#2a2a2a';
-        ctx.beginPath();
-        ctx.arc(-asteroid.size * 0.2, asteroid.size * 0.1, asteroid.size * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(asteroid.size * 0.3, -asteroid.size * 0.2, asteroid.size * 0.15, 0, Math.PI * 2);
-        ctx.fill();
-        if (asteroid.isGiant) {
-          ctx.beginPath();
-          ctx.arc(-asteroid.size * 0.15, -asteroid.size * 0.25, asteroid.size * 0.18, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(asteroid.size * 0.1, asteroid.size * 0.25, asteroid.size * 0.12, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Health indicator for damaged asteroids
-        const maxHealth = asteroid.isGiant ? Math.floor(asteroid.size / 5) + 10 : Math.floor(asteroid.size / 10) + 1;
-        if (asteroid.health < maxHealth) {
-          ctx.fillStyle = '#ff6600';
-          const crackCount = maxHealth - asteroid.health;
-          for (let i = 0; i < crackCount; i++) {
+          // Health indicator for damaged asteroids (draw over sprite)
+          const maxHealth = asteroid.isGiant ? Math.floor(asteroid.size / 5) + 10 : Math.floor(asteroid.size / 10) + 1;
+          if (asteroid.health < maxHealth) {
+            const crackCount = maxHealth - asteroid.health;
             ctx.strokeStyle = asteroid.isGiant ? '#ff8800' : '#ff4400';
             ctx.lineWidth = asteroid.isGiant ? 2 : 1;
+            for (let i = 0; i < crackCount; i++) {
+              ctx.beginPath();
+              const startAngle = (i / crackCount) * Math.PI * 2;
+              ctx.moveTo(0, 0);
+              ctx.lineTo(Math.cos(startAngle) * asteroid.size * 0.8, Math.sin(startAngle) * asteroid.size * 0.8);
+              ctx.stroke();
+            }
+          }
+        } else {
+          // Fallback: Procedural asteroid rendering (original code)
+          // Asteroid body - irregular polygon
+          const numPoints = asteroid.isGiant ? 12 : 8;
+          const points = [];
+          for (let i = 0; i < numPoints; i++) {
+            const angle = (i / numPoints) * Math.PI * 2;
+            // Use asteroid's rotation as seed for consistent shape
+            const variation = 0.7 + Math.sin(angle * 3 + asteroid.rotationSpeed * 100) * 0.3;
+            const r = asteroid.size * variation;
+            points.push({ x: Math.cos(angle) * r, y: Math.sin(angle) * r });
+          }
+
+          // Shadow
+          ctx.globalAlpha = 0.3;
+          ctx.fillStyle = '#000000';
+          ctx.beginPath();
+          ctx.moveTo(points[0].x + 4, points[0].y + 4);
+          for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x + 4, points[i].y + 4);
+          }
+          ctx.closePath();
+          ctx.fill();
+
+          // Main body gradient
+          ctx.globalAlpha = 1;
+          const gradient = ctx.createRadialGradient(-asteroid.size * 0.3, -asteroid.size * 0.3, 0, 0, 0, asteroid.size);
+          if (asteroid.isGiant) {
+            // Darker, more menacing colors for giant asteroids
+            gradient.addColorStop(0, '#997755');
+            gradient.addColorStop(0.5, '#664433');
+            gradient.addColorStop(1, '#442211');
+          } else {
+            gradient.addColorStop(0, '#888888');
+            gradient.addColorStop(0.5, '#555555');
+            gradient.addColorStop(1, '#333333');
+          }
+          ctx.fillStyle = gradient;
+
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+          }
+          ctx.closePath();
+          ctx.fill();
+
+          // Edge highlight
+          ctx.strokeStyle = asteroid.isGiant ? '#886644' : '#666666';
+          ctx.lineWidth = asteroid.isGiant ? 3 : 2;
+          ctx.stroke();
+
+          // Craters (more for giant asteroids)
+          ctx.fillStyle = asteroid.isGiant ? '#1a1108' : '#2a2a2a';
+          ctx.beginPath();
+          ctx.arc(-asteroid.size * 0.2, asteroid.size * 0.1, asteroid.size * 0.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(asteroid.size * 0.3, -asteroid.size * 0.2, asteroid.size * 0.15, 0, Math.PI * 2);
+          ctx.fill();
+          if (asteroid.isGiant) {
             ctx.beginPath();
-            const startAngle = (i / crackCount) * Math.PI * 2;
-            ctx.moveTo(0, 0);
-            ctx.lineTo(Math.cos(startAngle) * asteroid.size * 0.8, Math.sin(startAngle) * asteroid.size * 0.8);
-            ctx.stroke();
+            ctx.arc(-asteroid.size * 0.15, -asteroid.size * 0.25, asteroid.size * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(asteroid.size * 0.1, asteroid.size * 0.25, asteroid.size * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Health indicator for damaged asteroids
+          const maxHealth = asteroid.isGiant ? Math.floor(asteroid.size / 5) + 10 : Math.floor(asteroid.size / 10) + 1;
+          if (asteroid.health < maxHealth) {
+            ctx.fillStyle = '#ff6600';
+            const crackCount = maxHealth - asteroid.health;
+            for (let i = 0; i < crackCount; i++) {
+              ctx.strokeStyle = asteroid.isGiant ? '#ff8800' : '#ff4400';
+              ctx.lineWidth = asteroid.isGiant ? 2 : 1;
+              ctx.beginPath();
+              const startAngle = (i / crackCount) * Math.PI * 2;
+              ctx.moveTo(0, 0);
+              ctx.lineTo(Math.cos(startAngle) * asteroid.size * 0.8, Math.sin(startAngle) * asteroid.size * 0.8);
+              ctx.stroke();
+            }
           }
         }
 
@@ -6434,19 +7590,25 @@ const SpaceShooter = () => {
         const fadeStart = text.flash ? 90 : 30; // Flash warnings fade over longer period
         let alpha = Math.min(1, text.lifetime / fadeStart);
 
-        // Flash effect for danger warnings
+        // Flash effect for danger warnings and critical hits
         if (text.flash) {
           alpha *= (Math.sin(Date.now() / 100) + 1) / 2 * 0.5 + 0.5; // Pulsing flash
         }
 
         ctx.globalAlpha = alpha;
 
-        // Scale for rare/legendary pickups
+        // Scale for rare/legendary pickups and critical hits
         const textScale = text.scale || 1;
         const fontSize = Math.floor(14 * textScale);
 
         ctx.save();
         ctx.translate(text.x, text.y);
+
+        // Add slight rotation for damage numbers
+        if (text.vx) {
+          ctx.rotate(text.vx * 0.1);
+        }
+
         ctx.scale(textScale, textScale);
 
         ctx.fillStyle = text.color;
@@ -6454,14 +7616,14 @@ const SpaceShooter = () => {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Text shadow/glow - stronger for scaled text
+        // Text shadow/glow - stronger for scaled text and crits
         ctx.shadowColor = text.color;
-        ctx.shadowBlur = 10 * textScale;
+        ctx.shadowBlur = text.flash ? 15 * textScale : 10 * textScale;
         ctx.fillText(text.text, 0, 0);
 
         // Outline
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = text.flash ? '#000000' : '#ffffff';
+        ctx.lineWidth = text.flash ? 2 : 1;
         ctx.strokeText(text.text, 0, 0);
         ctx.shadowBlur = 0;
 
@@ -8998,6 +10160,193 @@ const SpaceShooter = () => {
       });
       ctx.restore();
 
+      // ========== DRAW DESTRUCTIBLE SPACE OBJECTS ==========
+      ctx.save();
+      destructiblesRef.current.forEach(obj => {
+        const def = DESTRUCTIBLE_TYPES[obj.type];
+
+        ctx.save();
+        ctx.translate(obj.x + def.width / 2, obj.y + def.height / 2);
+        ctx.rotate(obj.rotation);
+
+        // Main structure
+        ctx.fillStyle = def.color;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 2;
+
+        if (obj.type === 'satellite') {
+          // Satellite body
+          ctx.fillRect(-15, -15, 30, 30);
+          ctx.strokeRect(-15, -15, 30, 30);
+
+          // Solar panels
+          ctx.fillStyle = '#4444ff';
+          ctx.fillRect(-25, -8, 8, 16);
+          ctx.fillRect(17, -8, 8, 16);
+
+          // Antenna
+          ctx.strokeStyle = '#ffaa00';
+          ctx.beginPath();
+          ctx.moveTo(0, -15);
+          ctx.lineTo(0, -30);
+          ctx.stroke();
+        } else if (obj.type === 'spaceStation') {
+          // Space station modules
+          ctx.fillRect(-40, -20, 80, 40);
+          ctx.strokeRect(-40, -20, 80, 40);
+
+          // Docking ports
+          ctx.fillStyle = '#00aaff';
+          ctx.fillRect(-50, -5, 10, 10);
+          ctx.fillRect(40, -5, 10, 10);
+
+          // Shield segments if present
+          if (def.shieldSegments && obj.health > obj.maxHealth * 0.5) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < def.shieldSegments; i++) {
+              const angle = (Math.PI * 2 / def.shieldSegments) * i;
+              ctx.beginPath();
+              ctx.arc(0, 0, 50, angle, angle + Math.PI / 3);
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
+        } else if (obj.type === 'cargoContainer') {
+          // Cargo cube
+          ctx.fillRect(-10, -10, 20, 20);
+          ctx.strokeRect(-10, -10, 20, 20);
+
+          // Warning stripes
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1;
+          for (let i = -8; i < 8; i += 4) {
+            ctx.beginPath();
+            ctx.moveTo(-10 + i, -10);
+            ctx.lineTo(-10 + i + 2, 10);
+            ctx.stroke();
+          }
+        } else if (obj.type === 'commsArray') {
+          // Dish
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 20, 10, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          // Support structure
+          ctx.fillStyle = '#666666';
+          ctx.fillRect(-3, 0, 6, 25);
+        } else if (obj.type === 'miningRig') {
+          // Main rig body
+          ctx.fillRect(-30, -20, 60, 40);
+          ctx.strokeRect(-30, -20, 60, 40);
+
+          // Drilling arms
+          ctx.fillStyle = '#888888';
+          ctx.fillRect(-40, 10, 10, 20);
+          ctx.fillRect(30, 10, 10, 20);
+
+          // Ore storage
+          ctx.fillStyle = '#ffaa00';
+          ctx.fillRect(-10, -10, 20, 20);
+        }
+
+        // Damage effects
+        if (obj.damaged && obj.sparking) {
+          // Sparks
+          ctx.fillStyle = '#ffaa00';
+          for (let i = 0; i < 3; i++) {
+            const sparkX = (Math.random() - 0.5) * def.width * 0.5;
+            const sparkY = (Math.random() - 0.5) * def.height * 0.5;
+            ctx.fillRect(sparkX, sparkY, 2, 2);
+          }
+        }
+
+        // Health bar if damaged
+        if (obj.health < obj.maxHealth) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+          ctx.fillRect(-def.width / 2, -def.height / 2 - 10, def.width, 4);
+
+          const healthPercent = obj.health / obj.maxHealth;
+          ctx.fillStyle = healthPercent > 0.5 ? '#00ff88' : (healthPercent > 0.25 ? '#ffaa00' : '#ff4444');
+          ctx.fillRect(-def.width / 2, -def.height / 2 - 10, def.width * healthPercent, 4);
+        }
+
+        ctx.restore();
+      });
+      ctx.restore();
+      // ========== END DESTRUCTIBLES ==========
+
+      // ========== DRAW WEATHER EFFECTS ==========
+      const weather = weatherSystemRef.current;
+      if (weather.active && weather.intensity > 0) {
+        ctx.save();
+        ctx.globalAlpha = weather.intensity;
+
+        const weatherDef = WEATHER_TYPES[weather.type];
+
+        // Draw weather particles
+        weather.particles.forEach(p => {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          ctx.globalAlpha = p.alpha * weather.intensity;
+
+          if (weather.type === 'nebula_storm') {
+            // Purple/pink nebula clouds
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size * 3);
+            gradient.addColorStop(0, 'rgba(255, 0, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(128, 0, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(-p.size * 3, -p.size * 3, p.size * 6, p.size * 6);
+          } else if (weather.type === 'asteroid_field') {
+            // Gray rocky debris
+            ctx.fillStyle = '#888888';
+            ctx.fillRect(-p.size, -p.size, p.size * 2, p.size * 2);
+          } else if (weather.type === 'solar_flare') {
+            // Orange/yellow solar particles
+            ctx.fillStyle = '#ffaa00';
+            ctx.shadowColor = '#ffaa00';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (weather.type === 'void_rift') {
+            // Dark purple void tendrils
+            ctx.strokeStyle = 'rgba(0, 0, 136, 0.8)';
+            ctx.lineWidth = p.size;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-p.size * 2, 0);
+            ctx.quadraticCurveTo(0, -p.size * 3, p.size * 2, 0);
+            ctx.stroke();
+          } else if (weather.type === 'ion_storm') {
+            // Cyan electric particles
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = p.size;
+            ctx.beginPath();
+            ctx.moveTo(-p.size, -p.size);
+            ctx.lineTo(p.size, p.size);
+            ctx.moveTo(-p.size, p.size);
+            ctx.lineTo(p.size, -p.size);
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        });
+
+        // Screen overlay effect based on weather type
+        if (weather.effects.visibilityReduction > 0) {
+          ctx.globalAlpha = weather.effects.visibilityReduction * weather.intensity * 0.5;
+          ctx.fillStyle = weatherDef.color;
+          ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        }
+
+        ctx.restore();
+      }
+      // ========== END WEATHER EFFECTS ==========
+
       // Draw enemies
       let renderCounter = 0;
       const currentZone = getZoneForWave(waveRef.current);
@@ -9007,9 +10356,12 @@ const SpaceShooter = () => {
         // Guard against non-finite coordinates
         if (!isFinite(enemy.x) || !isFinite(enemy.y)) return;
 
+        // Elite enemy size scaling
+        const eliteScale = enemy.isElite ? 1.25 : 1;
+
         // Off-screen culling optimization - skip rendering if completely off-screen
-        const ew = Math.max(1, enemy.width || ENEMY_WIDTH);
-        const eh = Math.max(1, enemy.height || ENEMY_HEIGHT);
+        const ew = Math.max(1, (enemy.width || ENEMY_WIDTH) * eliteScale);
+        const eh = Math.max(1, (enemy.height || ENEMY_HEIGHT) * eliteScale);
         if (enemy.x + ew < -50 || enemy.x > GAME_WIDTH + 50 ||
             enemy.y + eh < -50 || enemy.y > GAME_HEIGHT + 50) {
           return; // Skip rendering this enemy
@@ -9026,6 +10378,113 @@ const SpaceShooter = () => {
         const ey = enemy.y;
         const centerY = ey + eh / 2;
         const centerX = ex + ew / 2;
+
+        // Elite enemy visual enhancements
+        if (enemy.isElite && !perfMode) {
+          // Pulsing glow aura
+          const elitePulse = 0.6 + 0.4 * Math.sin(Date.now() / 200);
+          ctx.shadowColor = enemy.polarity === 'light' ? '#ffaa00' : '#aa00ff';
+          ctx.shadowBlur = 25 * elitePulse;
+
+          // Particle trail behind elite
+          if (Math.random() < 0.3) {
+            sparkParticlesRef.current.push({
+              x: ex + ew,
+              y: centerY + (Math.random() - 0.5) * eh,
+              vx: -1 - Math.random(),
+              vy: (Math.random() - 0.5) * 0.5,
+              size: 2 + Math.random() * 2,
+              lifetime: 20 + Math.random() * 10,
+              color: enemy.polarity === 'light' ? '#ffaa00' : '#aa00ff',
+              alpha: 0.8
+            });
+          }
+
+          // Elite aura ring
+          ctx.globalAlpha = 0.2 * elitePulse;
+          ctx.strokeStyle = enemy.polarity === 'light' ? '#ffaa00' : '#aa00ff';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, Math.max(ew, eh) * 0.6, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+
+        // Elite enemy visual enhancements
+        if (enemy.isElite && !perfMode) {
+          // Pulsing glow aura
+          const elitePulse = 0.6 + 0.4 * Math.sin(Date.now() / 200);
+          ctx.shadowColor = enemy.polarity === 'light' ? '#ffaa00' : '#aa00ff';
+          ctx.shadowBlur = 25 * elitePulse;
+
+          // Particle trail behind elite
+          if (Math.random() < 0.3) {
+            sparkParticlesRef.current.push({
+              x: ex + ew,
+              y: centerY + (Math.random() - 0.5) * eh,
+              vx: -1 - Math.random(),
+              vy: (Math.random() - 0.5) * 0.5,
+              size: 2 + Math.random() * 2,
+              lifetime: 20 + Math.random() * 10,
+              color: enemy.polarity === 'light' ? '#ffaa00' : '#aa00ff',
+              alpha: 0.8
+            });
+          }
+
+          // Elite aura ring
+          ctx.globalAlpha = 0.2 * elitePulse;
+          ctx.strokeStyle = enemy.polarity === 'light' ? '#ffaa00' : '#aa00ff';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, Math.max(ew, eh) * 0.6, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+
+        // ========== ENEMY HEALTH BAR ==========
+        const showHealthBar = practiceSettingsRef.current.showHealthBars ||
+                             enemy.isElite ||
+                             enemy.isMiniBoss ||
+                             (enemy.maxHealth && enemy.maxHealth > 10);
+
+        if (showHealthBar && enemy.maxHealth && enemy.health < enemy.maxHealth) {
+          const healthPercent = Math.max(0, Math.min(1, enemy.health / enemy.maxHealth));
+          const barWidth = Math.min(ew * 0.8, 60);
+          const barHeight = 4;
+          const barX = centerX - barWidth / 2;
+          const barY = ey - 12;
+
+          // Background
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+          ctx.fillRect(barX, barY, barWidth, barHeight);
+
+          // Health fill with color based on percentage
+          let healthColor;
+          if (healthPercent > 0.6) {
+            healthColor = '#00ff88'; // Green
+          } else if (healthPercent > 0.3) {
+            healthColor = '#ffaa00'; // Orange
+          } else {
+            healthColor = '#ff4444'; // Red
+          }
+
+          // Elite/mini-boss bar glow
+          if (enemy.isElite || enemy.isMiniBoss) {
+            ctx.shadowColor = healthColor;
+            ctx.shadowBlur = 5;
+          }
+
+          ctx.fillStyle = healthColor;
+          ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+
+          ctx.shadowBlur = 0;
+
+          // Border
+          ctx.strokeStyle = enemy.isElite ? '#ffaa00' : (enemy.isMiniBoss ? '#ff00ff' : '#ffffff');
+          ctx.lineWidth = 1;
+          ctx.strokeRect(barX, barY, barWidth, barHeight);
+        }
+        // ========== END ENEMY HEALTH BAR ==========
 
         // Apply zone-based color tint to enemies (except special types)
         const useZoneTint = !enemy.isMiniBoss && !enemy.isBoss && enemy.type !== 'formation';
@@ -13391,6 +14850,52 @@ const SpaceShooter = () => {
       ctx.lineWidth = 2;
       ctx.stroke();
 
+      // ========== WEATHER STATUS INDICATOR ==========
+      if (weatherSystemRef.current.active && weatherSystemRef.current.intensity > 0) {
+        const weather = weatherSystemRef.current;
+        const weatherDef = WEATHER_TYPES[weather.type];
+
+        ctx.save();
+        ctx.globalAlpha = Math.min(weather.intensity * 1.5, 1);
+
+        // Weather name display
+        ctx.textAlign = 'center';
+        ctx.font = "8px \"Press Start 2P\", monospace";
+        ctx.fillStyle = weatherDef.color;
+        ctx.shadowColor = weatherDef.color;
+        ctx.shadowBlur = 10 * weather.intensity;
+
+        const weatherNameMap = {
+          nebula_storm: '? NEBULA STORM',
+          asteroid_field: '? ASTEROID FIELD',
+          solar_flare: '? SOLAR FLARE',
+          void_rift: '? VOID RIFT',
+          ion_storm: '? ION STORM'
+        };
+
+        ctx.fillText(weatherNameMap[weather.type] || weather.type.toUpperCase(), GAME_WIDTH / 2, 75);
+
+        // Weather duration bar
+        const barWidth = 120;
+        const barX = GAME_WIDTH / 2 - barWidth / 2;
+        const barY = 82;
+        const durationPercent = weather.duration / weatherDef.duration;
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(barX, barY, barWidth, 4);
+
+        ctx.fillStyle = weatherDef.color;
+        ctx.fillRect(barX, barY, barWidth * durationPercent, 4);
+
+        ctx.strokeStyle = weatherDef.color;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barWidth, 4);
+
+        ctx.restore();
+      }
+      // ========== END WEATHER STATUS ==========
+
       // Wave text
       ctx.textAlign = 'center';
       ctx.font = "10px \"Press Start 2P\", monospace";
@@ -14325,6 +15830,7 @@ const SpaceShooter = () => {
         if (settings.maxPower) activeOptions.push('MAX');
         if (settings.slowBullets) activeOptions.push('SLW');
         if (settings.showHitboxes) activeOptions.push('HBX');
+        if (settings.showHealthBars) activeOptions.push('HPB');
 
         if (activeOptions.length > 0) {
           ctx.font = '8px monospace';
@@ -14575,9 +16081,11 @@ const SpaceShooter = () => {
       fpsData.frames++;
 
       // Count total entities for performance monitoring
+      const asteroidCount = hazardsRef.current?.asteroids?.length || 0;
       const totalEntities = enemiesRef.current.length + bulletsRef.current.length +
                            enemyBulletsRef.current.length + explosionsRef.current.length +
-                           pickupEffectsRef.current.length + powerupsRef.current.length;
+                           pickupEffectsRef.current.length + powerupsRef.current.length +
+                           asteroidCount;
 
       if (timestamp - fpsData.lastTime >= 1000) {
         fpsData.fps = fpsData.frames;
@@ -14588,6 +16096,12 @@ const SpaceShooter = () => {
         const avgFrameTime = perfData.frameTimeHistory.length > 0
           ? perfData.frameTimeHistory.reduce((a, b) => a + b, 0) / perfData.frameTimeHistory.length
           : perfData.frameBudget;
+
+        // Log performance warnings
+        if (fpsData.fps < 50) {
+          const bossStatus = bossActiveRef.current ? ' | 🔥 BOSS BATTLE ACTIVE' : '';
+          console.warn(`[PERFORMANCE] Low FPS: ${fpsData.fps}${bossStatus} | Entities: ${totalEntities} (Asteroids: ${asteroidCount}, Enemy Bullets: ${enemyBulletsRef.current.length}) | Frame time: ${avgFrameTime.toFixed(2)}ms`);
+        }
 
         // Adaptive quality based on FPS and frame budget
         if (!userSettingsRef.current?.performanceMode) { // Only auto-adjust if not in manual perf mode
@@ -14611,31 +16125,80 @@ const SpaceShooter = () => {
         // Emergency performance mode if entity count is very high
         if (totalEntities > 800) {
           perfData.adaptiveQuality = Math.min(perfData.adaptiveQuality, 0.5);
-          console.log(`[PERFORMANCE] Emergency mode: ${totalEntities} entities, forcing quality to 0.5x`);
+          console.log(`[PERFORMANCE] Emergency mode: ${totalEntities} entities (${asteroidCount} asteroids), forcing quality to 0.5x`);
+        }
+      }
+
+      // Aggressive boss battle performance optimization
+      if (bossActiveRef.current) {
+        // During boss fights, enforce strict limits to prevent slowdown
+        const enemyBulletCount = enemyBulletsRef.current.length;
+
+        // Very aggressive enemy bullet cap during boss fights (boss patterns can spawn many bullets)
+        const bossBulletCap = fpsData.fps < 50 ? 40 : 60;
+        if (enemyBulletCount > bossBulletCap) {
+          console.warn(`[BOSS PERFORMANCE] Capping enemy bullets from ${enemyBulletCount} to ${bossBulletCap}`);
+          enemyBulletsRef.current = enemyBulletsRef.current.slice(-bossBulletCap);
+        }
+
+        // Cap bullet trails aggressively during boss fights
+        if (bulletTrailsRef.current.length > 100) {
+          bulletTrailsRef.current = bulletTrailsRef.current.slice(-100);
+        }
+
+        // Cap missile trails
+        if (missileTrailsRef.current.length > 60) {
+          missileTrailsRef.current = missileTrailsRef.current.slice(-60);
+        }
+
+        // Cap impact particles during boss fights
+        if (impactParticlesRef.current.length > 80) {
+          impactParticlesRef.current = impactParticlesRef.current.slice(-80);
+        }
+
+        // Cap spark particles
+        if (sparkParticlesRef.current.length > 60) {
+          sparkParticlesRef.current = sparkParticlesRef.current.slice(-60);
         }
       }
 
       // Aggressively cap entities when performance is poor
       if (fpsData.fps < 45 || totalEntities > 600) {
+        // Cap asteroids if they're causing issues
+        if (asteroidCount > 20 && hazardsRef.current?.asteroids) {
+          console.warn(`[PERFORMANCE] Capping asteroids from ${asteroidCount} to 20`);
+          hazardsRef.current.asteroids = hazardsRef.current.asteroids.slice(0, 20);
+        }
+
         // Cap enemy bullets more aggressively
-        const maxEnemyBullets = bossActiveRef.current ? 60 : 100;
+        const maxEnemyBullets = bossActiveRef.current ? 40 : 80;
         if (enemyBulletsRef.current.length > maxEnemyBullets) {
           enemyBulletsRef.current = enemyBulletsRef.current.slice(-maxEnemyBullets);
         }
 
         // Cap particle effects
-        if (pickupEffectsRef.current.length > 100) {
-          pickupEffectsRef.current = pickupEffectsRef.current.slice(-100);
+        if (pickupEffectsRef.current.length > 60) {
+          pickupEffectsRef.current = pickupEffectsRef.current.slice(-60);
         }
 
         // Cap explosions
-        if (explosionsRef.current.length > 15) {
-          explosionsRef.current = explosionsRef.current.slice(-15);
+        if (explosionsRef.current.length > 10) {
+          explosionsRef.current = explosionsRef.current.slice(-10);
         }
 
         // Cap player bullets
-        if (bulletsRef.current.length > 150) {
-          bulletsRef.current = bulletsRef.current.slice(-150);
+        if (bulletsRef.current.length > 120) {
+          bulletsRef.current = bulletsRef.current.slice(-120);
+        }
+
+        // Cap bullet trails when struggling
+        if (bulletTrailsRef.current.length > 80) {
+          bulletTrailsRef.current = bulletTrailsRef.current.slice(-80);
+        }
+
+        // Cap missile trails when struggling
+        if (missileTrailsRef.current.length > 50) {
+          missileTrailsRef.current = missileTrailsRef.current.slice(-50);
         }
       }
 
@@ -14948,13 +16511,66 @@ const SpaceShooter = () => {
 
       // Poll gamepad
       const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-      let gamepad = null;
-      for (let i = 0; i < gamepads.length; i++) {
-        if (gamepads[i] && gamepads[i].connected) {
-          gamepad = gamepads[i];
-          gamepadRef.current = gamepad;
-          break;
+
+      // Debug: Always log gamepad polling status AND note gamepad code is ONLY running in 'playing' state
+      if (!window._gamepadPollLogged) {
+        console.log('🎮 Polling gamepads... Found:', gamepads.length, 'GameState:', gameStateRef.current);
+        console.warn('⚠️ NOTE: This gamepad code ONLY runs when GameState === "playing"! Currently:', gameStateRef.current);
+        for (let i = 0; i < gamepads.length; i++) {
+          if (gamepads[i]) {
+            console.log(`  Gamepad ${i}:`, 'connected=' + gamepads[i].connected, 'id=' + gamepads[i].id, 'buttons=' + gamepads[i].buttons.length);
+          } else {
+            console.log(`  Gamepad ${i}: null/empty slot`);
+          }
         }
+        window._gamepadPollLogged = true;
+        setTimeout(() => { window._gamepadPollLogged = false; }, 3000);
+      }
+
+      let gamepad = null;
+
+      // IMPORTANT: Always poll fresh gamepad state each frame (cached references become stale)
+      // The Gamepad API requires calling getGamepads() every frame for updated button states
+      if (navigator.getGamepads) {
+        const freshGamepads = navigator.getGamepads();
+
+        // Try to find the same gamepad we used before (by index)
+        if (gamepadRef.current && freshGamepads[gamepadRef.current.index]) {
+          gamepad = freshGamepads[gamepadRef.current.index];
+        } else {
+          // Find any connected gamepad
+          for (let i = 0; i < freshGamepads.length; i++) {
+            if (freshGamepads[i] && freshGamepads[i].buttons && freshGamepads[i].buttons.length > 0) {
+              gamepad = freshGamepads[i];
+
+              // Debug: Log when gamepad is found and selected
+              if (!window._gamepadSelectedLogged) {
+                console.log('✅ Gamepad FOUND in slot', i, '| connected flag:', gamepad.connected, '| id:', gamepad.id);
+                console.log('   Buttons:', gamepad.buttons.length, '| First 10 buttons:',
+                  Array.from({length: Math.min(10, gamepad.buttons.length)}).map((_, idx) =>
+                    `${idx}:${gamepad.buttons[idx].pressed ? 'ON' : 'off'}`
+                  ).join(' ')
+                );
+                console.log('   Axes:', gamepad.axes.map((a, idx) => `${idx}:${a.toFixed(2)}`).join(' '));
+                window._gamepadSelectedLogged = true;
+                setTimeout(() => { window._gamepadSelectedLogged = false; }, 2000);
+              }
+              break;
+            }
+          }
+        }
+
+        // Store reference for next frame (mainly to track index)
+        if (gamepad) {
+          gamepadRef.current = gamepad;
+        }
+      }
+
+      // Debug: Log if no gamepad found
+      if (!gamepad && !window._noGamepadLogged) {
+        console.warn('⚠️ No connected gamepad found in any slot');
+        window._noGamepadLogged = true;
+        setTimeout(() => { window._noGamepadLogged = false; }, 5000);
       }
 
       // Gamepad input
@@ -14963,13 +16579,41 @@ const SpaceShooter = () => {
       let gpDash = false;
 
       if (gamepad) {
+        // Debug: One-time alert when gamepad is first detected
+        if (!window._gamepadAlertShown) {
+          alert(`🎮 PS4 Controller Detected!\n\nName: ${gamepad.id}\nButtons: ${gamepad.buttons.length}\nAxes: ${gamepad.axes.length}\n\nCheck console (F12) for more details.`);
+          console.log('🎮 GAMEPAD FULL INFO:', gamepad);
+          console.log('🎮 Buttons array:', gamepad.buttons);
+          console.log('🎮 Axes array:', gamepad.axes);
+          window._gamepadAlertShown = true;
+        }
+
+        // Debug: Log axes availability
+        if (!window._axesDebugLogged && gamepad.axes) {
+          console.log('🎮 Gamepad axes available:', gamepad.axes.length, 'Values:', gamepad.axes.map(a => a.toFixed(2)));
+          window._axesDebugLogged = true;
+          setTimeout(() => { window._axesDebugLogged = false; }, 2000);
+        }
+
         // Left stick for movement (axes 0 and 1)
         const deadzone = 0.15;
-        if (Math.abs(gamepad.axes[0]) > deadzone) gpMoveX = gamepad.axes[0];
-        if (Math.abs(gamepad.axes[1]) > deadzone) gpMoveY = gamepad.axes[1];
+        const axisX = gamepad.axes && gamepad.axes[0] !== undefined ? gamepad.axes[0] : 0;
+        const axisY = gamepad.axes && gamepad.axes[1] !== undefined ? gamepad.axes[1] : 0;
+
+        // Debug: Log stick values when moved
+        if (!window._stickDebugLogged && (Math.abs(axisX) > 0.2 || Math.abs(axisY) > 0.2)) {
+          console.log('🕹️ LEFT STICK MOVED! - X:', axisX.toFixed(3), 'Y:', axisY.toFixed(3), '| GameState:', gameStateRef.current);
+          console.log('🕹️ Deadzone:', deadzone, '| Will move?', Math.abs(axisX) > deadzone || Math.abs(axisY) > deadzone);
+          console.log('🕹️ All axes:', gamepad.axes.map((a, i) => `${i}:${a.toFixed(2)}`).join(' '));
+          window._stickDebugLogged = true;
+          setTimeout(() => { window._stickDebugLogged = false; }, 1000);
+        }
+
+        if (Math.abs(axisX) > deadzone) gpMoveX = axisX;
+        if (Math.abs(axisY) > deadzone) gpMoveY = axisY;
 
         // Right stick for optional aim assist / polarity quick toggle
-        const rightStickX = gamepad.axes[2] || 0;
+        const rightStickX = (gamepad.axes && gamepad.axes[2] !== undefined) ? gamepad.axes[2] : 0;
         if (Math.abs(rightStickX) > 0.7 && !gamepadButtonsRef.current.rightStickToggle) {
           // Quick polarity toggle with right stick flick
           const newPolarity = polarityRef.current === 'light' ? 'dark' : 'light';
@@ -14981,49 +16625,75 @@ const SpaceShooter = () => {
         }
 
         // D-pad (buttons 12-15 on standard gamepad)
-        if (gamepad.buttons[12]?.pressed) gpMoveY = -1; // Up
-        if (gamepad.buttons[13]?.pressed) gpMoveY = 1;  // Down
-        if (gamepad.buttons[14]?.pressed) gpMoveX = -1; // Left
-        if (gamepad.buttons[15]?.pressed) gpMoveX = 1;  // Right
+        if (gamepad.buttons[12] && gamepad.buttons[12].pressed) gpMoveY = -1; // Up
+        if (gamepad.buttons[13] && gamepad.buttons[13].pressed) gpMoveY = 1;  // Down
+        if (gamepad.buttons[14] && gamepad.buttons[14].pressed) gpMoveX = -1; // Left
+        if (gamepad.buttons[15] && gamepad.buttons[15].pressed) gpMoveX = 1;  // Right
 
         // PS4/PS5 Controller button mapping:
-        // X (Cross) = button 0 = Shoot
-        // O (Circle) = button 1 = Force toggle / Bomb
+        // X (Cross) = button 0 = Shoot / Menu select
+        // O (Circle) = button 1 = Force toggle / Menu back
         // Square = button 2 = Missile
-        // Triangle = button 3 = Laser beam (when available)
+        // Triangle = button 3 = Laser beam (Lv3+) / Menu back (alt) / Bomb (hold 0.3s, before Lv3 only)
         // L1 = button 4 = Polarity toggle
         // R1 = button 5 = Shoot (alt)
         // L2 = button 6 = Wave Cannon charge
         // R2 = button 7 = Auto-fire (hold to shoot)
-        // Share = button 8 = Quick Restart (on game over)
+        // Share/Create = button 8 = Bomb / Quick restart - PS5 might use button 9 in some browsers
         // Options = button 9 = Pause/Resume
         // L3 = button 10 = Dash
         // R3 = button 11 = Dash (alt)
+        // D-Pad Up = button 12, Down = button 13, Left = button 14, Right = button 15
         // PS = button 16 = (reserved)
-        // Touchpad = button 17 = Menu select (context sensitive)
+        // Touchpad Click = button 17 = Menu select / Confirm (all menus)
+        // Note: PS5 DualSense Create button may vary between button 8 and 9 depending on browser
 
         // Shooting - X, R1, or R2 trigger
-        const r2Pressure = gamepad.buttons[7]?.value || 0;
-        gpShoot = gamepad.buttons[0]?.pressed || gamepad.buttons[5]?.pressed || r2Pressure > 0.1;
+        const r2Pressure = (gamepad.buttons[7] && gamepad.buttons[7].value) || 0;
+        const btn0 = gamepad.buttons[0] && gamepad.buttons[0].pressed;
+        const btn5 = gamepad.buttons[5] && gamepad.buttons[5].pressed;
+        gpShoot = btn0 || btn5 || r2Pressure > 0.1;
+
+        // Debug: Log when shoot button is pressed
+        if (gpShoot && !window._gpShootBtnLogged) {
+          console.log('🔫 SHOOT BUTTON PRESSED! X:', btn0, 'R1:', btn5, 'R2:', r2Pressure.toFixed(2), '| GameState:', gameStateRef.current);
+          window._gpShootBtnLogged = true;
+          setTimeout(() => { window._gpShootBtnLogged = false; }, 500);
+        }
+
+        // Debug: Log button states and controller info
+        if (!window._btnDebugLogged) {
+          console.log('🎮 Controller:', gamepad.id);
+          console.log('🎮 Buttons:', gamepad.buttons.length, '| Axes:', gamepad.axes.length);
+          console.log('🎮 Shoot - X:', btn0, 'R1:', btn5, 'R2:', r2Pressure.toFixed(2));
+          // Log Share/Create button detection (PS5 DualSense might use button 8 or 9)
+          console.log('🎮 Create/Share btn [8]:', gamepad.buttons[8]?.pressed, '[9]:', gamepad.buttons[9]?.pressed);
+          console.log('🎮 Touchpad btn [17]:', gamepad.buttons[17]?.pressed);
+          window._btnDebugLogged = true;
+          setTimeout(() => { window._btnDebugLogged = false; }, 3000);
+        }
 
         // Missiles - Square
-        gpMissile = gamepad.buttons[2]?.pressed;
+        gpMissile = gamepad.buttons[2] && gamepad.buttons[2].pressed;
 
         // Force toggle / Bomb - Circle
-        gpForce = gamepad.buttons[1]?.pressed;
+        gpForce = gamepad.buttons[1] && gamepad.buttons[1].pressed;
 
         // Wave Cannon - L2 trigger (pressure sensitive)
-        const l2Pressure = gamepad.buttons[6]?.value || 0;
+        const l2Pressure = (gamepad.buttons[6] && gamepad.buttons[6].value) || 0;
         gpWaveCannon = l2Pressure > 0.3; // Requires significant trigger press
 
-        // Laser - Triangle
-        gpLaser = gamepad.buttons[3]?.pressed;
+        // Laser - Triangle (button 3)
+        gpLaser = gamepad.buttons[3] && gamepad.buttons[3].pressed;
 
         // Dash - L3 or R3 stick click
-        gpDash = gamepad.buttons[10]?.pressed || gamepad.buttons[11]?.pressed;
+        const btn10 = gamepad.buttons[10] && gamepad.buttons[10].pressed;
+        const btn11 = gamepad.buttons[11] && gamepad.buttons[11].pressed;
+        gpDash = btn10 || btn11;
 
         // Polarity toggle - L1 bumper (with debounce)
-        if (gamepad.buttons[4]?.pressed && !gamepadButtonsRef.current.polarity) {
+        const btn4Pressed = gamepad.buttons[4] && gamepad.buttons[4].pressed;
+        if (btn4Pressed && !gamepadButtonsRef.current.polarity) {
           const newPolarity = polarityRef.current === 'light' ? 'dark' : 'light';
           polarityRef.current = newPolarity;
           setPolarity(newPolarity);
@@ -15038,10 +16708,11 @@ const SpaceShooter = () => {
             }).catch(() => {});
           }
         }
-        gamepadButtonsRef.current.polarity = gamepad.buttons[4]?.pressed || false;
+        gamepadButtonsRef.current.polarity = btn4Pressed || false;
 
         // Handle pause (Options button)
-        if (gamepad.buttons[9]?.pressed && !gamepadButtonsRef.current.pause) {
+        const btn9Pressed = gamepad.buttons[9] && gamepad.buttons[9].pressed;
+        if (btn9Pressed && !gamepadButtonsRef.current.pause) {
           if (gameStateRef.current === 'playing') {
             setGameState('paused');
             // Pause all audio
@@ -15058,7 +16729,7 @@ const SpaceShooter = () => {
             }
           }
         }
-        gamepadButtonsRef.current.pause = gamepad.buttons[9]?.pressed || false;
+        gamepadButtonsRef.current.pause = btn9Pressed || false;
 
         // Handle brand screen - any button to continue
         if (gameStateRef.current === 'brand') {
@@ -15140,8 +16811,9 @@ const SpaceShooter = () => {
           gamepadButtonsRef.current.menuDown = gamepad.buttons[13]?.pressed || false;
           gamepadButtonsRef.current.stickDown = stickDown;
 
-          // X button (button 0) - select menu item
-          if (gamepad.buttons[0]?.pressed && !gamepadButtonsRef.current.menuSelect) {
+          // X button (button 0) or Touchpad (button 17 - PS5 touchpad click) - select menu item
+          const touchpadPressed = gamepad.buttons[17]?.pressed;
+          if ((gamepad.buttons[0]?.pressed || touchpadPressed) && !gamepadButtonsRef.current.menuSelect) {
             soundSystem.playMenuSelect();
             if (showSettingsRef.current) {
               setShowSettings(false);
@@ -15168,17 +16840,17 @@ const SpaceShooter = () => {
               }
             }
           }
-          gamepadButtonsRef.current.menuSelect = gamepad.buttons[0]?.pressed || false;
+          gamepadButtonsRef.current.menuSelect = gamepad.buttons[0]?.pressed || touchpadPressed || false;
 
-          // Circle button (button 1) - back from settings or customize
-          if (gamepad.buttons[1]?.pressed && !gamepadButtonsRef.current.menuBack) {
+          // Circle button (button 1) or Triangle button (button 3) - back from settings or customize
+          if ((gamepad.buttons[1]?.pressed || gamepad.buttons[3]?.pressed) && !gamepadButtonsRef.current.menuBack) {
             if (showSettingsRef.current) {
               setShowSettings(false);
             } else if (showCustomizeRef.current) {
               setShowCustomize(false);
             }
           }
-          gamepadButtonsRef.current.menuBack = gamepad.buttons[1]?.pressed || false;
+          gamepadButtonsRef.current.menuBack = gamepad.buttons[1]?.pressed || gamepad.buttons[3]?.pressed || false;
         }
 
         // Handle pause menu navigation with D-pad and analog stick
@@ -15254,8 +16926,9 @@ const SpaceShooter = () => {
           gamepadButtonsRef.current.menuRight = gamepad.buttons[15]?.pressed || false;
           gamepadButtonsRef.current.stickRight = stickRight;
 
-          // X button (button 0) - select pause menu item
-          if (gamepad.buttons[0]?.pressed && !gamepadButtonsRef.current.menuSelect) {
+          // X button (button 0) or Touchpad (button 17 - PS5 touchpad click) - select pause menu item
+          const touchpadPressed = gamepad.buttons[17]?.pressed;
+          if ((gamepad.buttons[0]?.pressed || touchpadPressed) && !gamepadButtonsRef.current.menuSelect) {
             if (showPauseControlsRef.current) {
               setShowPauseControls(false);
             } else if (showSettingsRef.current) {
@@ -15278,10 +16951,10 @@ const SpaceShooter = () => {
               }
             }
           }
-          gamepadButtonsRef.current.menuSelect = gamepad.buttons[0]?.pressed || false;
+          gamepadButtonsRef.current.menuSelect = gamepad.buttons[0]?.pressed || touchpadPressed || false;
 
-          // Circle button (button 1) - back from pause controls or resume
-          if (gamepad.buttons[1]?.pressed && !gamepadButtonsRef.current.menuBack) {
+          // Circle button (button 1) or Triangle button (button 3) - back from pause controls or resume
+          if ((gamepad.buttons[1]?.pressed || gamepad.buttons[3]?.pressed) && !gamepadButtonsRef.current.menuBack) {
             if (showPauseControlsRef.current) {
               setShowPauseControls(false);
             } else if (showSettingsRef.current) {
@@ -15290,7 +16963,7 @@ const SpaceShooter = () => {
               setGameState('playing');
             }
           }
-          gamepadButtonsRef.current.menuBack = gamepad.buttons[1]?.pressed || false;
+          gamepadButtonsRef.current.menuBack = gamepad.buttons[1]?.pressed || gamepad.buttons[3]?.pressed || false;
         }
 
         // Handle checkpoint screen navigation
@@ -15314,8 +16987,9 @@ const SpaceShooter = () => {
           gamepadButtonsRef.current.stickUp = stickUp;
           gamepadButtonsRef.current.stickDown = stickDown;
 
-          // X button - select checkpoint menu item
-          if (gamepad.buttons[0]?.pressed && !gamepadButtonsRef.current.menuSelect) {
+          // X button or Touchpad (button 17 - PS5 touchpad click) - select checkpoint menu item
+          const touchpadPressed = gamepad.buttons[17]?.pressed;
+          if ((gamepad.buttons[0]?.pressed || touchpadPressed) && !gamepadButtonsRef.current.menuSelect) {
             if (checkpointSelectionRef.current === 0) {
               // Continue to next wave
               setGameState('playing');
@@ -15336,11 +17010,14 @@ const SpaceShooter = () => {
               gameStateRef.current = 'menu';
             }
           }
-          gamepadButtonsRef.current.menuSelect = gamepad.buttons[0]?.pressed || false;
+          gamepadButtonsRef.current.menuSelect = gamepad.buttons[0]?.pressed || touchpadPressed || false;
         }
 
-        // Handle start/restart (X button in game over)
-        if (gamepad.buttons[0]?.pressed && !gamepadButtonsRef.current.start) {
+        // Handle start/restart (X, Share/Create, or Touchpad button in game over)
+        // PS5 DualSense: Create button might be button 8 or 9 depending on browser
+        const shareCreatePressed = gamepad.buttons[8]?.pressed || gamepad.buttons[9]?.pressed;
+        const touchpadPressed = gamepad.buttons[17]?.pressed;
+        if ((gamepad.buttons[0]?.pressed || shareCreatePressed || touchpadPressed) && !gamepadButtonsRef.current.start) {
           if (gameStateRef.current === 'gameOver') {
             // If player has a saved checkpoint, retry from there
             if (hasSaveGame()) {
@@ -15359,7 +17036,7 @@ const SpaceShooter = () => {
             }
           }
         }
-        gamepadButtonsRef.current.start = gamepad.buttons[0]?.pressed || false;
+        gamepadButtonsRef.current.start = gamepad.buttons[0]?.pressed || shareCreatePressed || touchpadPressed || false;
 
         // Handle missile (Square) - with cooldown
         if (gpMissile && !gamepadButtonsRef.current.missile && upgradesRef.current.missiles) {
@@ -15376,8 +17053,21 @@ const SpaceShooter = () => {
         }
         gamepadButtonsRef.current.missile = gpMissile;
 
-        // Handle bomb (Select/Share button 8) - screen clear
-        const gpBomb = gamepad.buttons[8]?.pressed;
+        // Handle bomb (Share/Create button 8, or Triangle button 3 as fallback for PS5)
+        // PS5 DualSense Create button may be button 8, 9, or not exposed depending on browser
+        // Triangle (button 3) works as alternative bomb button ONLY when laser is not available
+        const sharePressed = gamepad.buttons[8]?.pressed || false;
+        const hasLaser = upgradesRef.current.rapidFire >= 3;
+        const triangleBombTrigger = !hasLaser && gamepad.buttons[3]?.pressed && gamepadButtonsRef.current.triangleHoldTime > 18; // 0.3s hold
+        const gpBomb = sharePressed || triangleBombTrigger;
+
+        // Track Triangle button hold time for bomb alt-trigger (only when laser not available)
+        if (!hasLaser && gamepad.buttons[3]?.pressed) {
+          gamepadButtonsRef.current.triangleHoldTime = (gamepadButtonsRef.current.triangleHoldTime || 0) + 1;
+        } else {
+          gamepadButtonsRef.current.triangleHoldTime = 0;
+        }
+
         if (gpBomb && !gamepadButtonsRef.current.bomb) {
           const bomb = bombRef.current;
           if (bomb.stock > 0 && !bomb.active) {
@@ -15516,9 +17206,40 @@ const SpaceShooter = () => {
       if (controls.moveLeft.some(k => keysRef.current[k])) inputX -= 1;
       if (controls.moveRight.some(k => keysRef.current[k])) inputX += 1;
 
-      // Apply gamepad analog input (overrides keyboard if significant)
-      if (Math.abs(gpMoveX) > 0.1) inputX = gpMoveX;
-      if (Math.abs(gpMoveY) > 0.1) inputY = gpMoveY;
+      // Debug: Log keyboard input
+      if ((inputX !== 0 || inputY !== 0) && !window._kbInputLoggedRecently) {
+        console.log('⌨️ KEYBOARD INPUT detected:', { inputX, inputY, keys: Object.keys(keysRef.current).filter(k => keysRef.current[k]) });
+        window._kbInputLoggedRecently = true;
+        setTimeout(() => { window._kbInputLoggedRecently = false; }, 500);
+      }
+
+      // Apply gamepad analog input (only if NO keyboard input and stick moved beyond deadzone)
+      const hasKeyboardInput = inputX !== 0 || inputY !== 0;
+      if (!hasKeyboardInput && Math.abs(gpMoveX) > 0.3) {
+        inputX = gpMoveX;
+        // Debug: Log movement input
+        if (!window._gpMoveLoggedRecently) {
+          console.log('✅ APPLYING Gamepad Move X:', gpMoveX.toFixed(2), '| GameState:', gameStateRef.current, '| Carrier intro:', carrierIntroActive);
+          window._gpMoveLoggedRecently = true;
+          setTimeout(() => { window._gpMoveLoggedRecently = false; }, 500);
+        }
+      }
+      if (!hasKeyboardInput && Math.abs(gpMoveY) > 0.3) {
+        inputY = gpMoveY;
+        // Debug: Log movement input
+        if (!window._gpMoveYLoggedRecently) {
+          console.log('✅ APPLYING Gamepad Move Y:', gpMoveY.toFixed(2), '| GameState:', gameStateRef.current, '| Carrier intro:', carrierIntroActive);
+          window._gpMoveYLoggedRecently = true;
+          setTimeout(() => { window._gpMoveYLoggedRecently = false; }, 500);
+        }
+      }
+
+      // Debug: Log if gamepad is interfering
+      if (hasKeyboardInput && (Math.abs(gpMoveX) > 0.3 || Math.abs(gpMoveY) > 0.3) && !window._gpInterferenceLogged) {
+        console.warn('⚠️ Gamepad detected but keyboard has priority:', { kbX: inputX, kbY: inputY, gpX: gpMoveX, gpY: gpMoveY });
+        window._gpInterferenceLogged = true;
+        setTimeout(() => { window._gpInterferenceLogged = false; }, 2000);
+      }
 
       // Apply touch joystick input (overrides keyboard)
       if (touchJoystickRef.current.active) {
@@ -15637,12 +17358,16 @@ const SpaceShooter = () => {
         // Speed boost multiplier
         const speedMultiplier = 1 + (upgradesRef.current.speedBoost * 0.25); // +25% per stack
 
-        // Apply acceleration
-        player.vx += normalizedX * ACCELERATION * Math.abs(inputX) * speedMultiplier;
-        player.vy += normalizedY * ACCELERATION * Math.abs(inputY) * speedMultiplier;
+        // Apply weather speed effect
+        const weatherSpeedMod = weatherSystemRef.current.active ?
+          weatherSystemRef.current.effects.speedModifier : 1;
 
-        // Clamp to max speed (also boosted)
-        const boostedMaxSpeed = MAX_SPEED * speedMultiplier;
+        // Apply acceleration
+        player.vx += normalizedX * ACCELERATION * Math.abs(inputX) * speedMultiplier * weatherSpeedMod;
+        player.vy += normalizedY * ACCELERATION * Math.abs(inputY) * speedMultiplier * weatherSpeedMod;
+
+        // Clamp to max speed (also boosted and affected by weather)
+        const boostedMaxSpeed = MAX_SPEED * speedMultiplier * weatherSpeedMod;
         const currentSpeed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
         if (currentSpeed > boostedMaxSpeed) {
           player.vx = (player.vx / currentSpeed) * boostedMaxSpeed;
@@ -15975,9 +17700,9 @@ const SpaceShooter = () => {
         return trail.lifetime > 0 && trail.alpha > 0.05;
       });
 
-      // Limit bullet trails during boss fights to prevent excessive buildup
-      if (bossActiveRef.current && bulletTrailsRef.current.length > 150) {
-        bulletTrailsRef.current = bulletTrailsRef.current.slice(-150);
+      // Limit bullet trails during boss fights to prevent excessive buildup (lower limit for better performance)
+      if (bossActiveRef.current && bulletTrailsRef.current.length > 100) {
+        bulletTrailsRef.current = bulletTrailsRef.current.slice(-100);
       }
 
       // Update missile trails
@@ -15991,9 +17716,9 @@ const SpaceShooter = () => {
         return trail.lifetime > 0 && trail.alpha > 0.05;
       });
 
-      // Limit missile trails during boss fights to prevent excessive buildup
-      if (bossActiveRef.current && missileTrailsRef.current.length > 100) {
-        missileTrailsRef.current = missileTrailsRef.current.slice(-100);
+      // Limit missile trails during boss fights to prevent excessive buildup (lower limit for better performance)
+      if (bossActiveRef.current && missileTrailsRef.current.length > 60) {
+        missileTrailsRef.current = missileTrailsRef.current.slice(-60);
       }
 
       // Update option satellite positions (follow player trail)
@@ -16023,10 +17748,22 @@ const SpaceShooter = () => {
 
       // Wave Cannon charging (hold shift or L2 trigger)
       if (keysRef.current['ShiftLeft'] || keysRef.current['ShiftRight'] || gpWaveCannon) {
+        // Debug: Log wave cannon charging
+        if (!window._waveCannonChargeLogged) {
+          console.log('⚡ WAVE CANNON CHARGING! Shift:', keysRef.current['ShiftLeft'] || keysRef.current['ShiftRight'], 'L2:', gpWaveCannon, '| Charge:', waveCannonChargeRef.current, '/', WAVE_CANNON_MAX_CHARGE);
+          window._waveCannonChargeLogged = true;
+          setTimeout(() => { window._waveCannonChargeLogged = false; }, 1000);
+        }
         isChargingRef.current = true;
         waveCannonChargeRef.current = Math.min(WAVE_CANNON_MAX_CHARGE, waveCannonChargeRef.current + WAVE_CANNON_CHARGE_RATE);
+
+        // Play charge sound when starting to charge
+        if (waveCannonChargeRef.current === WAVE_CANNON_CHARGE_RATE) {
+          soundSystem.playWaveCannonCharge();
+        }
       } else if (isChargingRef.current && waveCannonChargeRef.current >= WAVE_CANNON_MIN_CHARGE) {
         // Release wave cannon!
+        console.log('💥 WAVE CANNON FIRED! Charge level:', waveCannonChargeRef.current, '/', WAVE_CANNON_MAX_CHARGE, '(' + (waveCannonChargeRef.current / WAVE_CANNON_MAX_CHARGE * 100).toFixed(0) + '%)');
         soundSystem.playWaveCannonFire();
         const chargeLevel = waveCannonChargeRef.current / WAVE_CANNON_MAX_CHARGE;
 
@@ -16065,6 +17802,7 @@ const SpaceShooter = () => {
         isChargingRef.current = false;
       } else if (isChargingRef.current && waveCannonChargeRef.current < WAVE_CANNON_MIN_CHARGE && !keysRef.current['ShiftLeft'] && !keysRef.current['ShiftRight'] && !gpWaveCannon) {
         // Released too early - reset charge
+        console.log('⚠️ WAVE CANNON released too early! Charge was:', waveCannonChargeRef.current, '/', WAVE_CANNON_MIN_CHARGE, 'required');
         waveCannonChargeRef.current = 0;
         isChargingRef.current = false;
       }
@@ -16183,6 +17921,13 @@ const SpaceShooter = () => {
       const spacePrevPressed = prevKeysRef.current['Space'];
       const gpShootPrevPressed = gamepadButtonsRef.current.shoot;
       const isNewShot = (spacePressed && !spacePrevPressed) || (gpShoot && !gpShootPrevPressed);
+
+      // Debug: Log shooting input
+      if (gpShoot && !window._gpShootLoggedRecently) {
+        console.log('🔫 Gamepad Shoot button pressed. isNewShot:', isNewShot, 'gpShoot:', gpShoot, 'gpShootPrev:', gpShootPrevPressed, 'gameState:', gameStateRef.current);
+        window._gpShootLoggedRecently = true;
+        setTimeout(() => { window._gpShootLoggedRecently = false; }, 200);
+      }
 
       // Get weapon level data
       const weaponData = WEAPON_LEVELS[weaponLevelRef.current.level] || WEAPON_LEVELS[1];
@@ -16628,6 +18373,18 @@ const SpaceShooter = () => {
               createExplosion(bossRef.current.x + BOSS_WIDTH / 2, bossRef.current.y + BOSS_HEIGHT / 2, 'boss', true);
               createExplosion(bossRef.current.x + 30, bossRef.current.y + 20, 'large');
               createExplosion(bossRef.current.x + BOSS_WIDTH - 30, bossRef.current.y + BOSS_HEIGHT - 20, 'large');
+
+              // Destroy ALL remaining enemies on the level (boss completion clears the stage)
+              enemiesRef.current.forEach(enemy => {
+                const ew = enemy.width || ENEMY_WIDTH;
+                const eh = enemy.height || ENEMY_HEIGHT;
+                createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, 'normal', true);
+
+                // Award points for cleared enemies
+                scoreRef.current += (enemy.points || 10);
+              });
+              enemiesRef.current = []; // Clear all enemies
+
               const newScore = scoreRef.current + bossRef.current.points;
               setScore(newScore);
               scoreRef.current = newScore;
@@ -16713,9 +18470,8 @@ const SpaceShooter = () => {
               waveKillsNeededRef.current = 10 + (waveRef.current * 5);
               waveStartTimeRef.current = performance.now(); // Reset grace period for new wave
 
-              // Clear boss bullets and spawned enemies to avoid clutter
+              // Clear boss bullets (enemies already cleared above)
               enemyBulletsRef.current = [];
-              enemiesRef.current = enemiesRef.current.filter(e => !e.spawnedByBoss);
 
               // Always start checkpoint transition after boss defeat
               startCheckpointTransition(defeatedBoss, completedWave);
@@ -18523,10 +20279,80 @@ const SpaceShooter = () => {
               bulletHit = true; // Normal bullets are consumed on hit
             }
 
-            // Apply damage
-            enemy.health -= damage;
+            // ========== CRITICAL HIT SYSTEM ==========
+            let isCritical = false;
+            let critMultiplier = 1;
 
-            createImpactParticles(bulletX, bulletY, '#ffaa00', 4);
+            // Base critical chance (15%)
+            let critChance = 0.15;
+
+            // Bonus crit chance from damage boost upgrade (5% per level)
+            if (permanentUpgradesRef.current?.damageBoost) {
+              critChance += permanentUpgradesRef.current.damageBoost * 0.05;
+            }
+
+            // Check for critical hit
+            if (Math.random() < critChance) {
+              isCritical = true;
+              critMultiplier = 2.0; // 2x damage on crit
+
+              // Enhanced crit multiplier for certain conditions
+              if (bullet.isWaveCannon) critMultiplier = 2.5; // Wave cannon crits are even stronger
+              if (enemy.isElite) critMultiplier += 0.5; // Bonus damage vs elites
+            }
+
+            // Calculate final damage
+            const finalDamage = damage * critMultiplier;
+
+            // Apply damage
+            enemy.health -= finalDamage;
+            // ========== END CRITICAL HIT SYSTEM ==========
+
+            // ========== FLOATING DAMAGE NUMBERS ==========
+            const damageText = isCritical
+              ? `${Math.floor(finalDamage)}!`
+              : Math.floor(finalDamage).toString();
+
+            floatingTextsRef.current.push({
+              x: enemy.x + ew / 2,
+              y: enemy.y - 10,
+              text: damageText,
+              color: isCritical ? '#ffff00' : '#ff8800',
+              lifetime: isCritical ? 40 : 30,
+              vy: -1.5,
+              vx: (Math.random() - 0.5) * 0.5,
+              scale: isCritical ? 1.3 : 1,
+              flash: isCritical
+            });
+
+            // Critical hit visual effects
+            if (isCritical) {
+              // Enhanced impact particles for crits
+              createImpactParticles(bulletX, bulletY, '#ffff00', 8);
+
+              // Crit spark burst
+              for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI * 2 / 6) * i;
+                sparkParticlesRef.current.push({
+                  x: enemy.x + ew / 2,
+                  y: enemy.y + eh / 2,
+                  vx: Math.cos(angle) * 3,
+                  vy: Math.sin(angle) * 3,
+                  size: 3,
+                  lifetime: 20,
+                  color: '#ffff00',
+                  alpha: 1
+                });
+              }
+
+              // Screen shake for big crits
+              if (critMultiplier >= 2.5) {
+                triggerScreenShake(3, 5);
+              }
+            } else {
+              createImpactParticles(bulletX, bulletY, '#ffaa00', 4);
+            }
+            // ========== END FLOATING DAMAGE NUMBERS ==========
 
             if (enemy.health > 0) {
               return true; // Enemy survives
@@ -18540,12 +20366,13 @@ const SpaceShooter = () => {
             sessionStatsRef.current.kills++;
 
             console.log('[ENEMY KILL] Enemy destroyed. Roll for powerup...');
-            // Power-up drop chance
-            if (Math.random() < POWERUP_DROP_CHANCE) {
-              console.log('[ENEMY KILL] Drop chance success! Spawning powerup.');
+            // Elite enemies have much higher power-up drop chance
+            const dropChance = enemy.isElite ? POWERUP_DROP_CHANCE * 2.5 : POWERUP_DROP_CHANCE;
+            if (Math.random() < dropChance) {
+              console.log('[ENEMY KILL] Drop chance success! Elite:', enemy.isElite, 'Spawning powerup.');
               spawnPowerup(enemy.x + ew / 2, enemy.y + eh / 2);
             } else {
-              console.log('[ENEMY KILL] Drop chance failed (30% chance).');
+              console.log('[ENEMY KILL] Drop chance failed. Chance:', dropChance);
             }
             return false; // Remove enemy
           }
@@ -19435,8 +21262,22 @@ const SpaceShooter = () => {
                   scale: 1.2 + (bonusMultiplier - 1) * 0.3
                 });
 
-                // Drop power-up
+                // Guaranteed power-up drops from mini-boss
                 spawnPowerup(mb.x + mb.width / 2, mb.y + mb.height / 2);
+
+                // Extra power-up if modifier present (higher rarity)
+                if (mb.modifier) {
+                  setTimeout(() => {
+                    spawnPowerup(mb.x + mb.width / 2 + 30, mb.y + mb.height / 2 + 20, 'rare');
+                  }, 200);
+                }
+
+                // Bonus power-up on higher waves
+                if (waveRef.current >= 8) {
+                  setTimeout(() => {
+                    spawnPowerup(mb.x + mb.width / 2 - 30, mb.y + mb.height / 2 - 20);
+                  }, 400);
+                }
 
                 miniBossRef.current = null;
               }
@@ -19527,18 +21368,74 @@ const SpaceShooter = () => {
 
               // Now damage health (if not invulnerable from regen)
               if (!boss.invincible) {
-                boss.health -= damage;
-                createExplosion(bullet.x, bullet.y, 'small');
+                // ========== BOSS CRITICAL HIT SYSTEM ==========
+                let isCritical = false;
+                let critMultiplier = 1;
 
-                // Health damage feedback
+                // Base critical chance (15%)
+                let critChance = 0.15;
+
+                // Bonus crit chance from damage boost upgrade (5% per level)
+                if (permanentUpgradesRef.current?.damageBoost) {
+                  critChance += permanentUpgradesRef.current.damageBoost * 0.05;
+                }
+
+                // Check for critical hit
+                if (Math.random() < critChance) {
+                  isCritical = true;
+                  critMultiplier = 2.0; // 2x damage on crit
+
+                  // Enhanced crit multiplier for certain conditions
+                  if (bullet.isWaveCannon) critMultiplier = 2.5;
+                }
+
+                // Calculate final damage
+                const finalDamage = damage * critMultiplier;
+
+                boss.health -= finalDamage;
+                // ========== END BOSS CRITICAL HIT SYSTEM ==========
+
+                createExplosion(bullet.x, bullet.y, isCritical ? 'normal' : 'small');
+
+                // Boss damage feedback with critical hits
+                const damageText = isCritical
+                  ? `${Math.floor(finalDamage)}!`
+                  : Math.floor(finalDamage).toString();
+
                 floatingTextsRef.current.push({
                   x: bullet.x,
                   y: bullet.y - 20,
-                  text: `-${damage}`,
-                  color: '#ff8844',
-                  lifetime: 30,
-                  vy: -2
+                  text: damageText,
+                  color: isCritical ? '#ffff00' : '#ff8844',
+                  lifetime: isCritical ? 40 : 30,
+                  vy: -2,
+                  vx: (Math.random() - 0.5) * 0.5,
+                  scale: isCritical ? 1.4 : 1,
+                  flash: isCritical
                 });
+
+                // Critical hit visual effects for boss
+                if (isCritical) {
+                  // Enhanced impact particles
+                  createImpactParticles(bullet.x, bullet.y, '#ffff00', 10);
+
+                  // Crit spark burst
+                  for (let i = 0; i < 8; i++) {
+                    const angle = (Math.PI * 2 / 8) * i;
+                    sparkParticlesRef.current.push({
+                      x: bullet.x,
+                      y: bullet.y,
+                      vx: Math.cos(angle) * 4,
+                      vy: Math.sin(angle) * 4,
+                      size: 3,
+                      lifetime: 25,
+                      color: '#ffff00',
+                      alpha: 1
+                    });
+                  }
+
+                  triggerScreenShake(4, 8);
+                }
               } else {
                 // Boss invulnerable from regeneration
                 floatingTextsRef.current.push({
@@ -19560,15 +21457,16 @@ const SpaceShooter = () => {
               createExplosion(boss.x + boss.width / 4, boss.y + boss.height / 4, 'large');
               createExplosion(boss.x + boss.width * 3/4, boss.y + boss.height * 3/4, 'large');
 
-              // Destroy all boss-spawned enemies
+              // Destroy ALL remaining enemies on the level (boss completion clears the stage)
               enemiesRef.current.forEach(enemy => {
-                if (enemy.spawnedByBoss) {
-                  const ew = enemy.width || ENEMY_WIDTH;
-                  const eh = enemy.height || ENEMY_HEIGHT;
-                  createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, 'normal', true);
-                }
+                const ew = enemy.width || ENEMY_WIDTH;
+                const eh = enemy.height || ENEMY_HEIGHT;
+                createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, 'normal', true);
+
+                // Award points for cleared enemies
+                scoreRef.current += (enemy.points || 10);
               });
-              enemiesRef.current = enemiesRef.current.filter(e => !e.spawnedByBoss);
+              enemiesRef.current = []; // Clear all enemies
 
               // Boss kill gives big multiplier boost
               scoreMultiplierRef.current = Math.min(MULTIPLIER_MAX, scoreMultiplierRef.current + 1.0);
@@ -20209,15 +22107,16 @@ const SpaceShooter = () => {
               createExplosion(boss.x + 30, boss.y + 20, 'large');
               createExplosion(boss.x + BOSS_WIDTH - 30, boss.y + BOSS_HEIGHT - 20, 'large');
 
-              // Destroy all boss-spawned enemies
+              // Destroy ALL remaining enemies on the level (boss completion clears the stage)
               enemiesRef.current.forEach(enemy => {
-                if (enemy.spawnedByBoss) {
-                  const ew = enemy.width || ENEMY_WIDTH;
-                  const eh = enemy.height || ENEMY_HEIGHT;
-                  createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, 'normal', true);
-                }
+                const ew = enemy.width || ENEMY_WIDTH;
+                const eh = enemy.height || ENEMY_HEIGHT;
+                createExplosion(enemy.x + ew / 2, enemy.y + eh / 2, 'normal', true);
+
+                // Award points for cleared enemies
+                scoreRef.current += (enemy.points || 10);
               });
-              enemiesRef.current = enemiesRef.current.filter(e => !e.spawnedByBoss);
+              enemiesRef.current = []; // Clear all enemies
 
               // Boss kill gives big multiplier boost
               scoreMultiplierRef.current = Math.min(MULTIPLIER_MAX, scoreMultiplierRef.current + 1.0);
@@ -20402,6 +22301,13 @@ const SpaceShooter = () => {
         text.lifetime--;
         text.y += text.vy;
         text.vy *= 0.98;
+
+        // Handle horizontal movement for damage numbers
+        if (text.vx) {
+          text.x += text.vx;
+          text.vx *= 0.95; // Slow down horizontal drift
+        }
+
         return text.lifetime > 0;
       });
 
@@ -20526,6 +22432,187 @@ const SpaceShooter = () => {
           }
         }
       }
+
+      // ==================== UPDATE ENVIRONMENTAL SYSTEMS ====================
+      updateEnvironment();
+
+      // Check for weather spawn timing
+      if (!weatherSystemRef.current.active &&
+          waveRef.current >= (weatherSystemRef.current.nextWeatherWave || 999)) {
+        spawnWeatherEvent();
+        // Set next weather wave (random 3-5 waves later)
+        weatherSystemRef.current.nextWeatherWave = waveRef.current + 3 + Math.floor(Math.random() * 3);
+      }
+
+      // Spawn destructibles periodically
+      if (Math.random() < 0.005 && destructiblesRef.current.length < 5) {
+        spawnDestructible();
+      }
+
+      // ==================== DESTRUCTIBLE COLLISIONS ====================
+      // Check bullet collisions with destructibles
+      bulletsRef.current = bulletsRef.current.filter(bullet => {
+        let bulletHit = false;
+
+        destructiblesRef.current.forEach(obj => {
+          const def = DESTRUCTIBLE_TYPES[obj.type];
+          const bulletW = bullet.isWaveCannon ? bullet.size : BULLET_WIDTH;
+          const bulletH = bullet.isWaveCannon ? bullet.size : BULLET_HEIGHT;
+          const bulletX = bullet.isWaveCannon ? bullet.x - bullet.size / 2 : bullet.x;
+          const bulletY = bullet.isWaveCannon ? bullet.y - bullet.size / 2 : bullet.y;
+
+          // AABB collision
+          const collision = bulletX < obj.x + def.width &&
+                           bulletX + bulletW > obj.x &&
+                           bulletY < obj.y + def.height &&
+                           bulletY + bulletH > obj.y;
+
+          if (collision) {
+            obj.health -= (bullet.damage || 1);
+            obj.damaged = true;
+
+            // Impact effect
+            createImpactParticles(bulletX + bulletW / 2, bulletY + bulletH / 2, bullet.polarity === 'light' ? '#ffaa00' : '#aa00ff');
+
+            // Check if destroyed
+            if (obj.health <= 0) {
+              // Award points
+              scoreRef.current += def.points;
+              setScore(scoreRef.current);
+
+              // Create explosion (large for mining rig)
+              if (def.explosion === 'large') {
+                createExplosion(obj.x + def.width / 2, obj.y + def.height / 2, 'large', true);
+              } else {
+                createExplosion(obj.x + def.width / 2, obj.y + def.height / 2, 'normal', true);
+              }
+
+              // Spawn debris
+              for (let i = 0; i < def.debris; i++) {
+                debrisParticlesRef.current.push({
+                  x: obj.x + Math.random() * def.width,
+                  y: obj.y + Math.random() * def.height,
+                  vx: (Math.random() - 0.5) * 4,
+                  vy: (Math.random() - 0.5) * 4 - 1,
+                  size: 2 + Math.random() * 3,
+                  lifetime: 60 + Math.random() * 40,
+                  maxLifetime: 100,
+                  color: def.color,
+                  rotation: Math.random() * Math.PI * 2,
+                  rotationSpeed: (Math.random() - 0.5) * 0.2
+                });
+              }
+
+              // Maybe spawn power-up
+              if (def.dropChance && Math.random() < def.dropChance) {
+                spawnPowerup(obj.x + def.width / 2, obj.y + def.height / 2);
+              }
+
+              // Remove destructible
+              destructiblesRef.current = destructiblesRef.current.filter(d => d !== obj);
+
+              // Floating text
+              floatingTextsRef.current.push({
+                x: obj.x + def.width / 2,
+                y: obj.y - 10,
+                text: '+' + def.points,
+                color: '#ffaa00',
+                lifetime: 60,
+                vy: -1,
+                scale: 1.2
+              });
+            }
+
+            if (!bullet.isWaveCannon && !bullet.piercing) {
+              bulletHit = true;
+            }
+          }
+        });
+
+        return !bulletHit;
+      });
+
+      // Check player collision with destructibles
+      destructiblesRef.current.forEach(obj => {
+        const def = DESTRUCTIBLE_TYPES[obj.type];
+        const player = playerRef.current;
+        const px = player.x + PLAYER_WIDTH / 2;
+        const py = player.y + PLAYER_HEIGHT / 2;
+
+        // Simple collision (player hitbox vs destructible box)
+        const collision = px > obj.x && px < obj.x + def.width &&
+                         py > obj.y && py < obj.y + def.height;
+
+        if (collision && !playerInvincibleRef.current && !dashRef.current.invincible) {
+          // Small damage to player
+          if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
+            upgradesRef.current.shieldHits--;
+            upgradesRef.current.shieldRechargeTimer = 180;
+            if (upgradesRef.current.shieldHits <= 0) upgradesRef.current.shield = false;
+            createShieldImpact(px, py);
+            triggerScreenShake(5, 8);
+            soundSystem.playEnemyExplosion();
+          } else {
+            soundSystem.playPlayerDestroy();
+            const newLives = livesRef.current - 1;
+            setLives(newLives);
+            livesRef.current = newLives;
+            playerInvincibleRef.current = 120;
+            createExplosion(px, py, 'large');
+            triggerScreenShake(15, 20);
+            if (newLives <= 0) {
+              handleGameOver();
+            }
+          }
+
+          // Damage destructible too
+          obj.health -= 5;
+          obj.damaged = true;
+        }
+      });
+
+      // Apply weather damage-over-time
+      if (weatherSystemRef.current.active &&
+          weatherSystemRef.current.effects.damageOverTime > 0 &&
+          !playerInvincibleRef.current &&
+          !dashRef.current.invincible) {
+
+        // Apply damage once per second (1000ms)
+        if (timestamp - weatherSystemRef.current.lastDamageTime >= 1000) {
+          weatherSystemRef.current.lastDamageTime = timestamp;
+          const dmg = weatherSystemRef.current.effects.damageOverTime;
+          const player = playerRef.current;
+
+          if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
+            upgradesRef.current.shieldHits -= dmg;
+            if (upgradesRef.current.shieldHits < 0) {
+              upgradesRef.current.shieldHits = 0;
+              upgradesRef.current.shield = false;
+            }
+            createShieldImpact(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2);
+            floatingTextsRef.current.push({
+              x: player.x + PLAYER_WIDTH / 2,
+              y: player.y,
+              text: weatherSystemRef.current.type === 'solar_flare' ? '🔥' : '⚡',
+              color: '#ff6600',
+              lifetime: 30,
+              vy: -1
+            });
+          } else {
+            livesRef.current -= dmg;
+            setLives(livesRef.current);
+            playerInvincibleRef.current = 60; // Brief invincibility
+            createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'small');
+            soundSystem.playPlayerDestroy();
+            if (livesRef.current <= 0) {
+              handleGameOver();
+            }
+          }
+        }
+      }
+      // ==================== END DESTRUCTIBLE COLLISIONS ====================
+
+      // ==================== END ENVIRONMENTAL UPDATES ====================
 
       // === Ship Ability Updates ===
       const currentShipAbility = (SHIP_DESIGNS[selectedShipRef.current] || SHIP_DESIGNS[0]).ability;
@@ -21936,9 +24023,38 @@ const SpaceShooter = () => {
                 soundSystem.init();
                 soundSystem.resume();
                 setBrandFadingOut(true);
+
+                // Skip cinematic on mobile devices
+                const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                  || ('ontouchstart' in window)
+                  || (navigator.maxTouchPoints > 0);
+
+                const nextState = isMobileDevice ? 'splash' : 'cinematic';
+
                 setTimeout(() => {
-                  setGameState('cinematic');
-                  gameStateRef.current = 'cinematic';
+                  setGameState(nextState);
+                  gameStateRef.current = nextState;
+                  setBrandFadingOut(false);
+                }, 800);
+              }
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              if (!brandFadingOut) {
+                soundSystem.init();
+                soundSystem.resume();
+                setBrandFadingOut(true);
+
+                // Skip cinematic on mobile devices
+                const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                  || ('ontouchstart' in window)
+                  || (navigator.maxTouchPoints > 0);
+
+                const nextState = isMobileDevice ? 'splash' : 'cinematic';
+
+                setTimeout(() => {
+                  setGameState(nextState);
+                  gameStateRef.current = nextState;
                   setBrandFadingOut(false);
                 }, 800);
               }
@@ -22035,6 +24151,17 @@ const SpaceShooter = () => {
                   }, 800);
                 }
               }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                if (!cinematicFadingOut) {
+                  setCinematicFadingOut(true);
+                  setTimeout(() => {
+                    setGameState('splash');
+                    gameStateRef.current = 'splash';
+                    setCinematicFadingOut(false);
+                  }, 800);
+                }
+              }}
             >
               <source src={asset('Nebula%20X%20Cinematic.mp4')} type="video/mp4" />
             </video>
@@ -22055,6 +24182,21 @@ const SpaceShooter = () => {
           <div
             className={`overlay splash-overlay ${splashFadingOut ? 'fade-out' : ''}`}
             onClick={() => {
+              if (!splashFadingOut) {
+                const chimeSound = new Audio(asset('mixkit-crystal-chime-3108.mp3'));
+                chimeSound.volume = 0.6;
+                chimeSound.play().catch(() => {});
+                soundSystem.init();
+                soundSystem.resume();
+                setSplashFadingOut(true);
+                setTimeout(() => {
+                  setGameState('menu');
+                  setSplashFadingOut(false);
+                }, 800);
+              }
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
               if (!splashFadingOut) {
                 const chimeSound = new Audio(asset('mixkit-crystal-chime-3108.mp3'));
                 chimeSound.volume = 0.6;
@@ -22309,7 +24451,7 @@ const SpaceShooter = () => {
                 </button>
               </div>
 
-              <p className="start-hint split-hint">🎮 D-Pad to navigate • to select • ENTER to start</p>
+              <p className="start-hint split-hint">🎮 D-Pad to navigate • Ⓐ to select • ENTER to start</p>
 
               {/* Decorative bottom */}
               <div className="menu-footer split-footer">
@@ -22398,7 +24540,7 @@ const SpaceShooter = () => {
             {showChallenges && (
               <div className="challenge-modal-overlay">
                 <div className="challenge-modal">
-                  <h2> CHALLENGE MODES</h2>
+                  <h2>🏆 CHALLENGE MODES</h2>
                   <p className="challenge-subtitle">Unlocked for defeating the Nexus Core!</p>
 
                   <div className="challenge-options">
@@ -22415,7 +24557,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>SURVIVAL MODE</h3>
                         <p>Endless waves with 1 life. How long can you survive?</p>
-                        <span className="challenge-detail">Starts at Wave 5 ↩ No continues</span>
+                        <span className="challenge-detail">Starts at Wave 5 • No continues</span>
                       </div>
                     </button>
 
@@ -22432,7 +24574,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>BOSS RUSH</h3>
                         <p>Face all bosses back-to-back. No mercy!</p>
-                        <span className="challenge-detail">Bosses only ↩ Limited healing</span>
+                        <span className="challenge-detail">Bosses only • Limited healing</span>
                       </div>
                     </button>
 
@@ -22449,7 +24591,7 @@ const SpaceShooter = () => {
                       <div className="challenge-info">
                         <h3>TIME ATTACK</h3>
                         <p>Complete 10 waves as fast as possible!</p>
-                        <span className="challenge-detail">Race against the clock ↩ Leaderboard ready</span>
+                        <span className="challenge-detail">Race against the clock • Leaderboard ready</span>
                       </div>
                     </button>
                   </div>
@@ -22650,6 +24792,16 @@ const SpaceShooter = () => {
                         <span className="toggle-label">Show Hitboxes</span>
                         <span className="toggle-desc">Display collision areas</span>
                       </label>
+
+                      <label className="toggle-option">
+                        <input
+                          type="checkbox"
+                          checked={practiceSettings.showHealthBars}
+                          onChange={(e) => setPracticeSettings(prev => ({ ...prev, showHealthBars: e.target.checked }))}
+                        />
+                        <span className="toggle-label">Show Health Bars</span>
+                        <span className="toggle-desc">Display enemy health above sprites</span>
+                      </label>
                     </div>
                   </div>
 
@@ -22688,7 +24840,7 @@ const SpaceShooter = () => {
             {showReplayMenu && (
               <div className="challenge-modal-overlay">
                 <div className="challenge-modal replay-modal">
-                  <h2> REPLAY SYSTEM</h2>
+                  <h2>🎬 REPLAY SYSTEM</h2>
                   <p className="challenge-subtitle">Watch and share your best runs!</p>
 
                   <div className="replay-controls">
@@ -23139,13 +25291,13 @@ const SpaceShooter = () => {
                 ✓ OK
               </button>
             </div>
-            <p className="start-hint">{'\ud83c\udfae'} Press {'\u274c'} or {'\ud83d\udd19'} to go back</p>
+            <p className="start-hint">{'\ud83c\udfae'} Press Ⓑ or B to go back</p>
           </div>
         )}
 
         {(gameState === 'menu' || gameState === 'checkpoint') && showCustomize && (
           <div className="overlay customize-overlay">
-            <h2>ð SHIP HANGAR</h2>
+            <h2>🚀 SHIP HANGAR</h2>
             <div className="customize-layout">
               {/* Ship Preview Section */}
               <div className="customize-preview-section">
@@ -23531,13 +25683,13 @@ const SpaceShooter = () => {
                 ✓ SELECT SHIP
               </button>
             </div>
-            <p className="start-hint">🎮 ◀ ▶ to browse ↩ ↩ to confirm</p>
+            <p className="start-hint">🎮 ◀ ▶ to browse • Ⓐ to confirm</p>
           </div>
         )}
 
         {gameState === 'paused' && !showPauseControls && !showSettings && (
           <div className="overlay pause-overlay" onClick={(e) => e.stopPropagation()}>
-            <h2> PAUSED</h2>
+            <h2>⏸️ PAUSED</h2>
             <div className="pause-buttons-grid">
               <button
                 onClick={(e) => { e.stopPropagation(); setGameState('playing'); }}
@@ -23580,7 +25732,7 @@ const SpaceShooter = () => {
                 <span className="btn-label">MAIN MENU</span>
               </button>
             </div>
-            <p className="start-hint">🎮 D-Pad to navigate ↩ ↩ to select ↩ ESC to resume</p>
+            <p className="start-hint">🎮 D-Pad to navigate • Ⓐ to select • ESC to resume</p>
           </div>
         )}
 
@@ -23591,13 +25743,13 @@ const SpaceShooter = () => {
               <div className="controls-section">
                 <h3>⌨️ Keyboard</h3>
                 <div className="controls-info">
-                  <p>↩ ↩ ↩ ↩  / WASD - Move</p>
+                  <p>⬆️ ⬇️ ⬅️ ➡️ / WASD - Move</p>
                   <p>SPACE - Shoot</p>
                   <p>Q - Dash (while moving)</p>
                   <p>B - Bomb (screen clear)</p>
                   <p>C - Toggle Polarity</p>
                   <p>SHIFT - Wave Cannon</p>
-                  <p>L - Laser Beam (↩≥3 Rapid)</p>
+                  <p>L - Laser Beam (Lvâ‰¥3 Rapid)</p>
                   <p>M - Missile</p>
                   <p>F - Force Toggle</p>
                   <p>G - Force Shield (Lv4+)</p>
@@ -23631,7 +25783,8 @@ const SpaceShooter = () => {
                   <p>□ - Missile</p>
                   <p>○ - Force Toggle</p>
                   <p>L1 - Polarity Toggle</p>
-                  <p>Share - Bomb</p>
+                  <p>Create/Share - Bomb</p>
+                  <p>△ (Hold 0.3s) - Bomb (before Lv3 Rapid)</p>
                   <p>Options - Pause</p>
                 </div>
               </div>
@@ -23639,7 +25792,7 @@ const SpaceShooter = () => {
             <button onClick={() => setShowPauseControls(false)} className="back-button">
               ◀ BACK
             </button>
-            <p className="start-hint">🎮 Press ↩❌ or ↩ to go back</p>
+            <p className="start-hint">🎮 Press Ⓑ or B to go back</p>
           </div>
         )}
 
@@ -23806,13 +25959,13 @@ const SpaceShooter = () => {
             <button onClick={() => setShowSettings(false)} className="back-button">
               ◀ BACK
             </button>
-            <p className="start-hint">🎮 Press ↩❌ or ↩ to go back</p>
+            <p className="start-hint">🎮 Press Ⓑ or B to go back</p>
           </div>
         )}
 
         {gameState === 'checkpoint' && !showCustomize && (
           <div className="overlay checkpoint-overlay">
-            <h2> CHECKPOINT REACHED</h2>
+            <h2>⭐ CHECKPOINT REACHED</h2>
             <div className="checkpoint-content">
               <div className="checkpoint-wave">
                 <span className="checkpoint-label">MISSION</span>
@@ -24031,7 +26184,7 @@ const SpaceShooter = () => {
 
               <p className="checkpoint-hint">Select a zone or continue to random path!</p>
             </div>
-            <p className="start-hint">🎮 D-Pad to navigate ↩ ↩ to select</p>
+            <p className="start-hint">🎮 D-Pad to navigate • Ⓐ to select</p>
           </div>
         )}
 
@@ -24054,6 +26207,54 @@ const SpaceShooter = () => {
             {bossActive && <p className="boss-fight">Defeated during Boss Fight!</p>}
             {score >= highScore && score > 0 && (
               <p className="new-high-score">🏆 NEW HIGH SCORE! 🏆</p>
+            )}
+
+            {/* Meta-Progression Rewards */}
+            {gameModeRef.current !== 'practice' && sessionRewardsRef.current.xp > 0 && (
+              <div className="meta-rewards-panel">
+                <div className="rewards-header">
+                  <h3>🎖️ PILOT PROGRESSION 🎖️</h3>
+                  <p className="pilot-level">Level {pilotProgression.level} Pilot</p>
+                </div>
+
+                <div className="rewards-earned">
+                  <div className="reward-item xp-reward">
+                    <span className="reward-icon">⭐</span>
+                    <span className="reward-amount">+{sessionRewardsRef.current.xp} XP</span>
+                    <span className="reward-label">Experience Earned</span>
+                  </div>
+                  <div className="reward-item credits-reward">
+                    <span className="reward-icon">💰</span>
+                    <span className="reward-amount">+{sessionRewardsRef.current.credits} Credits</span>
+                    <span className="reward-label">Credits Earned</span>
+                  </div>
+                </div>
+
+                <div className="xp-progress-bar">
+                  <div
+                    className="xp-fill"
+                    style={{ width: `${(pilotProgression.xp / getXPForLevel(pilotProgression.level)) * 100}%` }}
+                  />
+                  <span className="xp-text">
+                    {pilotProgression.xp} / {getXPForLevel(pilotProgression.level)} XP to Level {pilotProgression.level + 1}
+                  </span>
+                </div>
+
+                <div className="credits-display">
+                  <span className="credits-icon">💰</span>
+                  <span className="credits-amount">{pilotProgression.credits.toLocaleString()} Credits Available</span>
+                </div>
+
+                <button
+                  className="upgrade-shop-button"
+                  onClick={() => {
+                    setShowUpgradeShop(true);
+                    showUpgradeShopRef.current = true;
+                  }}
+                >
+                  🛒 OPEN UPGRADE SHOP
+                </button>
+              </div>
             )}
 
             {/* Quick Settings Panel */}
@@ -24095,7 +26296,7 @@ const SpaceShooter = () => {
                   <span className="volume-val">{userSettings.masterVolume}%</span>
                 </div>
                 <div className="volume-row">
-                  <span className="volume-label">{'ÃÂÃÂÃÂÃÂ½ÃÂÃÂµ'} Music</span>
+                  <span className="volume-label">🎵 Music</span>
                   <input
                     type="range"
                     min="0"
@@ -24156,7 +26357,7 @@ const SpaceShooter = () => {
             {showQuitConfirm && (
               <div className="quit-confirm-overlay">
                 <div className="quit-confirm-modal">
-                  <h3>ÃÂ¢ÃÂÃÂ ÃÂ¯ÃÂ¸ÃÂ QUIT GAME?</h3>
+                  <h3>⚠️ QUIT GAME?</h3>
                   <p>Are you sure you want to quit?</p>
                   <p className="quit-warning">You will return to the main menu.</p>
                   <div className="quit-confirm-buttons">
@@ -24202,7 +26403,7 @@ const SpaceShooter = () => {
                   <div className="victory-story">
                     <div className="story-text">
                       <p className="story-paragraph">
-                        In the year 2387, humanity faced its greatest threat ↩ÃÂÃÂ¬ an advanced AI network
+                        In the year 2387, humanity faced its greatest threat — an advanced AI network
                         known as the Nexus Collective had spread across the galaxy, consuming entire
                         star systems and enslaving civilizations.
                       </p>
@@ -24219,10 +26420,10 @@ const SpaceShooter = () => {
                       <p className="story-paragraph">
                         In the heart of the Nexus, they destroyed the AI Core, freeing billions and
                         ending the machine threat forever. The <span className="highlight">Nebula X</span> and
-                        its crew became legends ↩ÃÂÃÂ¬ their names etched in the stars for eternity.
+                        its crew became legends — their names etched in the stars for eternity.
                       </p>
                       <p className="story-final">
-                        ? <em>They will never be forgotten.</em> ?
+                        ✨ <em>They will never be forgotten.</em> ✨
                       </p>
                     </div>
                   </div>
@@ -24235,7 +26436,7 @@ const SpaceShooter = () => {
                   </div>
 
                   <div className="credits-section">
-                    <h3>↩ÃÂÃÂÃÂÃÂ¦ CREDITS ↩ÃÂÃÂÃÂÃÂ¦</h3>
+                    <h3>⭐ CREDITS ⭐</h3>
                     <div className="credits-list">
                       <p className="credit-item"><span className="credit-role">Game Design & Development</span><br/>The Nebula X Team</p>
                       <p className="credit-item"><span className="credit-role">Programming</span><br/>React & Canvas 2D</p>
@@ -24315,13 +26516,324 @@ const SpaceShooter = () => {
           </div>
         )}
 
-        {/* Mobile Touch Controls */}
+        {/* ==================== UPGRADE SHOP MODAL ==================== */}
+        {showUpgradeShop && (
+          <div className="upgrade-shop-overlay">
+            <div className="upgrade-shop-modal">
+              <div className="upgrade-shop-header">
+                <h2>🛒 UPGRADE SHOP</h2>
+                <button
+                  className="close-shop-btn"
+                  onClick={() => {
+                    setShowUpgradeShop(false);
+                    showUpgradeShopRef.current = false;
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="pilot-status-bar">
+                <div className="status-item">
+                  <span className="status-icon">🎖️</span>
+                  <span className="status-text">Level {pilotProgression.level} Pilot</span>
+                </div>
+                <div className="status-item">
+                  <span className="status-icon">💰</span>
+                  <span className="status-text">{pilotProgression.credits.toLocaleString()} Credits</span>
+                </div>
+                <div className="status-item">
+                  <span className="status-icon">⭐</span>
+                  <span className="status-text">{pilotProgression.xp} / {getXPForLevel(pilotProgression.level)} XP</span>
+                </div>
+              </div>
+
+              <div className="upgrade-shop-content">
+                {/* Starting Bonuses */}
+                <div className="upgrade-category">
+                  <h3 className="category-header">⚡ STARTING BONUSES</h3>
+                  <div className="upgrades-grid">
+                    {Object.entries(PERMANENT_UPGRADES_CATALOG)
+                      .filter(([key, upgrade]) => upgrade.category === 'starting')
+                      .map(([key, upgrade]) => {
+                        const currentLevel = permanentUpgrades[key] || 0;
+                        const isMaxLevel = currentLevel >= upgrade.maxLevel;
+                        const cost = getUpgradeCost(key, currentLevel);
+                        const canAfford = pilotProgression.credits >= cost;
+                        const meetsLevel = pilotProgression.level >= upgrade.requiresPilotLevel;
+                        const canPurchase = !isMaxLevel && canAfford && meetsLevel;
+
+                        return (
+                          <div key={key} className={`upgrade-card ${isMaxLevel ? 'maxed' : ''} ${canPurchase ? 'available' : ''}`}>
+                            <div className="upgrade-icon">{upgrade.icon}</div>
+                            <div className="upgrade-name">{upgrade.name}</div>
+                            <div className="upgrade-desc">{upgrade.description}</div>
+                            <div className="upgrade-level">
+                              Level: {currentLevel} / {upgrade.maxLevel}
+                            </div>
+                            {!isMaxLevel && (
+                              <>
+                                <div className={`upgrade-cost ${canAfford ? 'affordable' : 'expensive'}`}>
+                                  💰 {cost} Credits
+                                </div>
+                                {!meetsLevel && (
+                                  <div className="upgrade-locked">
+                                    🔒 Requires Pilot Level {upgrade.requiresPilotLevel}
+                                  </div>
+                                )}
+                                <button
+                                  className={`purchase-btn ${canPurchase ? '' : 'disabled'}`}
+                                  disabled={!canPurchase}
+                                  onClick={() => {
+                                    if (canPurchase) {
+                                      purchaseUpgrade(key);
+                                    }
+                                  }}
+                                >
+                                  {isMaxLevel ? 'MAXED' : (canPurchase ? 'PURCHASE' : (meetsLevel ? 'NOT ENOUGH CREDITS' : 'LOCKED'))}
+                                </button>
+                              </>
+                            )}
+                            {isMaxLevel && <div className="maxed-badge">⭐ MAXED ⭐</div>}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* Stat Boosts */}
+                <div className="upgrade-category">
+                  <h3 className="category-header">📊 STAT BOOSTS</h3>
+                  <div className="upgrades-grid">
+                    {Object.entries(PERMANENT_UPGRADES_CATALOG)
+                      .filter(([key, upgrade]) => upgrade.category === 'stats')
+                      .map(([key, upgrade]) => {
+                        const currentLevel = permanentUpgrades[key] || 0;
+                        const isMaxLevel = currentLevel >= upgrade.maxLevel;
+                        const cost = getUpgradeCost(key, currentLevel);
+                        const canAfford = pilotProgression.credits >= cost;
+                        const meetsLevel = pilotProgression.level >= upgrade.requiresPilotLevel;
+                        const canPurchase = !isMaxLevel && canAfford && meetsLevel;
+
+                        return (
+                          <div key={key} className={`upgrade-card ${isMaxLevel ? 'maxed' : ''} ${canPurchase ? 'available' : ''}`}>
+                            <div className="upgrade-icon">{upgrade.icon}</div>
+                            <div className="upgrade-name">{upgrade.name}</div>
+                            <div className="upgrade-desc">{upgrade.description}</div>
+                            <div className="upgrade-level">
+                              Level: {currentLevel} / {upgrade.maxLevel}
+                            </div>
+                            {!isMaxLevel && (
+                              <>
+                                <div className={`upgrade-cost ${canAfford ? 'affordable' : 'expensive'}`}>
+                                  💰 {cost} Credits
+                                </div>
+                                {!meetsLevel && (
+                                  <div className="upgrade-locked">
+                                    🔒 Requires Pilot Level {upgrade.requiresPilotLevel}
+                                  </div>
+                                )}
+                                <button
+                                  className={`purchase-btn ${canPurchase ? '' : 'disabled'}`}
+                                  disabled={!canPurchase}
+                                  onClick={() => {
+                                    if (canPurchase) {
+                                      purchaseUpgrade(key);
+                                    }
+                                  }}
+                                >
+                                  {isMaxLevel ? 'MAXED' : (canPurchase ? 'PURCHASE' : (meetsLevel ? 'NOT ENOUGH CREDITS' : 'LOCKED'))}
+                                </button>
+                              </>
+                            )}
+                            {isMaxLevel && <div className="maxed-badge">⭐ MAXED ⭐</div>}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* Economic */}
+                <div className="upgrade-category">
+                  <h3 className="category-header">💎 ECONOMIC</h3>
+                  <div className="upgrades-grid">
+                    {Object.entries(PERMANENT_UPGRADES_CATALOG)
+                      .filter(([key, upgrade]) => upgrade.category === 'economic')
+                      .map(([key, upgrade]) => {
+                        const currentLevel = permanentUpgrades[key] || 0;
+                        const isMaxLevel = currentLevel >= upgrade.maxLevel;
+                        const cost = getUpgradeCost(key, currentLevel);
+                        const canAfford = pilotProgression.credits >= cost;
+                        const meetsLevel = pilotProgression.level >= upgrade.requiresPilotLevel;
+                        const canPurchase = !isMaxLevel && canAfford && meetsLevel;
+
+                        return (
+                          <div key={key} className={`upgrade-card ${isMaxLevel ? 'maxed' : ''} ${canPurchase ? 'available' : ''}`}>
+                            <div className="upgrade-icon">{upgrade.icon}</div>
+                            <div className="upgrade-name">{upgrade.name}</div>
+                            <div className="upgrade-desc">{upgrade.description}</div>
+                            <div className="upgrade-level">
+                              Level: {currentLevel} / {upgrade.maxLevel}
+                            </div>
+                            {!isMaxLevel && (
+                              <>
+                                <div className={`upgrade-cost ${canAfford ? 'affordable' : 'expensive'}`}>
+                                  💰 {cost} Credits
+                                </div>
+                                {!meetsLevel && (
+                                  <div className="upgrade-locked">
+                                    🔒 Requires Pilot Level {upgrade.requiresPilotLevel}
+                                  </div>
+                                )}
+                                <button
+                                  className={`purchase-btn ${canPurchase ? '' : 'disabled'}`}
+                                  disabled={!canPurchase}
+                                  onClick={() => {
+                                    if (canPurchase) {
+                                      purchaseUpgrade(key);
+                                    }
+                                  }}
+                                >
+                                  {isMaxLevel ? 'MAXED' : (canPurchase ? 'PURCHASE' : (meetsLevel ? 'NOT ENOUGH CREDITS' : 'LOCKED'))}
+                                </button>
+                              </>
+                            )}
+                            {isMaxLevel && <div className="maxed-badge">⭐ MAXED ⭐</div>}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* Special Abilities */}
+                <div className="upgrade-category">
+                  <h3 className="category-header">✨ SPECIAL ABILITIES</h3>
+                  <div className="upgrades-grid">
+                    {Object.entries(PERMANENT_UPGRADES_CATALOG)
+                      .filter(([key, upgrade]) => upgrade.category === 'special')
+                      .map(([key, upgrade]) => {
+                        const currentLevel = permanentUpgrades[key] || 0;
+                        const isMaxLevel = currentLevel >= upgrade.maxLevel;
+                        const cost = getUpgradeCost(key, currentLevel);
+                        const canAfford = pilotProgression.credits >= cost;
+                        const meetsLevel = pilotProgression.level >= upgrade.requiresPilotLevel;
+                        const canPurchase = !isMaxLevel && canAfford && meetsLevel;
+
+                        return (
+                          <div key={key} className={`upgrade-card ${isMaxLevel ? 'maxed' : ''} ${canPurchase ? 'available' : ''}`}>
+                            <div className="upgrade-icon">{upgrade.icon}</div>
+                            <div className="upgrade-name">{upgrade.name}</div>
+                            <div className="upgrade-desc">{upgrade.description}</div>
+                            {upgrade.maxLevel > 1 && (
+                              <div className="upgrade-level">
+                                Level: {currentLevel} / {upgrade.maxLevel}
+                              </div>
+                            )}
+                            {!isMaxLevel && (
+                              <>
+                                <div className={`upgrade-cost ${canAfford ? 'affordable' : 'expensive'}`}>
+                                  💰 {cost} Credits
+                                </div>
+                                {!meetsLevel && (
+                                  <div className="upgrade-locked">
+                                    🔒 Requires Pilot Level {upgrade.requiresPilotLevel}
+                                  </div>
+                                )}
+                                <button
+                                  className={`purchase-btn ${canPurchase ? '' : 'disabled'}`}
+                                  disabled={!canPurchase}
+                                  onClick={() => {
+                                    if (canPurchase) {
+                                      purchaseUpgrade(key);
+                                    }
+                                  }}
+                                >
+                                  {isMaxLevel ? 'MAXED' : (canPurchase ? 'PURCHASE' : (meetsLevel ? 'NOT ENOUGH CREDITS' : 'LOCKED'))}
+                                </button>
+                              </>
+                            )}
+                            {isMaxLevel && <div className="maxed-badge">⭐ OWNED ⭐</div>}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* Advanced Unlocks */}
+                <div className="upgrade-category">
+                  <h3 className="category-header">👑 ADVANCED UNLOCKS</h3>
+                  <div className="upgrades-grid">
+                    {Object.entries(PERMANENT_UPGRADES_CATALOG)
+                      .filter(([key, upgrade]) => upgrade.category === 'advanced')
+                      .map(([key, upgrade]) => {
+                        const currentLevel = permanentUpgrades[key] || 0;
+                        const isMaxLevel = currentLevel >= upgrade.maxLevel;
+                        const cost = getUpgradeCost(key, currentLevel);
+                        const canAfford = pilotProgression.credits >= cost;
+                        const meetsLevel = pilotProgression.level >= upgrade.requiresPilotLevel;
+                        const canPurchase = !isMaxLevel && canAfford && meetsLevel;
+
+                        return (
+                          <div key={key} className={`upgrade-card advanced ${isMaxLevel ? 'maxed' : ''} ${canPurchase ? 'available' : ''}`}>
+                            <div className="upgrade-icon">{upgrade.icon}</div>
+                            <div className="upgrade-name">{upgrade.name}</div>
+                            <div className="upgrade-desc">{upgrade.description}</div>
+                            {!isMaxLevel && (
+                              <>
+                                <div className={`upgrade-cost ${canAfford ? 'affordable' : 'expensive'}`}>
+                                  💰 {cost} Credits
+                                </div>
+                                {!meetsLevel && (
+                                  <div className="upgrade-locked">
+                                    🔒 Requires Pilot Level {upgrade.requiresPilotLevel}
+                                  </div>
+                                )}
+                                <button
+                                  className={`purchase-btn ${canPurchase ? '' : 'disabled'}`}
+                                  disabled={!canPurchase}
+                                  onClick={() => {
+                                    if (canPurchase) {
+                                      purchaseUpgrade(key);
+                                    }
+                                  }}
+                                >
+                                  {isMaxLevel ? 'OWNED' : (canPurchase ? 'PURCHASE' : (meetsLevel ? 'NOT ENOUGH CREDITS' : 'LOCKED'))}
+                                </button>
+                              </>
+                            )}
+                            {isMaxLevel && <div className="maxed-badge">👑 UNLOCKED 👑</div>}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* ==================== END UPGRADE SHOP ==================== */}
+
+        {/* Mobile Touch Controls - Only show during gameplay */}
         {showMobileControls && gameState === 'playing' && (
           <>
+            {/* Pause Button (top center during gameplay) */}
+            <button
+              className="touch-pause-btn"
+              onClick={() => {
+                hapticFeedback('light');
+                setGameState('paused');
+              }}
+              onTouchStart={(e) => e.preventDefault()}
+            >
+              ⏸ PAUSE
+            </button>
+
             {/* Virtual Joystick */}
             <div
               className="touch-joystick"
               onTouchStart={(e) => {
+                e.preventDefault();
+                hapticFeedback('light');
                 const touch = e.touches[0];
                 const rect = e.currentTarget.getBoundingClientRect();
                 touchJoystickRef.current = {
@@ -24333,6 +26845,7 @@ const SpaceShooter = () => {
                 };
               }}
               onTouchMove={(e) => {
+                e.preventDefault();
                 if (touchJoystickRef.current.active) {
                   const touch = e.touches[0];
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -24340,7 +26853,8 @@ const SpaceShooter = () => {
                   touchJoystickRef.current.currentY = touch.clientY - rect.top;
                 }
               }}
-              onTouchEnd={() => {
+              onTouchEnd={(e) => {
+                e.preventDefault();
                 touchJoystickRef.current.active = false;
               }}
             >
@@ -24362,29 +26876,57 @@ const SpaceShooter = () => {
             <div className="touch-buttons">
               <button
                 className="touch-btn touch-btn-shoot"
-                onTouchStart={() => { touchButtonsRef.current.shoot = true; }}
-                onTouchEnd={() => { touchButtonsRef.current.shoot = false; }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  hapticFeedback('light');
+                  touchButtonsRef.current.shoot = true;
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  touchButtonsRef.current.shoot = false;
+                }}
               >
                 FIRE
               </button>
               <button
                 className="touch-btn touch-btn-dash"
-                onTouchStart={() => { touchButtonsRef.current.dash = true; }}
-                onTouchEnd={() => { touchButtonsRef.current.dash = false; }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  hapticFeedback('medium');
+                  touchButtonsRef.current.dash = true;
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  touchButtonsRef.current.dash = false;
+                }}
               >
                 DASH
               </button>
               <button
                 className="touch-btn touch-btn-bomb"
-                onTouchStart={() => { touchButtonsRef.current.bomb = true; }}
-                onTouchEnd={() => { touchButtonsRef.current.bomb = false; }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  hapticFeedback('heavy');
+                  touchButtonsRef.current.bomb = true;
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  touchButtonsRef.current.bomb = false;
+                }}
               >
                 BOMB
               </button>
               <button
                 className="touch-btn touch-btn-special"
-                onTouchStart={() => { touchButtonsRef.current.special = true; }}
-                onTouchEnd={() => { touchButtonsRef.current.special = false; }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  hapticFeedback('medium');
+                  touchButtonsRef.current.special = true;
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  touchButtonsRef.current.special = false;
+                }}
               >
                 SPEC
               </button>

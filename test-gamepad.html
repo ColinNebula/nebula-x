@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PS4/PS5 Controller Test</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background: #1a1a2e;
+      color: #00ff41;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      color: #0ff;
+    }
+    .status {
+      background: #0a0a15;
+      border: 2px solid #0ff;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    .connected { color: #0f0; }
+    .disconnected { color: #f00; }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .button {
+      background: #1a1a2e;
+      border: 2px solid #444;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+    }
+    .button.pressed {
+      background: #0f0;
+      color: #000;
+      border-color: #0f0;
+      font-weight: bold;
+    }
+    .axes {
+      margin-top: 20px;
+    }
+    .axis {
+      margin: 10px 0;
+    }
+    .axis-bar {
+      width: 100%;
+      height: 20px;
+      background: #1a1a2e;
+      border: 1px solid #0ff;
+      position: relative;
+      margin-top: 5px;
+    }
+    .axis-value {
+      height: 100%;
+      background: #0ff;
+      transition: width 0.05s;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 PS4/PS5 Controller Test</h1>
+
+  <div class="status">
+    <h2>Controller Status: <span id="status" class="disconnected">Not Connected</span></h2>
+    <p>Controller Name: <span id="controller-name">N/A</span></p>
+    <p>Buttons: <span id="button-count">0</span></p>
+    <p>Axes: <span id="axes-count">0</span></p>
+  </div>
+
+  <div class="status">
+    <h3>Instructions:</h3>
+    <ul>
+      <li>Press any button on your PS4/PS5 controller to connect</li>
+      <li>Button 0 (X/Cross) = Shoot / Select</li>
+      <li>Button 1 (Circle) = Back</li>
+      <li>Button 2 (Square) = Missile</li>
+      <li>Button 3 (Triangle) = Laser / Back</li>
+      <li>Button 4 (L1) = Polarity Toggle</li>
+      <li>Button 5 (R1) = Shoot (alt)</li>
+      <li>Button 6 (L2) = Wave Cannon</li>
+      <li>Button 7 (R2) = Auto-fire</li>
+      <li>Button 8 (Share) = Bomb / Restart</li>
+      <li>Button 9 (Options) = Pause</li>
+      <li>Button 10 (L3) = Dash</li>
+      <li>Button 11 (R3) = Dash</li>
+      <li>Button 17 (Touchpad) = Select / Confirm</li>
+      <li>Axes 0-1 = Left Stick (Movement)</li>
+      <li>Axes 2-3 = Right Stick</li>
+    </ul>
+  </div>
+
+  <div id="buttons" class="button-grid"></div>
+  <div id="axes" class="axes"></div>
+
+  <script>
+    let gamepadIndex = null;
+
+    function updateStatus() {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      let connectedGamepad = null;
+
+      for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i] && gamepads[i].connected) {
+          connectedGamepad = gamepads[i];
+          gamepadIndex = i;
+          break;
+        }
+      }
+
+      const status = document.getElementById('status');
+      const controllerName = document.getElementById('controller-name');
+      const buttonCount = document.getElementById('button-count');
+      const axesCount = document.getElementById('axes-count');
+      const buttonsDiv = document.getElementById('buttons');
+      const axesDiv = document.getElementById('axes');
+
+      if (connectedGamepad) {
+        status.textContent = 'Connected';
+        status.className = 'connected';
+        controllerName.textContent = connectedGamepad.id;
+        buttonCount.textContent = connectedGamepad.buttons.length;
+        axesCount.textContent = connectedGamepad.axes.length;
+
+        // Update buttons
+        let buttonsHTML = '';
+        connectedGamepad.buttons.forEach((button, index) => {
+          const pressed = button.pressed ? 'pressed' : '';
+          const value = button.value ? ` (${button.value.toFixed(2)})` : '';
+          buttonsHTML += `<div class="button ${pressed}">Button ${index}${value}</div>`;
+        });
+        buttonsDiv.innerHTML = buttonsHTML;
+
+        // Update axes
+        let axesHTML = '<h3>Analog Sticks / Triggers</h3>';
+        connectedGamepad.axes.forEach((axis, index) => {
+          const axisNames = ['Left Stick X', 'Left Stick Y', 'Right Stick X', 'Right Stick Y'];
+          const name = axisNames[index] || `Axis ${index}`;
+          const value = axis.toFixed(3);
+          const percentage = ((axis + 1) / 2) * 100; // Convert -1 to 1 range to 0-100%
+          axesHTML += `
+            <div class="axis">
+              <div>${name}: ${value}</div>
+              <div class="axis-bar">
+                <div class="axis-value" style="width: ${percentage}%"></div>
+              </div>
+            </div>
+          `;
+        });
+        axesDiv.innerHTML = axesHTML;
+      } else {
+        status.textContent = 'Not Connected';
+        status.className = 'disconnected';
+        controllerName.textContent = 'N/A';
+        buttonCount.textContent = '0';
+        axesCount.textContent = '0';
+        buttonsDiv.innerHTML = '<div class="button">No controller detected. Press any button on your controller.</div>';
+        axesDiv.innerHTML = '';
+      }
+
+      requestAnimationFrame(updateStatus);
+    }
+
+    window.addEventListener('gamepadconnected', (e) => {
+      console.log('Gamepad connected:', e.gamepad);
+    });
+
+    window.addEventListener('gamepaddisconnected', (e) => {
+      console.log('Gamepad disconnected');
+      gamepadIndex = null;
+    });
+
+    updateStatus();
+  </script>
+</body>
+</html>

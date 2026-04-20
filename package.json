@@ -14,6 +14,8 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@microsoft/applicationinsights-web": "^3.4.1",
+    "playfab-sdk": "^2.187.251205",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-scripts": "5.0.1",
@@ -30,11 +32,15 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.2",
     "@vitejs/plugin-react-swc": "^4.2.2",
     "acorn": "^8.15.0",
     "acorn-jsx": "^5.3.2",
     "gh-pages": "^6.3.0",
+    "typescript": "^6.0.2",
     "vite": "^7.2.7"
   },
   "scripts": {
@@ -46,6 +52,8 @@
     "preview": "vite preview",
     "start": "vite",
     "test": "vitest",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "prepare-github": "node scripts/prepare-github.js",
@@ -77,10 +85,10 @@
   "author": "",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ColinNebula/nebulax.git"
+    "url": "https://github.com/ColinNebula/nebula-x.git"
   },
   "bugs": {
-    "url": "https://github.com/ColinNebula/nebulax/issues"
+    "url": "https://github.com/ColinNebula/nebula-x/issues"
   },
-  "homepage": "https://github.com/ColinNebula/nebulax#readme"
+  "homepage": "https://colinnebula.github.io/nebula-x"
 }
