@@ -5614,10 +5614,10 @@
   top: max(15px, env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
-  padding: 10px 20px;
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.3) 0%, rgba(0, 200, 255, 0.2) 100%);
-  border: 2px solid rgba(0, 255, 255, 0.5);
-  border-radius: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.4) 0%, rgba(0, 200, 255, 0.3) 100%);
+  border: 2px solid rgba(0, 255, 255, 0.6);
+  border-radius: 10px;
   color: #00ffff;
   font-family: "Press Start 2P", monospace;
   font-size: 0.6rem;
@@ -5627,16 +5627,23 @@
   -webkit-user-select: none;
   touch-action: manipulation;
   z-index: 2000;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4),
+              inset 0 2px 5px rgba(255, 255, 255, 0.1);
+  transition: all 0.08s ease-out;
   -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(3px);
+  min-width: 48px; /* WCAG AAA minimum touch target */
+  min-height: 48px;
+  text-shadow: 0 0 8px currentColor;
 }
 
 .touch-pause-btn:active {
-  transform: translateX(-50%) scale(0.95);
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.5) 0%, rgba(0, 220, 110, 0.4) 100%);
+  transform: translateX(-50%) scale(0.94);
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.6) 0%, rgba(0, 220, 110, 0.5) 100%);
   border-color: rgba(0, 255, 136, 1);
-  box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+  border-width: 3px;
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.7),
+              inset 0 0 15px rgba(0, 255, 136, 0.3);
 }
 
 .touch-joystick {
@@ -5673,6 +5680,157 @@
   box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
   transform: translate(-50%, -50%);
   pointer-events: none;
+  transition: all 0.05s ease-out; /* Smooth movement */
+}
+
+/* Enhanced joystick visual elements */
+.joystick-range {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 2px dashed rgba(0, 255, 136, 0.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.joystick-direction-line {
+  position: absolute;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(0, 255, 136, 0.8) 0%, rgba(0, 255, 136, 0) 100%);
+  transform-origin: left center;
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+/* Joystick size variants */
+.touch-joystick.joystick-small {
+  width: 120px;
+  height: 120px;
+}
+
+.touch-joystick.joystick-small .joystick-base {
+  width: 60px;
+  height: 60px;
+}
+
+.touch-joystick.joystick-small .joystick-stick {
+  width: 32px;
+  height: 32px;
+}
+
+.touch-joystick.joystick-small .joystick-range {
+  width: 80px;
+  height: 80px;
+}
+
+.touch-joystick.joystick-medium {
+  width: 150px;
+  height: 150px;
+}
+
+.touch-joystick.joystick-medium .joystick-base {
+  width: 80px;
+  height: 80px;
+}
+
+.touch-joystick.joystick-medium .joystick-stick {
+  width: 40px;
+  height: 40px;
+}
+
+.touch-joystick.joystick-medium .joystick-range {
+  width: 110px;
+  height: 110px;
+}
+
+.touch-joystick.joystick-large {
+  width: 180px;
+  height: 180px;
+}
+
+.touch-joystick.joystick-large .joystick-base {
+  width: 100px;
+  height: 100px;
+}
+
+.touch-joystick.joystick-large .joystick-stick {
+  width: 50px;
+  height: 50px;
+}
+
+.touch-joystick.joystick-large .joystick-range {
+  width: 140px;
+  height: 140px;
+}
+
+/* Touch controls settings styles */
+.touch-controls-settings {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px solid rgba(0, 255, 136, 0.3);
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.setting-row label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.5rem;
+  color: #00ff88;
+}
+
+.setting-label {
+  flex: 1;
+}
+
+.setting-value {
+  margin-left: 10px;
+  color: #ffff00;
+  min-width: 50px;
+  text-align: right;
+}
+
+.setting-select {
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.45rem;
+  background: rgba(0, 0, 0, 0.5);
+  color: #00ff88;
+  border: 2px solid rgba(0, 255, 136, 0.5);
+  border-radius: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  outline: none;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.setting-select:hover {
+  border-color: #00ff88;
+}
+
+.setting-select option {
+  background: #000;
+  color: #00ff88;
+}
+
+.checkbox-toggle {
+  width: 50px;
+  height: 25px;
+  margin-top: 8px;
+  cursor: pointer;
 }
 
 .touch-buttons {
@@ -5701,37 +5859,110 @@
   -webkit-user-select: none;
   touch-action: none;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 0.1s;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  transition: all 0.08s ease-out;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3),
+              inset 0 2px 5px rgba(255, 255, 255, 0.1);
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+  /* Enhanced for iPhone and modern devices */
+  backdrop-filter: blur(2px);
+  will-change: transform, box-shadow;
 }
 
+.btn-label {
+  font-size: 0.45rem;
+  line-height: 1.2;
+  text-shadow: 0 0 8px currentColor;
+}
+
+.btn-hint {
+  font-size: 0.3rem;
+  opacity: 0.7;
+  margin-top: 2px;
+  color: #ffff00;
+}
+
+/* Active state - industry standard visual feedback */
+.touch-btn.active,
 .touch-btn:active {
-  transform: scale(0.9);
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.5) 0%, rgba(0, 220, 110, 0.4) 100%);
+  transform: scale(0.88);
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.6) 0%, rgba(0, 220, 110, 0.5) 100%);
   border-color: rgba(0, 255, 136, 1);
-  box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+  border-width: 3px;
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.8),
+              inset 0 0 15px rgba(0, 255, 136, 0.3);
 }
 
+/* Shoot button - special red styling */
 .touch-btn-shoot {
-  background: linear-gradient(135deg, rgba(255, 100, 100, 0.3) 0%, rgba(255, 50, 50, 0.2) 100%);
-  border-color: rgba(255, 100, 100, 0.5);
+  background: linear-gradient(135deg, rgba(255, 100, 100, 0.35) 0%, rgba(255, 50, 50, 0.25) 100%);
+  border-color: rgba(255, 100, 100, 0.6);
   color: #ff6666;
+  box-shadow: 0 0 15px rgba(255, 100, 100, 0.4),
+              inset 0 2px 5px rgba(255, 255, 255, 0.1);
 }
 
+.touch-btn-shoot.active,
 .touch-btn-shoot:active {
-  background: linear-gradient(135deg, rgba(255, 136, 136, 0.5) 0%, rgba(255, 100, 100, 0.4) 100%);
+  background: linear-gradient(135deg, rgba(255, 136, 136, 0.65) 0%, rgba(255, 100, 100, 0.5) 100%);
   border-color: rgba(255, 136, 136, 1);
-  box-shadow: 0 0 25px rgba(255, 136, 136, 0.6);
+  box-shadow: 0 0 35px rgba(255, 136, 136, 0.9),
+              inset 0 0 20px rgba(255, 100, 100, 0.4);
+}
+
+/* Dash button - cyan emphasis */
+.touch-btn-dash {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.35) 0%, rgba(0, 200, 255, 0.25) 100%);
+  border-color: rgba(0, 255, 255, 0.6);
+  color: #00ffff;
+}
+
+.touch-btn-dash.active,
+.touch-btn-dash:active {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.65) 0%, rgba(0, 220, 255, 0.5) 100%);
+  border-color: rgba(0, 255, 255, 1);
+  box-shadow: 0 0 35px rgba(0, 255, 255, 0.9),
+              inset 0 0 20px rgba(0, 255, 255, 0.4);
+}
+
+/* Bomb button - orange/yellow emphasis */
+.touch-btn-bomb {
+  background: linear-gradient(135deg, rgba(255, 200, 0, 0.35) 0%, rgba(255, 150, 0, 0.25) 100%);
+  border-color: rgba(255, 200, 0, 0.6);
+  color: #ffcc00;
+}
+
+.touch-btn-bomb.active,
+.touch-btn-bomb:active {
+  background: linear-gradient(135deg, rgba(255, 220, 0, 0.65) 0%, rgba(255, 180, 0, 0.5) 100%);
+  border-color: rgba(255, 220, 0, 1);
+  box-shadow: 0 0 35px rgba(255, 200, 0, 0.9),
+              inset 0 0 20px rgba(255, 150, 0, 0.4);
+}
+
+/* Special button - purple emphasis */
+.touch-btn-special {
+  background: linear-gradient(135deg, rgba(200, 100, 255, 0.35) 0%, rgba(150, 50, 255, 0.25) 100%);
+  border-color: rgba(200, 100, 255, 0.6);
+  color: #cc66ff;
+}
+
+.touch-btn-special.active,
+.touch-btn-special:active {
+  background: linear-gradient(135deg, rgba(220, 136, 255, 0.65) 0%, rgba(180, 100, 255, 0.5) 100%);
+  border-color: rgba(220, 136, 255, 1);
+  box-shadow: 0 0 35px rgba(200, 100, 255, 0.9),
+              inset 0 0 20px rgba(150, 50, 255, 0.4);
 }
 
 /* Industry standard: Minimum touch target size and spacing */
 .touch-btn,
 .touch-pause-btn {
-  min-width: 44px; /* WCAG AAA standard */
-  min-height: 44px;
+  min-width: 48px; /* Enhanced from 44px for better mobile UX */
+  min-height: 48px;
   margin: 4px; /* Prevent accidental touches */
 }
 
@@ -5740,6 +5971,81 @@
 .touch-pause-btn,
 .touch-joystick {
   touch-action: manipulation;
+}
+
+/* ========== INDUSTRY STANDARD OPTIMIZATIONS ========== */
+
+/* Button size variants for customization */
+.touch-buttons.buttons-small .touch-btn {
+  width: 52px;
+  height: 52px;
+  font-size: 0.4rem;
+}
+
+.touch-buttons.buttons-small .btn-label {
+  font-size: 0.4rem;
+}
+
+.touch-buttons.buttons-small .btn-hint {
+  font-size: 0.28rem;
+}
+
+.touch-buttons.buttons-medium .touch-btn {
+  width: 64px;
+  height: 64px;
+  font-size: 0.5rem;
+}
+
+.touch-buttons.buttons-medium .btn-label {
+  font-size: 0.45rem;
+}
+
+.touch-buttons.buttons-medium .btn-hint {
+  font-size: 0.3rem;
+}
+
+.touch-buttons.buttons-large .touch-btn {
+  width: 76px;
+  height: 76px;
+  font-size: 0.55rem;
+}
+
+.touch-buttons.buttons-large .btn-label {
+  font-size: 0.5rem;
+}
+
+.touch-buttons.buttons-large .btn-hint {
+  font-size: 0.32rem;
+}
+
+/* Optimized for iPhone 15 Pro Max and similar flagship devices */
+@supports (height: 100dvh) {
+  .touch-joystick {
+    bottom: max(env(safe-area-inset-bottom, 20px), 20px);
+    left: max(env(safe-area-inset-left, 20px), 20px);
+  }
+
+  .touch-buttons {
+    bottom: max(env(safe-area-inset-bottom, 20px), 20px);
+    right: max(env(safe-area-inset-right, 20px), 20px);
+  }
+
+  .touch-pause-btn {
+    top: max(env(safe-area-inset-top, 15px), 15px);
+  }
+}
+
+/* PWA fullscreen mode optimization */
+@media (display-mode: fullscreen) {
+  .touch-joystick {
+    bottom: 25px;
+    left: 25px;
+  }
+
+  .touch-buttons {
+    bottom: 25px;
+    right: 25px;
+  }
 }
 
 /* Accessibility: High contrast mode support */
@@ -5769,6 +6075,44 @@
 }
 
 /* ========== RESPONSIVE MOBILE LAYOUT ========== */
+
+/* Large flagship phones in portrait (iPhone 15 Pro Max, Galaxy S24 Ultra, etc.) */
+@media (min-width: 400px) and (max-width: 450px) and (min-height: 850px) and (orientation: portrait) {
+  /* Optimize touch controls for large phones */
+  .touch-joystick.joystick-medium {
+    width: 160px;
+    height: 160px;
+    bottom: max(30px, env(safe-area-inset-bottom));
+    left: max(25px, env(safe-area-inset-left));
+  }
+
+  .touch-joystick.joystick-medium .joystick-base {
+    width: 90px;
+    height: 90px;
+  }
+
+  .touch-joystick.joystick-medium .joystick-stick {
+    width: 45px;
+    height: 45px;
+  }
+
+  .touch-buttons.buttons-medium {
+    bottom: max(30px, env(safe-area-inset-bottom));
+    right: max(25px, env(safe-area-inset-right));
+    gap: 12px;
+  }
+
+  .touch-buttons.buttons-medium .touch-btn {
+    width: 68px;
+    height: 68px;
+  }
+
+  .touch-pause-btn {
+    padding: 12px 24px;
+    font-size: 0.65rem;
+    top: max(20px, env(safe-area-inset-top));
+  }
+}
 
 /* Tablets and larger phones in landscape */
 @media (max-width: 900px) and (orientation: landscape) {

@@ -1202,25 +1202,48 @@ const SpaceShooter = () => {
   // Mobile touch controls
   const [showMobileControls, setShowMobileControls] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
-  const touchJoystickRef = useRef({ active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 });
+  const touchJoystickRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    currentX: 0,
+    currentY: 0,
+    touchId: null, // Track specific touch for multi-touch support
+    angle: 0, // Current joystick angle
+    distance: 0 // Current joystick distance from center
+  });
   const touchButtonsRef = useRef({
     shoot: false,
     dash: false,
     bomb: false,
-    special: false
+    special: false,
+    shootStartTime: 0, // Track when shoot button was pressed for auto-fire
+    lastAutoFireTime: 0 // Track last auto-fire shot
   });
 
-  // Haptic feedback helper (industry standard for PWA games)
-  const hapticFeedback = useCallback((intensity = 'medium') => {
+  // Enhanced haptic feedback helper (industry standard patterns from iOS/Android games)
+  const hapticFeedback = useCallback((type = 'medium') => {
+    // Check if haptic feedback is enabled in settings
+    const buttonSettings = userSettings.buttons || DEFAULT_USER_SETTINGS.buttons;
+    if (!buttonSettings.hapticFeedback && buttonSettings.hapticFeedback !== undefined) {
+      return; // Haptic disabled
+    }
+
     if ('vibrate' in navigator) {
       const patterns = {
-        light: 10,
-        medium: 20,
-        heavy: 50
+        tap: 5,           // Ultra light tap (UI interactions)
+        light: 10,        // Light feedback (button press)
+        medium: 20,       // Medium feedback (action confirm)
+        heavy: 40,        // Heavy feedback (important action)
+        impact: [15, 30], // Impact pattern (collision/hit)
+        success: [10, 50, 10], // Success pattern (achievement)
+        warning: [20, 100, 20, 100, 20], // Warning pattern (low health)
+        error: [50, 50, 50] // Error pattern (action failed)
       };
-      navigator.vibrate(patterns[intensity] || 20);
+      const pattern = patterns[type] || patterns.medium;
+      navigator.vibrate(pattern);
     }
-  }, []);
+  }, [userSettings.buttons]);
 
   // Default user settings
   const DEFAULT_USER_SETTINGS = {
@@ -1246,6 +1269,24 @@ const SpaceShooter = () => {
       togglePolarity: ['KeyC'],
       toggleForce: ['KeyF'],
       pause: ['Escape']
+    },
+    // Touch controls settings (optimized for iPhone 15 Pro Max and similar devices)
+    joystick: {
+      sensitivity: 1.2, // Industry standard: slightly higher for phones (0.5 to 2.0)
+      deadZone: 0.12, // Smaller dead zone for modern capacitive screens (0.0 to 0.5)
+      responseCurve: 'exponential', // Best for precision: 'linear', 'exponential', 'smooth'
+      snapToDirections: false, // 8-way directional snapping
+      size: 'medium', // Auto-adjusts based on screen size: 'small', 'medium', 'large'
+      visualFeedback: true, // Show range indicator and directional aids
+      opacity: 0.85 // Control transparency (0.3 to 1.0) for better gameplay visibility
+    },
+    buttons: {
+      size: 'medium', // 'small', 'medium', 'large' - auto-adjusts for phones
+      opacity: 0.85, // Button transparency (0.3 to 1.0)
+      autoFire: true, // Hold shoot button for continuous fire (industry standard)
+      autoFireRate: 100, // Milliseconds between auto-fire shots (50-200ms)
+      hapticFeedback: true, // Vibration on button press
+      layout: 'grid' // 'grid' (2x2) or 'arc' (curved layout)
     }
   };
 
@@ -4808,15 +4849,16 @@ const SpaceShooter = () => {
     // Performance mode reduces particle counts
     const perfMode = userSettingsRef.current?.performanceMode;
     // Also reduce particles during boss battles for better performance
-    const bossBattleReduction = bossActiveRef.current ? 0.4 : 1;
-    // Reduce particles further if FPS is low
-    const fpsReduction = fpsRef.current.fps < 50 ? 0.3 : (fpsRef.current.fps < 55 ? 0.6 : 1);
+    const bossBattleReduction = bossActiveRef.current ? 0.3 : 1;
+    // Reduce particles aggressively if FPS is low
+    const currentFPS = fpsRef.current.fps || 60;
+    const fpsReduction = currentFPS < 30 ? 0.15 : (currentFPS < 45 ? 0.3 : (currentFPS < 55 ? 0.6 : 1));
     // Entity-based reduction for heavy scenes
     const totalEntities = enemiesRef.current.length + bulletsRef.current.length +
                          enemyBulletsRef.current.length + explosionsRef.current.length +
                          pickupEffectsRef.current.length;
-    const entityReduction = totalEntities > 400 ? 0.4 : (totalEntities > 300 ? 0.6 : 1);
-    const particleMultiplier = (perfMode ? 0.5 : 1) * bossBattleReduction * fpsReduction * entityReduction;
+    const entityReduction = totalEntities > 400 ? 0.3 : (totalEntities > 300 ? 0.5 : 1);
+    const particleMultiplier = (perfMode ? 0.4 : 1) * bossBattleReduction * fpsReduction * entityReduction;
 
     // Add shockwave for large explosions
     if (size === 'boss' || size === 'large' || size === 'heavy') {
@@ -12489,7 +12531,11 @@ const SpaceShooter = () => {
         const centerX = bx + bossW / 2;
         const pulsePhase = Date.now() / 200;
 
-        // Draw boss shield if active
+        // Performance optimization: simplify rendering during low FPS
+        const currentFPS = fpsRef.current.fps || 60;
+        const simplifyRendering = currentFPS < 40;
+
+        // Draw boss shield if active (skip hexagon pattern during low FPS)
         if (boss.shield > 0) {
           const shieldPercent = boss.shield / boss.maxShield;
           const shieldAlpha = 0.3 + Math.sin(Date.now() / 300) * 0.15;
@@ -12509,23 +12555,25 @@ const SpaceShooter = () => {
           ctx.arc(centerX, centerY, shieldRadius, 0, Math.PI * 2);
           ctx.fill();
 
-          // Shield hexagon pattern
-          ctx.strokeStyle = `rgba(0, 255, 255, ${shieldAlpha * shieldPercent})`;
-          ctx.lineWidth = 2;
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 15;
-          for (let i = 0; i < 6; i++) {
-            const angle = (Math.PI / 3) * i + Date.now() / 1000;
-            ctx.beginPath();
-            for (let j = 0; j < 6; j++) {
-              const hexAngle = angle + (Math.PI / 3) * j;
-              const x = centerX + Math.cos(hexAngle) * shieldRadius * 0.85;
-              const y = centerY + Math.sin(hexAngle) * shieldRadius * 0.85;
-              if (j === 0) ctx.moveTo(x, y);
-              else ctx.lineTo(x, y);
+          // Shield hexagon pattern - skip during low FPS for performance
+          if (!simplifyRendering) {
+            ctx.strokeStyle = `rgba(0, 255, 255, ${shieldAlpha * shieldPercent})`;
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 15;
+            for (let i = 0; i < 6; i++) {
+              const angle = (Math.PI / 3) * i + Date.now() / 1000;
+              ctx.beginPath();
+              for (let j = 0; j < 6; j++) {
+                const hexAngle = angle + (Math.PI / 3) * j;
+                const x = centerX + Math.cos(hexAngle) * shieldRadius * 0.85;
+                const y = centerY + Math.sin(hexAngle) * shieldRadius * 0.85;
+                if (j === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+              }
+              ctx.closePath();
+              ctx.stroke();
             }
-            ctx.closePath();
-            ctx.stroke();
           }
 
           ctx.restore();
@@ -15963,29 +16011,30 @@ const SpaceShooter = () => {
         ctx.font = '10px monospace';
         ctx.textAlign = 'left';
         const fps = fpsRef.current.fps;
-        const fpsColor = fps >= 55 ? '#00ff00' : fps >= 30 ? '#ffff00' : '#ff0000';
+        const fpsColor = fps >= 55 ? '#00ff00' : fps >= 45 ? '#ffff00' : '#ff0000';
 
         // Calculate average frame time
         const avgFrameTime = perfData.frameTimeHistory.length > 0
           ? (perfData.frameTimeHistory.reduce((a, b) => a + b, 0) / perfData.frameTimeHistory.length).toFixed(2)
           : '0.00';
 
-        // Enhanced stats display
-        const statsHeight = 95;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(5, 5, 180, statsHeight);
+        // Enhanced stats display - adjust height if boss is active
+        const statsHeight = bossActiveRef.current ? 110 : 95;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(5, 5, 200, statsHeight);
 
         // FPS
         ctx.fillStyle = fpsColor;
         ctx.fillText(`FPS: ${fps}`, 10, 18);
 
         // Frame time
-        const frameTimeColor = parseFloat(avgFrameTime) < 16.67 ? '#00ff00' : '#ffff00';
+        const frameTimeColor = parseFloat(avgFrameTime) < 16.67 ? '#00ff00' : parseFloat(avgFrameTime) < 25 ? '#ffff00' : '#ff0000';
         ctx.fillStyle = frameTimeColor;
-        ctx.fillText(`Frame: ${avgFrameTime}ms`, 10, 32);
+        ctx.fillText(`Frame: ${avgFrameTime}ms (${(1000 / parseFloat(avgFrameTime)).toFixed(0)} max)`, 10, 32);
 
         // Adaptive quality
-        ctx.fillStyle = '#00ccff';
+        const qualityColor = perfData.adaptiveQuality >= 0.9 ? '#00ff00' : perfData.adaptiveQuality >= 0.6 ? '#ffff00' : '#ff8800';
+        ctx.fillStyle = qualityColor;
         ctx.fillText(`Quality: ${(perfData.adaptiveQuality * 100).toFixed(0)}%`, 10, 46);
 
         // Object counts
@@ -15994,14 +16043,29 @@ const SpaceShooter = () => {
                             bulletsRef.current.length + explosionsRef.current.length;
         ctx.fillText(`Objects: ${totalObjects}`, 10, 60);
 
-        // Culled objects (performance win)
-        ctx.fillStyle = '#88ff88';
-        ctx.fillText(`Culled: ${perfData.culledObjects}`, 10, 74);
+        // Enemy bullets specifically (important for boss battles)
+        if (bossActiveRef.current) {
+          const bulletColor = enemyBulletsRef.current.length > 40 ? '#ff8800' : '#88ff88';
+          ctx.fillStyle = bulletColor;
+          ctx.fillText(`Boss Bullets: ${enemyBulletsRef.current.length}`, 10, 74);
+        } else {
+          // Culled objects (performance win)
+          ctx.fillStyle = '#88ff88';
+          ctx.fillText(`Culled: ${perfData.culledObjects}`, 10, 74);
+        }
 
         // Particle count
-        const particleCount = impactParticlesRef.current.length + sparkParticlesRef.current.length;
-        ctx.fillStyle = '#ffaa88';
+        const particleCount = impactParticlesRef.current.length + sparkParticlesRef.current.length +
+                             bulletTrailsRef.current.length + missileTrailsRef.current.length;
+        const particleColor = particleCount > 200 ? '#ff8800' : '#ffaa88';
+        ctx.fillStyle = particleColor;
         ctx.fillText(`Particles: ${particleCount}`, 10, 88);
+
+        // Boss battle indicator
+        if (bossActiveRef.current) {
+          ctx.fillStyle = '#ff00ff';
+          ctx.fillText(`🔥 BOSS BATTLE`, 10, 102);
+        }
 
         ctx.restore();
       }
@@ -16097,8 +16161,12 @@ const SpaceShooter = () => {
           ? perfData.frameTimeHistory.reduce((a, b) => a + b, 0) / perfData.frameTimeHistory.length
           : perfData.frameBudget;
 
-        // Log performance warnings
-        if (fpsData.fps < 50) {
+        // Log performance warnings - ONLY during actual gameplay with entities
+        // Don't warn during menu/pause/transitions where low FPS is expected
+        const isActiveGameplay = gameStateRef.current === 'playing' && totalEntities > 0;
+        const hasPerformanceIssue = fpsData.fps < 45 || avgFrameTime > perfData.frameBudget * 1.5;
+
+        if (isActiveGameplay && hasPerformanceIssue) {
           const bossStatus = bossActiveRef.current ? ' | 🔥 BOSS BATTLE ACTIVE' : '';
           console.warn(`[PERFORMANCE] Low FPS: ${fpsData.fps}${bossStatus} | Entities: ${totalEntities} (Asteroids: ${asteroidCount}, Enemy Bullets: ${enemyBulletsRef.current.length}) | Frame time: ${avgFrameTime.toFixed(2)}ms`);
         }
@@ -16135,30 +16203,40 @@ const SpaceShooter = () => {
         const enemyBulletCount = enemyBulletsRef.current.length;
 
         // Very aggressive enemy bullet cap during boss fights (boss patterns can spawn many bullets)
-        const bossBulletCap = fpsData.fps < 50 ? 40 : 60;
+        // Scale based on FPS - much more aggressive when FPS is terrible
+        const bossBulletCap = fpsData.fps < 30 ? 25 : (fpsData.fps < 50 ? 35 : 55);
         if (enemyBulletCount > bossBulletCap) {
-          console.warn(`[BOSS PERFORMANCE] Capping enemy bullets from ${enemyBulletCount} to ${bossBulletCap}`);
+          console.warn(`[BOSS PERFORMANCE] Capping enemy bullets from ${enemyBulletCount} to ${bossBulletCap} (FPS: ${fpsData.fps})`);
           enemyBulletsRef.current = enemyBulletsRef.current.slice(-bossBulletCap);
         }
 
-        // Cap bullet trails aggressively during boss fights
-        if (bulletTrailsRef.current.length > 100) {
-          bulletTrailsRef.current = bulletTrailsRef.current.slice(-100);
+        // Cap bullet trails aggressively during boss fights - scale with FPS
+        const trailCap = fpsData.fps < 30 ? 40 : 80;
+        if (bulletTrailsRef.current.length > trailCap) {
+          bulletTrailsRef.current = bulletTrailsRef.current.slice(-trailCap);
         }
 
         // Cap missile trails
-        if (missileTrailsRef.current.length > 60) {
-          missileTrailsRef.current = missileTrailsRef.current.slice(-60);
+        const missileCap = fpsData.fps < 30 ? 30 : 50;
+        if (missileTrailsRef.current.length > missileCap) {
+          missileTrailsRef.current = missileTrailsRef.current.slice(-missileCap);
         }
 
         // Cap impact particles during boss fights
-        if (impactParticlesRef.current.length > 80) {
-          impactParticlesRef.current = impactParticlesRef.current.slice(-80);
+        const impactCap = fpsData.fps < 30 ? 40 : 70;
+        if (impactParticlesRef.current.length > impactCap) {
+          impactParticlesRef.current = impactParticlesRef.current.slice(-impactCap);
         }
 
         // Cap spark particles
-        if (sparkParticlesRef.current.length > 60) {
-          sparkParticlesRef.current = sparkParticlesRef.current.slice(-60);
+        const sparkCap = fpsData.fps < 30 ? 30 : 50;
+        if (sparkParticlesRef.current.length > sparkCap) {
+          sparkParticlesRef.current = sparkParticlesRef.current.slice(-sparkCap);
+        }
+
+        // Cap pickup effects during boss battles
+        if (pickupEffectsRef.current.length > 40) {
+          pickupEffectsRef.current = pickupEffectsRef.current.slice(-40);
         }
       }
 
@@ -17241,16 +17319,57 @@ const SpaceShooter = () => {
         setTimeout(() => { window._gpInterferenceLogged = false; }, 2000);
       }
 
-      // Apply touch joystick input (overrides keyboard)
+      // Apply touch joystick input (overrides keyboard) - ENHANCED VERSION
       if (touchJoystickRef.current.active) {
         const deltaX = touchJoystickRef.current.currentX - touchJoystickRef.current.startX;
         const deltaY = touchJoystickRef.current.currentY - touchJoystickRef.current.startY;
-        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        const maxDistance = 50; // Max joystick radius
+        const rawDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-        if (distance > 5) { // Dead zone
-          inputX = Math.max(-1, Math.min(1, deltaX / maxDistance));
-          inputY = Math.max(-1, Math.min(1, deltaY / maxDistance));
+        // Get joystick settings
+        const joystickSettings = userSettings.joystick || DEFAULT_USER_SETTINGS.joystick;
+        const maxDistance = joystickSettings.size === 'small' ? 40 : joystickSettings.size === 'large' ? 70 : 55;
+        const deadZoneRadius = maxDistance * joystickSettings.deadZone;
+
+        // Store angle and distance for visual feedback
+        touchJoystickRef.current.angle = Math.atan2(deltaY, deltaX);
+        touchJoystickRef.current.distance = rawDistance;
+
+        if (rawDistance > deadZoneRadius) {
+          // Calculate normalized distance (0 to 1)
+          const normalizedDistance = Math.min(1, (rawDistance - deadZoneRadius) / (maxDistance - deadZoneRadius));
+
+          // Apply response curve based on settings
+          let curvedDistance = normalizedDistance;
+          switch (joystickSettings.responseCurve) {
+            case 'linear':
+              curvedDistance = normalizedDistance;
+              break;
+            case 'exponential':
+              // Exponential curve for more precise small movements
+              curvedDistance = normalizedDistance * normalizedDistance;
+              break;
+            case 'smooth':
+              // Smooth S-curve for balanced response
+              curvedDistance = normalizedDistance * normalizedDistance * (3.0 - 2.0 * normalizedDistance);
+              break;
+          }
+
+          // Apply sensitivity multiplier
+          curvedDistance *= joystickSettings.sensitivity;
+          curvedDistance = Math.min(1, curvedDistance); // Clamp to 1
+
+          // Calculate direction
+          let angle = Math.atan2(deltaY, deltaX);
+
+          // Apply 8-way directional snapping if enabled
+          if (joystickSettings.snapToDirections) {
+            const snapAngle = Math.PI / 4; // 45 degrees
+            angle = Math.round(angle / snapAngle) * snapAngle;
+          }
+
+          // Apply to input with curved distance
+          inputX = Math.cos(angle) * curvedDistance;
+          inputY = Math.sin(angle) * curvedDistance;
         }
       }
 
@@ -17915,12 +18034,32 @@ const SpaceShooter = () => {
         }
       }
 
-      // Normal shooting (X button / Space - TAP TO FIRE, not hold)
-      // Only fire when button is newly pressed (not held from previous frame)
+      // Normal shooting (Enhanced with auto-fire support for mobile)
       const spacePressed = keysRef.current['Space'] || touchButtonsRef.current.shoot;
       const spacePrevPressed = prevKeysRef.current['Space'];
       const gpShootPrevPressed = gamepadButtonsRef.current.shoot;
+
+      // Check if auto-fire is enabled (for mobile/touch controls)
+      const buttonSettings = userSettings.buttons || DEFAULT_USER_SETTINGS.buttons;
+      const autoFireEnabled = buttonSettings.autoFire && touchButtonsRef.current.shoot;
+      const autoFireRate = buttonSettings.autoFireRate || 100;
+
+      // Track shoot button timing for auto-fire
+      if (touchButtonsRef.current.shoot && touchButtonsRef.current.shootStartTime === 0) {
+        touchButtonsRef.current.shootStartTime = timestamp;
+        touchButtonsRef.current.lastAutoFireTime = timestamp;
+      } else if (!touchButtonsRef.current.shoot) {
+        touchButtonsRef.current.shootStartTime = 0;
+        touchButtonsRef.current.lastAutoFireTime = 0;
+      }
+
+      // Determine if we should fire: new button press OR auto-fire interval
       const isNewShot = (spacePressed && !spacePrevPressed) || (gpShoot && !gpShootPrevPressed);
+      const isAutoFireShot = autoFireEnabled &&
+                             touchButtonsRef.current.shoot &&
+                             (timestamp - touchButtonsRef.current.lastAutoFireTime > autoFireRate);
+
+      const shouldFire = (isNewShot || isAutoFireShot) && !isChargingRef.current;
 
       // Debug: Log shooting input
       if (gpShoot && !window._gpShootLoggedRecently) {
@@ -17934,7 +18073,12 @@ const SpaceShooter = () => {
       const weaponFireRateBonus = weaponData.fireRateBonus || 0;
       const adjustedFireRate = fireRate * (1 - weaponFireRateBonus);
 
-      if (isNewShot && !isChargingRef.current && timestamp - lastShotRef.current > adjustedFireRate) {
+      if (shouldFire && timestamp - lastShotRef.current > adjustedFireRate) {
+        // Update auto-fire timing
+        if (isAutoFireShot) {
+          touchButtonsRef.current.lastAutoFireTime = timestamp;
+        }
+
         // Play shoot sound
         soundSystem.playShoot(1 + Math.random() * 0.2);
 
@@ -18485,8 +18629,12 @@ const SpaceShooter = () => {
       // Update player bullets and filter out off-screen bullets
       bulletsRef.current = bulletsRef.current.filter(bullet => {
         const bulletPolarity = bullet.polarity || 'light';
-        // Reduce trail generation during boss fights (20% instead of 50%)
-        const trailChance = bossActiveRef.current ? 0.2 : 0.5;
+        // Reduce trail generation during boss fights, skip entirely if FPS < 30
+        const currentFPS = fpsRef.current.fps || 60;
+        let trailChance = bossActiveRef.current ? 0.2 : 0.5;
+        if (currentFPS < 30) trailChance = 0;
+        else if (currentFPS < 45) trailChance *= 0.5;
+
         if (Math.random() < trailChance) {
           bulletTrailsRef.current.push({
             x: bullet.x - 2,
@@ -18499,8 +18647,11 @@ const SpaceShooter = () => {
           });
         }
 
-        // Wave cannon energy trail - reduced during boss fights
-        const waveTrailChance = bossActiveRef.current ? 0.3 : 0.8;
+        // Wave cannon energy trail - reduced during boss fights, skip if FPS < 30
+        let waveTrailChance = bossActiveRef.current ? 0.3 : 0.8;
+        if (currentFPS < 30) waveTrailChance = 0;
+        else if (currentFPS < 45) waveTrailChance *= 0.4;
+
         if (bullet.isWaveCannon && Math.random() < waveTrailChance) {
           bulletTrailsRef.current.push({
             x: bullet.x - 10 + (Math.random() - 0.5) * 10,
@@ -18531,8 +18682,12 @@ const SpaceShooter = () => {
 
       // Update missiles (homing behavior)
       missilesRef.current = missilesRef.current.filter(missile => {
-        // Spawn smoke trail particles for missiles - reduced during boss fights
-        const missileTrailChance = bossActiveRef.current ? 0.25 : 0.7;
+        // Spawn smoke trail particles for missiles - reduced during boss fights, skip if FPS < 30
+        const currentFPS = fpsRef.current.fps || 60;
+        let missileTrailChance = bossActiveRef.current ? 0.25 : 0.7;
+        if (currentFPS < 30) missileTrailChance = 0;
+        else if (currentFPS < 45) missileTrailChance *= 0.4;
+
         if (Math.random() < missileTrailChance) {
           missileTrailsRef.current.push({
             x: missile.x - 5,
@@ -19096,9 +19251,23 @@ const SpaceShooter = () => {
             // Player hit terrain!
             if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
               upgradesRef.current.shieldHits--;
+              upgradesRef.current.shieldRechargeTimer = 180;
+              if (upgradesRef.current.shieldHits <= 0) upgradesRef.current.shield = false;
+              createShieldImpact(obs.x + obs.width / 2, obs.y + obs.height / 2);
+              createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'small');
+              triggerScreenShake(8, 10);
               obs.health--;
             } else {
-              handlePlayerDeath();
+              soundSystem.playPlayerDestroy();
+              const newLives = livesRef.current - 1;
+              setLives(newLives);
+              livesRef.current = newLives;
+              playerInvincibleRef.current = 120;
+              createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
+              triggerScreenShake(15, 20);
+              if (newLives <= 0) {
+                handleGameOver();
+              }
             }
           }
         }
@@ -20842,18 +21011,30 @@ const SpaceShooter = () => {
           }
 
           // Normal shooting (spread pattern) - reduced during regen
-          // Also reduce firing rate when too many bullets on screen
-          const tooManyBullets = enemyBulletsRef.current.length > 150;
-          const effectiveFireRate = tooManyBullets ? boss.fireRate * 1.5 : boss.fireRate;
+          // Also reduce firing rate when too many bullets on screen or FPS is low
+          const currentFPS = fpsRef.current.fps || 60;
+          const bulletThreshold = currentFPS < 30 ? 50 : (currentFPS < 50 ? 80 : 120);
+          const tooManyBullets = enemyBulletsRef.current.length > bulletThreshold;
+
+          // Increase fire rate delay when performance is bad
+          let fireRateMultiplier = 1.0;
+          if (currentFPS < 30) fireRateMultiplier = 2.5;
+          else if (currentFPS < 40) fireRateMultiplier = 2.0;
+          else if (currentFPS < 50) fireRateMultiplier = 1.5;
+          else if (tooManyBullets) fireRateMultiplier = 1.3;
+
+          const effectiveFireRate = boss.fireRate * fireRateMultiplier;
 
           if (!boss.laserCharging && !boss.laserFiring && !isRegenerating && currentTime - boss.lastShot > effectiveFireRate) {
             // Boss becomes vulnerable once it starts shooting
             if (boss.invincible && !boss.regenerating) {
               boss.invincible = false;
             }
-            // Fire multiple bullets in a spread - reduce count during heavy load
+            // Fire multiple bullets in a spread - reduce count during heavy load or low FPS
             const baseSpreadCount = boss.isSuperBoss ? 7 : (boss.isMegaBoss ? 5 : 3);
-            const spreadCount = tooManyBullets ? Math.ceil(baseSpreadCount * 0.6) : baseSpreadCount;
+            let spreadCount = baseSpreadCount;
+            if (currentFPS < 30) spreadCount = Math.ceil(baseSpreadCount * 0.4);
+            else if (currentFPS < 45 || tooManyBullets) spreadCount = Math.ceil(baseSpreadCount * 0.6);
             for (let i = -(spreadCount - 1) / 2; i <= (spreadCount - 1) / 2; i++) {
               enemyBulletsRef.current.push({
                 x: boss.x,
@@ -20865,11 +21046,14 @@ const SpaceShooter = () => {
               });
             }
             boss.lastShot = currentTime;
-            console.log('[BOSS SHOOT] Fired', spreadCount, 'bullets. Boss:', boss.type, 'FireRate:', effectiveFireRate);
+            if (currentFPS < 50) {
+              console.log('[BOSS SHOOT] Fired', spreadCount, 'bullets. FPS:', currentFPS, 'FireRate:', effectiveFireRate.toFixed(0));
+            }
           }
 
           // Mega boss cannons - fire large aimed shots from wing weapons (reduced during regen)
-          if (boss.isMegaBoss && !boss.laserFiring && !isRegenerating && currentTime - boss.lastCannonShot > boss.cannonFireRate) {
+          // Skip cannon fire completely when FPS is very low
+          if (boss.isMegaBoss && !boss.laserFiring && !isRegenerating && currentFPS >= 30 && currentTime - boss.lastCannonShot > boss.cannonFireRate) {
             const player = playerRef.current;
             // Cannon positions on the wings
             const cannonPositions = boss.isSuperBoss
@@ -20907,7 +21091,8 @@ const SpaceShooter = () => {
           }
 
           // Super boss secondary guns - fire aimed shots from wing turrets (disabled during regen)
-          if (boss.isSuperBoss && !isRegenerating && currentTime - boss.lastSecondaryShot > boss.secondaryFireRate) {
+          // Skip secondary fire when FPS is low
+          if (boss.isSuperBoss && !isRegenerating && currentFPS >= 40 && currentTime - boss.lastSecondaryShot > boss.secondaryFireRate) {
             const player = playerRef.current;
             const gunPositions = [
               { x: boss.x + boss.width * 0.3, y: boss.y - 40 },
@@ -21091,7 +21276,10 @@ const SpaceShooter = () => {
           // Count current boss-spawned enemies
           const bossEnemyCount = enemiesRef.current.filter(e => e.spawnedByBoss).length;
 
-          if (bossEnemyCount < boss.maxSpawnedEnemies &&
+          // Reduce or disable enemy spawning during low FPS
+          const maxSpawns = currentFPS < 30 ? 0 : (currentFPS < 45 ? Math.ceil(boss.maxSpawnedEnemies * 0.5) : boss.maxSpawnedEnemies);
+
+          if (bossEnemyCount < maxSpawns &&
               currentTime - boss.lastSpawn > boss.spawnRate) {
 
             // Spawn enemy from boss position
@@ -23957,6 +24145,12 @@ const SpaceShooter = () => {
         perfData.frameTimeHistory.shift();
       }
 
+      // Warn if single frame took too long during boss battles (indicates lag spike)
+      // Only warn if we're actually in gameplay and have entities
+      if (frameTime > 50 && bossActiveRef.current && gameStateRef.current === 'playing' && totalEntities > 10) {
+        console.warn(`[FRAME SPIKE] Boss battle frame took ${frameTime.toFixed(1)}ms (entities: ${totalEntities}, bullets: ${enemyBulletsRef.current.length})`);
+      }
+
       animationFrameRef.current = requestAnimationFrame(gameLoop);
     };
 
@@ -25245,9 +25439,254 @@ const SpaceShooter = () => {
                   </div>
 
                   <div className="controls-note">
-                    <p> Click any key button to remap it</p>
+                    <p>💡 Click any key button to remap it</p>
                     <p>🎮 Gamepad controls are automatic and cannot be remapped</p>
                   </div>
+
+                  {/* Touch Controls Settings */}
+                  {isMobileDevice && (
+                    <div className="touch-controls-settings">
+                      <div className="controls-header">
+                        <h3>📱 Touch Controls</h3>
+                      </div>
+
+                      {/* Joystick Sensitivity */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">🎯 Sensitivity</span>
+                          <span className="setting-value">{(userSettings.joystick?.sensitivity || 1.0).toFixed(1)}x</span>
+                        </label>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="2.0"
+                          step="0.1"
+                          value={userSettings.joystick?.sensitivity || 1.0}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            joystick: { ...prev.joystick, sensitivity: parseFloat(e.target.value) }
+                          }))}
+                          className="slider"
+                        />
+                      </div>
+
+                      {/* Dead Zone */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">⚙️ Dead Zone</span>
+                          <span className="setting-value">{((userSettings.joystick?.deadZone || 0.15) * 100).toFixed(0)}%</span>
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="0.4"
+                          step="0.05"
+                          value={userSettings.joystick?.deadZone || 0.15}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            joystick: { ...prev.joystick, deadZone: parseFloat(e.target.value) }
+                          }))}
+                          className="slider"
+                        />
+                      </div>
+
+                      {/* Response Curve */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">📈 Response Curve</span>
+                        </label>
+                        <select
+                          value={userSettings.joystick?.responseCurve || 'exponential'}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            joystick: { ...prev.joystick, responseCurve: e.target.value }
+                          }))}
+                          className="setting-select"
+                        >
+                          <option value="linear">Linear (Direct)</option>
+                          <option value="exponential">Exponential (Precise)</option>
+                          <option value="smooth">Smooth (Balanced)</option>
+                        </select>
+                      </div>
+
+                      {/* Joystick Size */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">📐 Joystick Size</span>
+                        </label>
+                        <select
+                          value={userSettings.joystick?.size || 'medium'}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            joystick: { ...prev.joystick, size: e.target.value }
+                          }))}
+                          className="setting-select"
+                        >
+                          <option value="small">Small (Compact)</option>
+                          <option value="medium">Medium (Default)</option>
+                          <option value="large">Large (Precise)</option>
+                        </select>
+                      </div>
+
+                      {/* 8-Way Directional Snap */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">🧭 8-Way Directional Snap</span>
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={userSettings.joystick?.snapToDirections || false}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            joystick: { ...prev.joystick, snapToDirections: e.target.checked }
+                          }))}
+                          className="checkbox-toggle"
+                        />
+                      </div>
+
+                      {/* Visual Feedback */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">👁️ Visual Feedback</span>
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={userSettings.joystick?.visualFeedback !== false}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            joystick: { ...prev.joystick, visualFeedback: e.target.checked }
+                          }))}
+                          className="checkbox-toggle"
+                        />
+                      </div>
+
+                      {/* Joystick Opacity */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">🔆 Joystick Opacity</span>
+                          <span className="setting-value">{((userSettings.joystick?.opacity || 0.85) * 100).toFixed(0)}%</span>
+                        </label>
+                        <input
+                          type="range"
+                          min="0.3"
+                          max="1.0"
+                          step="0.05"
+                          value={userSettings.joystick?.opacity || 0.85}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            joystick: { ...prev.joystick, opacity: parseFloat(e.target.value) }
+                          }))}
+                          className="slider"
+                        />
+                      </div>
+
+                      {/* Button Settings Section */}
+                      <div className="controls-header" style={{ marginTop: '30px' }}>
+                        <h3>🎮 Action Buttons</h3>
+                      </div>
+
+                      {/* Button Size */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">📏 Button Size</span>
+                        </label>
+                        <select
+                          value={userSettings.buttons?.size || 'medium'}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            buttons: { ...prev.buttons, size: e.target.value }
+                          }))}
+                          className="setting-select"
+                        >
+                          <option value="small">Small (Compact)</option>
+                          <option value="medium">Medium (Balanced)</option>
+                          <option value="large">Large (Easy to Hit)</option>
+                        </select>
+                      </div>
+
+                      {/* Button Opacity */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">🔆 Button Opacity</span>
+                          <span className="setting-value">{((userSettings.buttons?.opacity || 0.85) * 100).toFixed(0)}%</span>
+                        </label>
+                        <input
+                          type="range"
+                          min="0.3"
+                          max="1.0"
+                          step="0.05"
+                          value={userSettings.buttons?.opacity || 0.85}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            buttons: { ...prev.buttons, opacity: parseFloat(e.target.value) }
+                          }))}
+                          className="slider"
+                        />
+                      </div>
+
+                      {/* Auto-Fire Toggle */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">🔥 Auto-Fire (Hold to Shoot)</span>
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={userSettings.buttons?.autoFire !== false}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            buttons: { ...prev.buttons, autoFire: e.target.checked }
+                          }))}
+                          className="checkbox-toggle"
+                        />
+                      </div>
+
+                      {/* Auto-Fire Rate */}
+                      {userSettings.buttons?.autoFire !== false && (
+                        <div className="setting-row">
+                          <label>
+                            <span className="setting-label">⚡ Auto-Fire Rate</span>
+                            <span className="setting-value">{userSettings.buttons?.autoFireRate || 100}ms</span>
+                          </label>
+                          <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            step="10"
+                            value={userSettings.buttons?.autoFireRate || 100}
+                            onChange={(e) => setUserSettings(prev => ({
+                              ...prev,
+                              buttons: { ...prev.buttons, autoFireRate: parseInt(e.target.value) }
+                            }))}
+                            className="slider"
+                          />
+                        </div>
+                      )}
+
+                      {/* Haptic Feedback Toggle */}
+                      <div className="setting-row">
+                        <label>
+                          <span className="setting-label">📳 Haptic Feedback</span>
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={userSettings.buttons?.hapticFeedback !== false}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            buttons: { ...prev.buttons, hapticFeedback: e.target.checked }
+                          }))}
+                          className="checkbox-toggle"
+                        />
+                      </div>
+
+                      <div className="controls-note">
+                        <p>💡 Adjust sensitivity for faster/slower movement response</p>
+                        <p>🎯 Higher dead zone prevents accidental drift</p>
+                        <p>📈 Exponential curve gives more precise small movements</p>
+                        <p>🔥 Auto-fire is recommended for mobile gaming</p>
+                        <p>📳 Haptic feedback provides tactile response</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -26828,57 +27267,112 @@ const SpaceShooter = () => {
               ⏸ PAUSE
             </button>
 
-            {/* Virtual Joystick */}
+            {/* Virtual Joystick - INDUSTRY STANDARD ENHANCED */}
             <div
-              className="touch-joystick"
+              className={`touch-joystick joystick-${userSettings.joystick?.size || 'medium'}`}
+              style={{
+                opacity: userSettings.joystick?.opacity || 0.85,
+                filter: touchJoystickRef.current.active ? 'brightness(1.2)' : 'brightness(1)'
+              }}
               onTouchStart={(e) => {
                 e.preventDefault();
-                hapticFeedback('light');
                 const touch = e.touches[0];
                 const rect = e.currentTarget.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                hapticFeedback('tap');
                 touchJoystickRef.current = {
                   active: true,
-                  startX: touch.clientX - rect.left,
-                  startY: touch.clientY - rect.top,
+                  touchId: touch.identifier,
+                  startX: centerX,
+                  startY: centerY,
                   currentX: touch.clientX - rect.left,
-                  currentY: touch.clientY - rect.top
+                  currentY: touch.clientY - rect.top,
+                  angle: 0,
+                  distance: 0
                 };
               }}
               onTouchMove={(e) => {
                 e.preventDefault();
                 if (touchJoystickRef.current.active) {
-                  const touch = e.touches[0];
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  touchJoystickRef.current.currentX = touch.clientX - rect.left;
-                  touchJoystickRef.current.currentY = touch.clientY - rect.top;
+                  // Find the touch that matches our joystick
+                  for (let i = 0; i < e.touches.length; i++) {
+                    if (e.touches[i].identifier === touchJoystickRef.current.touchId) {
+                      const touch = e.touches[i];
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      touchJoystickRef.current.currentX = touch.clientX - rect.left;
+                      touchJoystickRef.current.currentY = touch.clientY - rect.top;
+                      break;
+                    }
+                  }
                 }
               }}
               onTouchEnd={(e) => {
                 e.preventDefault();
-                touchJoystickRef.current.active = false;
+                // Check if our specific touch ended
+                let touchStillActive = false;
+                for (let i = 0; i < e.touches.length; i++) {
+                  if (e.touches[i].identifier === touchJoystickRef.current.touchId) {
+                    touchStillActive = true;
+                    break;
+                  }
+                }
+                if (!touchStillActive) {
+                  touchJoystickRef.current.active = false;
+                  touchJoystickRef.current.touchId = null;
+                }
               }}
             >
+              {/* Always show base when controls are visible */}
+              <div className="joystick-base" style={{
+                left: '50%',
+                top: '50%',
+                opacity: touchJoystickRef.current.active ? 1 : 0.5
+              }} />
+
+              {/* Range indicator (optional visual guide) */}
+              {userSettings.joystick?.visualFeedback && (
+                <div className="joystick-range" style={{
+                  left: '50%',
+                  top: '50%',
+                  opacity: touchJoystickRef.current.active ? 0.3 : 0.15
+                }} />
+              )}
+
+              {/* Active stick */}
               {touchJoystickRef.current.active && (
                 <>
-                  <div className="joystick-base" style={{
-                    left: touchJoystickRef.current.startX,
-                    top: touchJoystickRef.current.startY
-                  }} />
                   <div className="joystick-stick" style={{
                     left: touchJoystickRef.current.currentX,
                     top: touchJoystickRef.current.currentY
                   }} />
+
+                  {/* Direction indicator line */}
+                  {userSettings.joystick?.visualFeedback && touchJoystickRef.current.distance > 5 && (
+                    <div className="joystick-direction-line" style={{
+                      left: '50%',
+                      top: '50%',
+                      width: `${Math.min(touchJoystickRef.current.distance, 60)}px`,
+                      transform: `translate(-50%, -50%) rotate(${touchJoystickRef.current.angle}rad)`
+                    }} />
+                  )}
                 </>
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="touch-buttons">
+            {/* Action Buttons - INDUSTRY STANDARD ENHANCED */}
+            <div
+              className={`touch-buttons buttons-${userSettings.buttons?.size || 'medium'}`}
+              style={{
+                opacity: userSettings.buttons?.opacity || 0.85
+              }}
+            >
               <button
-                className="touch-btn touch-btn-shoot"
+                className={`touch-btn touch-btn-shoot ${touchButtonsRef.current.shoot ? 'active' : ''}`}
                 onTouchStart={(e) => {
                   e.preventDefault();
-                  hapticFeedback('light');
+                  hapticFeedback('tap');
                   touchButtonsRef.current.shoot = true;
                 }}
                 onTouchEnd={(e) => {
@@ -26886,13 +27380,14 @@ const SpaceShooter = () => {
                   touchButtonsRef.current.shoot = false;
                 }}
               >
-                FIRE
+                <span className="btn-label">FIRE</span>
+                {userSettings.buttons?.autoFire && <span className="btn-hint">Hold</span>}
               </button>
               <button
-                className="touch-btn touch-btn-dash"
+                className={`touch-btn touch-btn-dash ${touchButtonsRef.current.dash ? 'active' : ''}`}
                 onTouchStart={(e) => {
                   e.preventDefault();
-                  hapticFeedback('medium');
+                  hapticFeedback('light');
                   touchButtonsRef.current.dash = true;
                 }}
                 onTouchEnd={(e) => {
@@ -26900,10 +27395,10 @@ const SpaceShooter = () => {
                   touchButtonsRef.current.dash = false;
                 }}
               >
-                DASH
+                <span className="btn-label">DASH</span>
               </button>
               <button
-                className="touch-btn touch-btn-bomb"
+                className={`touch-btn touch-btn-bomb ${touchButtonsRef.current.bomb ? 'active' : ''}`}
                 onTouchStart={(e) => {
                   e.preventDefault();
                   hapticFeedback('heavy');
@@ -26914,13 +27409,13 @@ const SpaceShooter = () => {
                   touchButtonsRef.current.bomb = false;
                 }}
               >
-                BOMB
+                <span className="btn-label">BOMB</span>
               </button>
               <button
-                className="touch-btn touch-btn-special"
+                className={`touch-btn touch-btn-special ${touchButtonsRef.current.special ? 'active' : ''}`}
                 onTouchStart={(e) => {
                   e.preventDefault();
-                  hapticFeedback('medium');
+                  hapticFeedback('light');
                   touchButtonsRef.current.special = true;
                 }}
                 onTouchEnd={(e) => {
@@ -26928,7 +27423,7 @@ const SpaceShooter = () => {
                   touchButtonsRef.current.special = false;
                 }}
               >
-                SPEC
+                <span className="btn-label">SPEC</span>
               </button>
             </div>
           </>
