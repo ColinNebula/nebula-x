@@ -20,7 +20,7 @@ export default defineConfig({
     react(),
     excludeLargeFiles()
   ],
-  base: '/nebula-x/',
+  base: '/',
   server: {
     port: 5173,
     open: true,
