@@ -21,6 +21,7 @@ export default defineConfig({
     excludeLargeFiles()
   ],
   base: '/',
+  publicDir: 'public',
   server: {
     port: 5173,
     open: true,
