@@ -5657,6 +5657,11 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  /* OPTIMIZED: Hardware acceleration for smoother rendering */
+  will-change: filter;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .joystick-base {
@@ -5668,6 +5673,9 @@
   border: 3px solid rgba(0, 255, 136, 0.5);
   transform: translate(-50%, -50%);
   pointer-events: none;
+  /* OPTIMIZED: Hardware acceleration */
+  will-change: opacity;
+  transform: translate(-50%, -50%) translateZ(0);
 }
 
 .joystick-stick {
@@ -5680,7 +5688,11 @@
   box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
   transform: translate(-50%, -50%);
   pointer-events: none;
-  transition: all 0.05s ease-out; /* Smooth movement */
+  /* OPTIMIZED: Faster transitions with hardware acceleration */
+  transition: transform 0.016s linear; /* ~60fps */
+  will-change: transform;
+  transform: translate(-50%, -50%) translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Enhanced joystick visual elements */
@@ -5857,19 +5869,23 @@
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
-  touch-action: none;
+  touch-action: manipulation; /* OPTIMIZED: Prevent double-tap zoom delay */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 0.08s ease-out;
+  /* OPTIMIZED: Faster response with hardware acceleration */
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.3),
               inset 0 2px 5px rgba(255, 255, 255, 0.1);
   -webkit-tap-highlight-color: transparent;
   position: relative;
-  /* Enhanced for iPhone and modern devices */
   backdrop-filter: blur(2px);
+  /* OPTIMIZED: Hardware acceleration for smoother rendering */
   will-change: transform, box-shadow;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .btn-label {

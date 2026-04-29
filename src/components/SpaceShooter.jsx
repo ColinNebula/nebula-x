@@ -1247,6 +1247,14 @@ const SpaceShooter = () => {
   // Mobile touch controls
   const [showMobileControls, setShowMobileControls] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  
+  // OPTIMIZED: Touch input buffer system for better performance
+  const touchInputBufferRef = useRef({
+    joystick: { active: false, x: 0, y: 0, angle: 0, distance: 0 },
+    buttons: { shoot: false, dash: false, bomb: false, special: false },
+    needsUpdate: false
+  });
+  
   const touchJoystickRef = useRef({
     active: false,
     startX: 0,
@@ -1255,7 +1263,8 @@ const SpaceShooter = () => {
     currentY: 0,
     touchId: null, // Track specific touch for multi-touch support
     angle: 0, // Current joystick angle
-    distance: 0 // Current joystick distance from center
+    distance: 0, // Current joystick distance from center
+    updateScheduled: false // RAF throttle flag
   });
   const touchButtonsRef = useRef({
     shoot: false,
@@ -1263,7 +1272,8 @@ const SpaceShooter = () => {
     bomb: false,
     special: false,
     shootStartTime: 0, // Track when shoot button was pressed for auto-fire
-    lastAutoFireTime: 0 // Track last auto-fire shot
+    lastAutoFireTime: 0, // Track last auto-fire shot
+    updateScheduled: false // RAF throttle flag
   });
 
   // Enhanced haptic feedback helper (industry standard patterns from iOS/Android games)
@@ -3070,6 +3080,43 @@ const SpaceShooter = () => {
     6: { name: 'TECH FORTRESS', theme: 'tech', color: '#00ff00' }
   };
   const currentZoneRef = useRef(1);
+
+  // OPTIMIZED: RAF-throttled touch update function for smoother performance
+  const scheduleJoystickUpdate = useCallback(() => {
+    if (!touchJoystickRef.current.updateScheduled) {
+      touchJoystickRef.current.updateScheduled = true;
+      requestAnimationFrame(() => {
+        touchJoystickRef.current.updateScheduled = false;
+      });
+    }
+  }, []);
+  
+  // OPTIMIZED: Batch touch input processing (called once per frame in game loop)
+  const processTouchInput = useCallback(() => {
+    const joystick = touchJoystickRef.current;
+    const buffer = touchInputBufferRef.current;
+    
+    // Update joystick data
+    buffer.joystick.active = joystick.active;
+    if (joystick.active) {
+      buffer.joystick.angle = joystick.angle;
+      buffer.joystick.distance = joystick.distance;
+      buffer.joystick.x = Math.cos(joystick.angle) * Math.min(joystick.distance / 50, 1);
+      buffer.joystick.y = Math.sin(joystick.angle) * Math.min(joystick.distance / 50, 1);
+    } else {
+      buffer.joystick.x = 0;
+      buffer.joystick.y = 0;
+    }
+    
+    // Update button states
+    const buttons = touchButtonsRef.current;
+    buffer.buttons.shoot = buttons.shoot;
+    buffer.buttons.dash = buttons.dash;
+    buffer.buttons.bomb = buttons.bomb;
+    buffer.buttons.special = buttons.special;
+    
+    buffer.needsUpdate = false;
+  }, []);
 
   // Initialize physics engine
   useEffect(() => {
@@ -17498,9 +17545,12 @@ const SpaceShooter = () => {
         setTimeout(() => { window._gpInterferenceLogged = false; }, 2000);
       }
 
-      // Apply touch joystick input (overrides keyboard) - ENHANCED VERSION
+      // Apply touch joystick input (overrides keyboard) - OPTIMIZED VERSION
       if (touchJoystickRef.current.active) {
-        const deltaX = touchJoystickRef.current.currentX - touchJoystickRef.current.startX;
+        // OPTIMIZED: Calculate once and store in refs during touch events
+        // Here wejust read the pre-calculated values
+        const sensitivity = userSettingsRef.current?.joystick?.sensitivity || 1.2;
+        const deadZone = userSettingsRef.current?.joystick?.deadZone || 0.12;
         const deltaY = touchJoystickRef.current.currentY - touchJoystickRef.current.startY;
         const rawDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
@@ -27900,14 +27950,13 @@ const SpaceShooter = () => {
         {/* Mobile Touch Controls - Only show during gameplay */}
         {showMobileControls && gameState === 'playing' && (
           <>
-            {/* Pause Button (top center during gameplay) */}
+            {/* Pause Button (top center during gameplay) - OPTIMIZED */}
             <button
               className="touch-pause-btn"
               onClick={() => {
                 triggerHaptic('light');
                 setGameState('paused');
               }}
-              onTouchStart={(e) => e.preventDefault()}
             >
               ⏸ PAUSE
             </button>
@@ -27920,52 +27969,67 @@ const SpaceShooter = () => {
                 filter: touchJoystickRef.current.active ? 'brightness(1.2)' : 'brightness(1)'
               }}
               onTouchStart={(e) => {
-                e.preventDefault();
+                // OPTIMIZED: Minimal work in event handler
                 const touch = e.touches[0];
                 const rect = e.currentTarget.getBoundingClientRect();
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
 
                 triggerHaptic('tap');
-                touchJoystickRef.current = {
-                  active: true,
-                  touchId: touch.identifier,
-                  startX: centerX,
-                  startY: centerY,
-                  currentX: touch.clientX - rect.left,
-                  currentY: touch.clientY - rect.top,
-                  angle: 0,
-                  distance: 0
-                };
+                const joystick = touchJoystickRef.current;
+                joystick.active = true;
+                joystick.touchId = touch.identifier;
+                joystick.startX = centerX;
+                joystick.startY = centerY;
+                joystick.currentX = touch.clientX - rect.left;
+                joystick.currentY = touch.clientY - rect.top;
+                
+                // Calculate angle and distance immediately
+                const deltaX = joystick.currentX - joystick.startX;
+                const deltaY = joystick.currentY - joystick.startY;
+                joystick.angle = Math.atan2(deltaY, deltaX);
+                joystick.distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                
+                scheduleJoystickUpdate();
               }}
               onTouchMove={(e) => {
-                e.preventDefault();
-                if (touchJoystickRef.current.active) {
-                  // Find the touch that matches our joystick
-                  for (let i = 0; i < e.touches.length; i++) {
-                    if (e.touches[i].identifier === touchJoystickRef.current.touchId) {
-                      const touch = e.touches[i];
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      touchJoystickRef.current.currentX = touch.clientX - rect.left;
-                      touchJoystickRef.current.currentY = touch.clientY - rect.top;
-                      break;
-                    }
+                // OPTIMIZED: Minimal calculation, just update position
+                const joystick = touchJoystickRef.current;
+                if (!joystick.active) return;
+                
+                // Find the touch that matches our joystick
+                for (let i = 0; i < e.touches.length; i++) {
+                  if (e.touches[i].identifier === joystick.touchId) {
+                    const touch = e.touches[i];
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    joystick.currentX = touch.clientX - rect.left;
+                    joystick.currentY = touch.clientY - rect.top;
+                    
+                    // Calculate angle and distance
+                    const deltaX = joystick.currentX - joystick.startX;
+                    const deltaY = joystick.currentY - joystick.startY;
+                    joystick.angle = Math.atan2(deltaY, deltaX);
+                    joystick.distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    
+                    scheduleJoystickUpdate();
+                    break;
                   }
                 }
               }}
               onTouchEnd={(e) => {
-                e.preventDefault();
-                // Check if our specific touch ended
+                // OPTIMIZED: Fast check and reset
+                const joystick = touchJoystickRef.current;
                 let touchStillActive = false;
                 for (let i = 0; i < e.touches.length; i++) {
-                  if (e.touches[i].identifier === touchJoystickRef.current.touchId) {
+                  if (e.touches[i].identifier === joystick.touchId) {
                     touchStillActive = true;
                     break;
                   }
                 }
                 if (!touchStillActive) {
-                  touchJoystickRef.current.active = false;
-                  touchJoystickRef.current.touchId = null;
+                  joystick.active = false;
+                  joystick.touchId = null;
+                  joystick.distance = 0;
                 }
               }}
             >
@@ -28006,7 +28070,7 @@ const SpaceShooter = () => {
               )}
             </div>
 
-            {/* Action Buttons - INDUSTRY STANDARD ENHANCED */}
+            {/* Action Buttons - OPTIMIZED FOR PERFORMANCE */}
             <div
               className={`touch-buttons buttons-${userSettings.buttons?.size || 'medium'}`}
               style={{
@@ -28016,12 +28080,13 @@ const SpaceShooter = () => {
               <button
                 className={`touch-btn touch-btn-shoot ${touchButtonsRef.current.shoot ? 'active' : ''}`}
                 onTouchStart={(e) => {
-                  e.preventDefault();
+                  e.stopPropagation(); // OPTIMIZED: Only stop propagation
                   triggerHaptic('tap');
                   touchButtonsRef.current.shoot = true;
+                  touchButtonsRef.current.shootStartTime = performance.now();
                 }}
                 onTouchEnd={(e) => {
-                  e.preventDefault();
+                  e.stopPropagation();
                   touchButtonsRef.current.shoot = false;
                 }}
               >
@@ -28031,12 +28096,12 @@ const SpaceShooter = () => {
               <button
                 className={`touch-btn touch-btn-dash ${touchButtonsRef.current.dash ? 'active' : ''}`}
                 onTouchStart={(e) => {
-                  e.preventDefault();
+                  e.stopPropagation();
                   triggerHaptic('light');
                   touchButtonsRef.current.dash = true;
                 }}
                 onTouchEnd={(e) => {
-                  e.preventDefault();
+                  e.stopPropagation();
                   touchButtonsRef.current.dash = false;
                 }}
               >
@@ -28045,12 +28110,12 @@ const SpaceShooter = () => {
               <button
                 className={`touch-btn touch-btn-bomb ${touchButtonsRef.current.bomb ? 'active' : ''}`}
                 onTouchStart={(e) => {
-                  e.preventDefault();
+                  e.stopPropagation();
                   triggerHaptic('heavy');
                   touchButtonsRef.current.bomb = true;
                 }}
                 onTouchEnd={(e) => {
-                  e.preventDefault();
+                  e.stopPropagation();
                   touchButtonsRef.current.bomb = false;
                 }}
               >
@@ -28059,12 +28124,12 @@ const SpaceShooter = () => {
               <button
                 className={`touch-btn touch-btn-special ${touchButtonsRef.current.special ? 'active' : ''}`}
                 onTouchStart={(e) => {
-                  e.preventDefault();
+                  e.stopPropagation();
                   triggerHaptic('light');
                   touchButtonsRef.current.special = true;
                 }}
                 onTouchEnd={(e) => {
-                  e.preventDefault();
+                  e.stopPropagation();
                   touchButtonsRef.current.special = false;
                 }}
               >

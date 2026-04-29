@@ -1,145 +1,242 @@
-﻿#  NEBULA X
+﻿# 🚀 NEBULA X
 
-A fast-paced retro arcade space shooter with modern graphics, built with React and HTML5 Canvas.
+**Fast-paced retro space shooter with modern graphics** • Built with React 19 & HTML5 Canvas
 
 <div align="center">
 
-![Nebula X Logo](public/nebula-x-logo.png)
-
-### [ **PLAY NOW**](https://colinnebula.github.io/nebula-x/)
+### [**▶️ PLAY NOW**](https://colinnebula.github.io/nebula-x/)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
-[![Build Size](https://img.shields.io/badge/Build-35MB-success.svg)](#-build-optimization)
+[![React 19](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
+[![Build: 35MB](https://img.shields.io/badge/Build-35MB-success.svg)](#📦-optimized-build)
 
 </div>
 
 ---
 
-##  Quick Start
+## ⚡ Quick Start
 
-### Play Online
-Visit **[https://colinnebula.github.io/nebula-x/](https://colinnebula.github.io/nebula-x/)** to play instantly in your browser!
-
-### Run Locally
 ```bash
-npm install
-npm start
+# Play online (fastest)
+https://colinnebula.github.io/nebula-x/
+
+# Or run locally
+npm install && npm start
+# Opens at http://localhost:5173
 ```
-Game launches at `http://localhost:5173`
+
+**Build for production:** `npm run build` (outputs to `/build`)
 
 ---
 
-## 🛠️ Microsoft Tools Integration
+## 🎮 Game Features
 
-Nebula X uses **6 Microsoft technologies** for a professional, production-ready experience:
+### Core Gameplay
+- 🔥 **Bullet-hell combat** - Dodge intense enemy fire patterns
+- 🌌 **5 zones** - Moon → Mars → Jupiter → Saturn → Uranus
+- 👾 **Boss fights** - Epic battles every 5 waves, 15+ unique bosses
+- 🎯 **Mini-bosses** - Must defeat before boss appears
+- 💥 **Environmental hazards** - Solar flares, black holes, asteroid fields, debris storms
+- ⚡ **Boss EMP defense** - Proximity electromagnetic burst when you get too close
+- 🎨 **Weapon upgrades** - Speed, triple shot, homing missiles, spread, pierce, laser
+- 🛸 **10+ enemy types** - Basic, fast, tank, sniper, bomber, kamikaze, fortress, stealth
+- 📱 **Mobile optimized** - Industry-standard touch controls (iPhone 15 Pro Max tested)
+- 🎮 **Controller support** - PS4/PS5/Xbox compatible
 
-| Tool | Status | Purpose | Documentation |
-|------|--------|---------|---------------|
-| 🚀 **Azure Static Web Apps** | ⚠️ Setup Recommended | Superior hosting, global CDN, auto CI/CD, serverless APIs | [AZURE_STATIC_WEB_APPS_GUIDE.md](AZURE_STATIC_WEB_APPS_GUIDE.md) |
-| 🎮 **PlayFab (Azure)** | ⚠️ Setup Required | Global leaderboards, cloud saves, achievements | [PLAYFAB_SETUP.md](PLAYFAB_SETUP.md) |
-| 📱 **PWABuilder** | ✅ Active | Install to desktop/mobile, offline play | Built-in |
-| 💙 **TypeScript** | ✅ Active | Type safety, 250+ definitions, autocomplete | [TYPESCRIPT_APPINSIGHTS_GUIDE.md](TYPESCRIPT_APPINSIGHTS_GUIDE.md) |
-| 📊 **Application Insights** | ⚠️ Setup Required | Real-time analytics, error tracking, metrics | [TYPESCRIPT_APPINSIGHTS_GUIDE.md](TYPESCRIPT_APPINSIGHTS_GUIDE.md) |
-| 🔧 **Edge DevTools** | ✅ Ready | 3D Canvas, performance profiling, debugging | [EDGE_DEVTOOLS_GUIDE.md](EDGE_DEVTOOLS_GUIDE.md) |
-
-**See [MICROSOFT_TOOLS_SUMMARY.md](MICROSOFT_TOOLS_SUMMARY.md) for complete integration guide**
-
-**Azure Static Web Apps:** 3x faster than GitHub Pages with global CDN, free SSL, auto CI/CD, and serverless APIs!  
-**Cost:** All FREE for indie games! 💰
-
----
-
-## 🎮 Features
-
-### 🏆 Global Leaderboards (PlayFab)
-Compete with players worldwide! Nebula X integrates with **Microsoft Azure PlayFab** for:
-- **Real-time leaderboards** - See global high score rankings
-- **Cloud saves** - Progress syncs across all your devices
-- **Achievements tracking** - Unlock and sync achievements
-- **Player analytics** - Track your stats and improvement
-- **Cross-device play** - Start on PC, continue on mobile
-
-**Setup (2 minutes):**
-1. Get free Title ID from [PlayFab](https://developer.playfab.com/)
-2. Create `.env` file: `REACT_APP_PLAYFAB_TITLE_ID=YOUR_ID`
-3. See [PLAYFAB_SETUP.md](PLAYFAB_SETUP.md) for detailed guide
-
-### 📱 Progressive Web App (PWA)
-Install Nebula X like a native app:
-- **Offline play** - Game works without internet
-- **Faster loading** - Assets cached locally
-- **Full-screen mode** - Immersive gaming experience
-- **Desktop/mobile install** - Add to home screen or Start Menu
-
-**Auto-prompts to install when you visit the game!**
-
-### 🎯 Game Modes
-- **Campaign** - 50 waves of increasing difficulty
-- **Survival** - Endless mode, how long can you last?
-- **Boss Rush** - Fight all bosses back-to-back
-- **Time Attack** - Race against the clock
-- **Practice Mode** - Train on specific waves
-
-### 💥 Core Gameplay
-- Intense bullet-hell patterns
-- Multiple weapon types and powerups
-- Epic boss battles every 5 waves
-- Achievements and rank system
-- Gamepad support (PS4/PS5/Xbox)
-- Touch controls for mobile
-
-### 💙 TypeScript Support
-Built with **TypeScript** for type safety and better developer experience:
-- **250+ type definitions** - Full game entity types
-- **Better IDE support** - IntelliSense autocomplete everywhere
-- **Catch bugs early** - Type checking at development time
-- **Self-documenting** - Types serve as documentation
-- **Gradual migration** - Mix JS and TS files
-
-**See [TYPESCRIPT_APPINSIGHTS_GUIDE.md](TYPESCRIPT_APPINSIGHTS_GUIDE.md) for migration guide**
-
-### 📊 Real-Time Analytics (Application Insights)
-Monitor your game with **Azure Application Insights**:
-- **Real-time metrics** - Player count, FPS, performance
-- **Error tracking** - Automatic exception reporting with stack traces
-- **Custom analytics** - Track kills, bosses, achievements
-- **Performance monitoring** - FPS, load times, bottlenecks
-- **User behavior** - Session duration, retention, engagement
-
-**Setup (2 minutes):**
-1. Create [Application Insights](https://portal.azure.com/) resource (FREE)
-2. Add to `.env`: `REACT_APP_APPINSIGHTS_KEY=your-key`
-3. See [TYPESCRIPT_APPINSIGHTS_GUIDE.md](TYPESCRIPT_APPINSIGHTS_GUIDE.md) for full guide
-
-### 🔧 Development Tools (Edge DevTools)
-Optimize and debug with **Microsoft Edge DevTools**:
-- **3D Canvas inspection** - Visualize layers, check GPU acceleration
-- **Performance profiling** - Find FPS drops, identify bottlenecks
-- **Memory leak detection** - Fix slowdowns over time
-- **Network throttling** - Test mobile loading performance
-
-**See [EDGE_DEVTOOLS_GUIDE.md](EDGE_DEVTOOLS_GUIDE.md) for detailed debugging workflows**
+### Progressive Web App (PWA)
+- 📲 **Install as app** - Works like native desktop/mobile app
+- 🔌 **Offline play** - No internet required after install
+- ⚡ **Fast loading** - Assets cached locally
+- 🖥️ **Full-screen mode** - Immersive experience
 
 ---
 
-##  Support Development
+## 🛠️ Tech Stack
 
-Enjoying Nebula X? Support continued development and new features!
+| Technology | Purpose | Status |
+|------------|---------|--------|
+| ⚛️ React 19 | UI framework | ✅ Active |
+| 🎨 Vite 7.2 | Build tool | ✅ Active |
+| 🎮 HTML5 Canvas | Game rendering | ✅ Active |
+| 📱 PWA | Offline support | ✅ Active |
+| 💙 TypeScript | Optional types (250+ definitions) | ✅ Available |
 
-<div align="center">
+---
 
-[![PayPal](https://img.shields.io/badge/PayPal-Donate-blue?style=for-the-badge&logo=paypal)](https://paypal.me/YourPayPalUsername)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-red?style=for-the-badge&logo=ko-fi)](https://ko-fi.com/YourKofiUsername)
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub-Sponsor-pink?style=for-the-badge&logo=github)](https://github.com/sponsors/ColinNebula)
+## 🚀 Optional: Deploy to Azure
 
-</div>
+**Azure Static Web Apps** offers superior hosting vs GitHub Pages:
+- ⚡ **Global CDN** - 3x faster worldwide
+- 🔐 **Free SSL** - Automatic HTTPS for custom domains
+- 🔄 **Auto CI/CD** - Push to deploy
+- 🌐 **Serverless APIs** - Azure Functions included
+- 💰 **FREE tier** - Same as GitHub Pages!
 
-Your support helps:
--  Add new game modes and features
--  Create original music and sound effects  
--  Fix bugs and improve performance
--  Add mobile support
--  Keep the game free and open source
+### Quick Deploy (10 min)
+1. **Create Azure account** (free): https://azure.com/free
+2. **Create Static Web App**: https://portal.azure.com/#create/Microsofthttps://thankful-stone-07408b91e.azurestaticapps.net
+.StaticApp
+3. **Configure:**
+   - Source: GitHub → Select `nebula-x` repo
+   - Build preset: Custom
+   - App location: `/`
+   - Output location: `build`
+4. **Deploy:** GitHub Actions auto-created, push to deploy!
 
-Even a small donation makes a huge difference! 
+**URL:** `https://nebula-x.azurestaticapps.net` (custom domain supported)
+
+---
+
+## 🎯 Optional: Add Global Leaderboards (PlayFab)
+
+**Microsoft Azure PlayFab** adds multiplayer features for FREE:
+- 🏆 Global leaderboards
+- ☁️ Cloud saves
+- 🏅 Achievement tracking
+- 📊 Player analytics
+
+### Quick Setup (2 min)
+1. **Get Title ID** (free): https://developer.playfab.com/
+2. **Create `.env` file:**
+   ```env
+   REACT_APP_PLAYFAB_TITLE_ID=YOUR_TITLE_ID_HERE
+   ```
+3. **Restart dev server:** `npm start`
+
+**Leaderboards auto-appear in game menu!**
+
+---
+
+## 📊 Optional: Analytics & Monitoring
+
+### Application Insights (Azure)
+Track performance and errors in production:
+```env
+REACT_APP_APPINSIGHTS_KEY=your-key-here
+```
+- ⚡ Real-time FPS monitoring
+- 🐛 Automatic error tracking
+- 📈 Player behavior analytics
+- **FREE tier:** 5GB/month
+
+### Edge DevTools (Debug)
+Optimize performance during development:
+- **F12** → Application tab → Canvas 3D inspector
+- Performance profiler (find FPS drops)
+- Memory leak detection
+- Network throttling (test mobile)
+
+---
+
+## 📦 Optimized Build
+
+### Current Build Size: **35 MB**
+- ✅ MP4 videos excluded (moved to `media-assets/`)
+- ✅ 87% size reduction from original
+- ✅ GitHub Pages compatible
+- ✅ Fast loading on mobile
+
+### Largest Assets
+- Audio files: ~28 MB (MP3/WAV for music & SFX)
+- JS bundle: ~400 KB (gzipped: ~100 KB)
+- CSS: ~86 KB (gzipped: ~15 KB)
+
+### Large Files in `.gitignore`
+All large media files auto-excluded:
+- `media-assets/` directory (local dev only)
+- `*.mp4` videos (155 MB + 93 MB excluded)
+- `node_modules/`, `build/`, `emsdk/`
+- Development scripts (100+ utility files)
+
+---
+
+## 📁 Project Structure
+
+```
+nebulax/
+├── src/
+│   ├── components/
+│   │   └── SpaceShooter.jsx    # Main game component
+│   ├── services/
+│   │   ├── playfabService.js   # Leaderboards (optional)
+│   │   └── soundSystem.js      # Audio engine
+│   ├── utils/
+│   └── index.js
+├── public/
+│   ├── assets/                 # Images, sprites, icons
+│   ├── audio/                  # MP3/WAV files
+│   ├── manifest.json          # PWA config
+│   └── service-worker.js      # Offline caching
+├── build/                      # Production output
+└── package.json
+```
+
+---
+
+## 🎯 Development Commands
+
+```bash
+# Development
+npm start              # Dev server (localhost:5173)
+npm run dev           # Same as start
+
+# Production
+npm run build         # Build to /build
+npm run preview       # Preview production build
+
+# Deployment
+npm run deploy        # Deploy to GitHub Pages
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Game won't load
+- Clear browser cache (Ctrl+Shift+Delete)
+- Check console for errors (F12)
+- Verify `npm install` completed successfully
+
+### Poor performance
+- Close other browser tabs
+- Disable browser extensions
+- Check GPU acceleration (Edge DevTools → Performance)
+- Reduce graphics settings in game menu
+
+### Touch controls not working
+- Ensure touchscreen device
+- Check Settings → Controls → Touch Enabled
+- Try refreshing page
+
+### Leaderboards not showing
+- Verify `.env` file has `REACT_APP_PLAYFAB_TITLE_ID`
+- Restart dev server after creating `.env`
+- Check browser console for PlayFab errors
+
+---
+
+## 📄 License
+
+**MIT License** - Free to use, modify, and distribute
+
+---
+
+## 🙏 Credits
+
+- **Game Engine:** React 19 + HTML5 Canvas
+- **Music:** Licensed royalty-free tracks
+- **Sound Effects:** Mixed library + custom
+- **Hosting:** GitHub Pages (or Azure Static Web Apps)
+- **Built with:** Vite, TypeScript (optional), PWABuilder
+
+---
+
+## 🌟 Support Development
+
+Enjoying Nebula X? Consider supporting:
+- ⭐ Star this repo on GitHub
+- 🐛 Report bugs via Issues
+- 💡 Suggest features via Discussions
+- 🔀 Contribute via Pull Requests
+
+**Keep the game free & open source!** 🚀 

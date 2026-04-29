@@ -98,6 +98,66 @@ emsdk/
 wasm/
 
 # =========================
+# UTILITY SCRIPTS (CLEANUP/FIX TOOLS)
+# =========================
+# One-off emoji/encoding fix scripts
+*.py
+fix-*.js
+fix-*.ps1
+find-*.js
+find-*.py
+check-*.js
+check-*.py
+analyze-*.py
+debug-*.js
+debug-*.py
+scan-*.js
+scan-*.py
+verify-*.js
+remove-*.js
+normalize-*.js
+master-*.py
+ULTIMATE-*.py
+progressive-*.py
+proper-*.py
+show-*.py
+get-*.py
+categorize-*.py
+decode-*.py
+
+# =========================
+# DOCUMENTATION (CONSOLIDATED TO README.md)
+# =========================
+# Keep only README.md, move others to archive
+*_GUIDE.md
+*_SETUP.md
+*_README.md
+*_COMPLETE.md
+*_SUMMARY.md
+*_SYSTEM.md
+*_SAFETY.md
+*_OPTIMIZATION.md
+*_QUICKREF.txt
+MIGRATION_GUIDE.md
+CREATING_*.md
+# =========================
+# TEMP & TEST FILES
+# =========================
+# Temporary development files
+temp-*.js
+temp-*.jsx
+temp-*.css
+temp-*.txt
+test-*.jsx
+test-*.html
+trace-*.js
+t.jsx
+SpaceShooter.jsx
+use-effect-*.jsx
+NUL.css
+package-scripts.json
+PLAYFAB_INTEGRATION_EXAMPLE.jsx
+# =========================
 # TEMPORARY/DEBUG FILES
 # =========================
 temp-*.js
