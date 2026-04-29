@@ -29,6 +29,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
+    minify: false, // Disable minification to fix initialization issues
+    target: 'es2020',
     rollupOptions: {
       // Mark optional WASM module as external (loaded at runtime if available)
       external: ['/game_physics.js']
