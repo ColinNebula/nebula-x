@@ -30,14 +30,6 @@ export default defineConfig({
   build: {
     outDir: 'build',
     rollupOptions: {
-      output: {
-        manualChunks: {
-          // Split React and React-DOM into a separate vendor chunk
-          'react-vendor': ['react', 'react-dom'],
-          // Split the large game component into its own chunk
-          'game': ['./src/components/SpaceShooter.jsx']
-        }
-      },
       // Mark optional WASM module as external (loaded at runtime if available)
       external: ['/game_physics.js']
     },
