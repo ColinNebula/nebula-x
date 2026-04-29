@@ -4,11 +4,17 @@ import './index.css';
 import App from './App.jsx';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+
+// Disable StrictMode in production to avoid initialization issues with large components
+if (import.meta.env.DEV) {
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+} else {
+  root.render(<App />);
+}
 
 // Register Service Worker for PWA functionality (production only)
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
