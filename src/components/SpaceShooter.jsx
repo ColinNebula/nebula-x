@@ -1147,6 +1147,51 @@ const POWERUP_TYPES = {
   PHOENIX: { color: '#ff8800', icon: '🔥', name: 'Phoenix', rarity: 'ultra', glowColor: '#ffaa00', description: 'Auto-revive on death' }
 };
 
+// Default user settings - moved outside component to avoid initialization issues
+const DEFAULT_USER_SETTINGS = {
+  masterVolume: 50,
+  musicVolume: 30,
+  sfxVolume: 60,
+  playerName: 'PILOT',
+  avatar: 0,
+  avatarColor: '#00ff88', // Custom avatar accent color
+  difficulty: 'normal', // easy, normal, hard
+  performanceMode: false, // Reduced visual effects for better performance
+  showFPS: false, // Display FPS counter
+  controls: {
+    moveUp: ['KeyW', 'ArrowUp'],
+    moveDown: ['KeyS', 'ArrowDown'],
+    moveLeft: ['KeyA', 'ArrowLeft'],
+    moveRight: ['KeyD', 'ArrowRight'],
+    shoot: ['Space', 'KeyZ'],
+    special: ['KeyX', 'KeyC'],
+    dash: ['ShiftLeft', 'ShiftRight'],
+    missile: ['KeyM'],
+    bomb: ['KeyB'],
+    togglePolarity: ['KeyC'],
+    toggleForce: ['KeyF'],
+    pause: ['Escape']
+  },
+  // Touch controls settings (optimized for iPhone 15 Pro Max and similar devices)
+  joystick: {
+    sensitivity: 1.2, // Industry standard: slightly higher for phones (0.5 to 2.0)
+    deadZone: 0.12, // Smaller dead zone for modern capacitive screens (0.0 to 0.5)
+    responseCurve: 'exponential', // Best for precision: 'linear', 'exponential', 'smooth'
+    snapToDirections: false, // 8-way directional snapping
+    size: 'medium', // Auto-adjusts based on screen size: 'small', 'medium', 'large'
+    visualFeedback: true, // Show range indicator and directional aids
+    opacity: 0.85 // Control transparency (0.3 to 1.0) for better gameplay visibility
+  },
+  buttons: {
+    size: 'medium', // 'small', 'medium', 'large' - auto-adjusts for phones
+    opacity: 0.85, // Button transparency (0.3 to 1.0)
+    autoFire: true, // Hold shoot button for continuous fire (industry standard)
+    autoFireRate: 100, // Milliseconds between auto-fire shots (50-200ms)
+    hapticFeedback: true, // Vibration on button press
+    layout: 'grid' // 'grid' (2x2) or 'arc' (curved layout)
+  }
+};
+
 const SpaceShooter = () => {
   const canvasRef = useRef(null);
   const [gameState, setGameState] = useState('brand'); // brand, cinematic, splash, menu, playing, paused, gameOver, checkpoint, victory
@@ -1222,13 +1267,7 @@ const SpaceShooter = () => {
   });
 
   // Enhanced haptic feedback helper (industry standard patterns from iOS/Android games)
-  const hapticFeedback = useCallback((type = 'medium') => {
-    // Check if haptic feedback is enabled in settings
-    const buttonSettings = userSettings.buttons || DEFAULT_USER_SETTINGS.buttons;
-    if (!buttonSettings.hapticFeedback && buttonSettings.hapticFeedback !== undefined) {
-      return; // Haptic disabled
-    }
-
+  const hapticFeedback = useCallback((type = 'medium', checkSettings = true) => {
     if ('vibrate' in navigator) {
       const patterns = {
         tap: 5,           // Ultra light tap (UI interactions)
@@ -1243,52 +1282,7 @@ const SpaceShooter = () => {
       const pattern = patterns[type] || patterns.medium;
       navigator.vibrate(pattern);
     }
-  }, [userSettings.buttons]);
-
-  // Default user settings
-  const DEFAULT_USER_SETTINGS = {
-    masterVolume: 50,
-    musicVolume: 30,
-    sfxVolume: 60,
-    playerName: 'PILOT',
-    avatar: 0,
-    avatarColor: '#00ff88', // Custom avatar accent color
-    difficulty: 'normal', // easy, normal, hard
-    performanceMode: false, // Reduced visual effects for better performance
-    showFPS: false, // Display FPS counter
-    controls: {
-      moveUp: ['KeyW', 'ArrowUp'],
-      moveDown: ['KeyS', 'ArrowDown'],
-      moveLeft: ['KeyA', 'ArrowLeft'],
-      moveRight: ['KeyD', 'ArrowRight'],
-      shoot: ['Space', 'KeyZ'],
-      special: ['KeyX', 'KeyC'],
-      dash: ['ShiftLeft', 'ShiftRight'],
-      missile: ['KeyM'],
-      bomb: ['KeyB'],
-      togglePolarity: ['KeyC'],
-      toggleForce: ['KeyF'],
-      pause: ['Escape']
-    },
-    // Touch controls settings (optimized for iPhone 15 Pro Max and similar devices)
-    joystick: {
-      sensitivity: 1.2, // Industry standard: slightly higher for phones (0.5 to 2.0)
-      deadZone: 0.12, // Smaller dead zone for modern capacitive screens (0.0 to 0.5)
-      responseCurve: 'exponential', // Best for precision: 'linear', 'exponential', 'smooth'
-      snapToDirections: false, // 8-way directional snapping
-      size: 'medium', // Auto-adjusts based on screen size: 'small', 'medium', 'large'
-      visualFeedback: true, // Show range indicator and directional aids
-      opacity: 0.85 // Control transparency (0.3 to 1.0) for better gameplay visibility
-    },
-    buttons: {
-      size: 'medium', // 'small', 'medium', 'large' - auto-adjusts for phones
-      opacity: 0.85, // Button transparency (0.3 to 1.0)
-      autoFire: true, // Hold shoot button for continuous fire (industry standard)
-      autoFireRate: 100, // Milliseconds between auto-fire shots (50-200ms)
-      hapticFeedback: true, // Vibration on button press
-      layout: 'grid' // 'grid' (2x2) or 'arc' (curved layout)
-    }
-  };
+  }, []);
 
   // User settings with localStorage persistence
   const [userSettings, setUserSettings] = useState(() => {
@@ -1300,6 +1294,14 @@ const SpaceShooter = () => {
     }
     return DEFAULT_USER_SETTINGS;
   });
+
+  // Wrapper for haptic feedback that checks user settings
+  const triggerHaptic = useCallback((type = 'medium') => {
+    const buttonSettings = userSettings.buttons || DEFAULT_USER_SETTINGS.buttons;
+    if (buttonSettings.hapticFeedback !== false) {
+      hapticFeedback(type);
+    }
+  }, [userSettings.buttons, hapticFeedback]);
 
   // Difficulty settings
   const DIFFICULTY_SETTINGS = {
@@ -2201,6 +2203,7 @@ const SpaceShooter = () => {
   const bossActiveRef = useRef(false);
   const miniBossRef = useRef(null); // Mini-boss: elite enemy mid-wave
   const miniBossSpawnedRef = useRef(false); // Track if mini-boss was spawned this wave
+  const miniBossDefeatedRef = useRef(false); // Track if mini-boss was defeated this wave
   const carrierRef = useRef(null); // Giant space carrier that drops enemies
   const lastCarrierSpawnRef = useRef(0); // Cooldown for carrier spawns
   const carrierIntroRef = useRef(null); // Carrier intro at wave start (drops off player)
@@ -2558,11 +2561,14 @@ const SpaceShooter = () => {
 
   // Environmental hazards
   const hazardsRef = useRef({
-    asteroids: [],      // { x, y, size, rotation, rotationSpeed, vx, vy, health }
+    asteroids: [],      // { x, y, size, rotation, rotationSpeed, vx, vy, health, hasGravity, magneticCharge }
     laserBarriers: [],  // { y, width, active, timer, warningTimer }
     gravityWells: [],   // { x, y, radius, strength, pulsePhase }
     atmosphericParticles: [], // { x, y, vx, vy, size, alpha, type, color }
-    terrainObstacles: []  // { x, y, width, height, type, vx }
+    terrainObstacles: [],  // { x, y, width, height, type, vx }
+    solarFlares: [],    // { x, y, width, height, warningTimer, activeTimer, intensity, pulsePhase }
+    blackHoles: [],     // { x, y, radius, eventHorizon, strength, rotation, teleportCooldown }
+    debrisStorms: []    // { x, y, width, height, particles: [], density, vx, blocksShots }
   });
   const lastHazardSpawnRef = useRef(0);
 
@@ -4084,6 +4090,7 @@ const SpaceShooter = () => {
     bossActiveRef.current = false;
     miniBossRef.current = null;
     miniBossSpawnedRef.current = false;
+    miniBossDefeatedRef.current = false;
     waveCannonChargeRef.current = 0;
     isChargingRef.current = false;
     forceRef.current = null;
@@ -4092,7 +4099,7 @@ const SpaceShooter = () => {
     electricityRef.current = [];
     lastElectricityRef.current = 0;
     playerLaserRef.current = { charging: false, charge: 0, firing: false, duration: 0 };
-    hazardsRef.current = { asteroids: [], laserBarriers: [], gravityWells: [], atmosphericParticles: [], terrainObstacles: [] };
+    hazardsRef.current = { asteroids: [], laserBarriers: [], gravityWells: [], atmosphericParticles: [], terrainObstacles: [], solarFlares: [], blackHoles: [], debrisStorms: [] };
     lastHazardSpawnRef.current = 0;
 
     // ==================== INITIALIZE ENVIRONMENTAL STORYTELLING ====================
@@ -4225,6 +4232,7 @@ const SpaceShooter = () => {
     setBossActive(false);
     miniBossRef.current = null;
     miniBossSpawnedRef.current = false;
+    miniBossDefeatedRef.current = false;
     livesRef.current = 3;
     scoreRef.current = 0;
 
@@ -7211,6 +7219,177 @@ const SpaceShooter = () => {
             }
           }
         }
+
+        ctx.restore();
+      });
+
+      // Draw asteroid gravity fields
+      hazards.asteroids.forEach(asteroid => {
+        if (!asteroid.hasGravity) return;
+
+        ctx.save();
+        const pulse = Math.sin(Date.now() / 300) * 0.3 + 0.7;
+        ctx.globalAlpha = 0.15 * pulse;
+        ctx.strokeStyle = asteroid.magneticCharge === 'positive' ? '#00ffff' :
+                         asteroid.magneticCharge === 'negative' ? '#ff00ff' : '#88ccff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(asteroid.x, asteroid.y, asteroid.gravityRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Magnetic field indicator
+        if (asteroid.magneticCharge) {
+          ctx.globalAlpha = 0.25 * pulse;
+          ctx.fillStyle = asteroid.magneticCharge === 'positive' ? '#00ffff' : '#ff00ff';
+          ctx.font = 'bold 16px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(asteroid.magneticCharge === 'positive' ? '+' : '−', asteroid.x, asteroid.y - asteroid.size - 10);
+        }
+        ctx.restore();
+      });
+
+      // Draw Solar Flares
+      hazards.solarFlares.forEach(flare => {
+        ctx.save();
+
+        if (flare.warningTimer > 0) {
+          // Warning phase - blinking red outline
+          const blink = Math.floor(flare.warningTimer / 10) % 2 === 0;
+          if (blink) {
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = '#ffaa00';
+            ctx.fillRect(flare.x, flare.y, flare.width, flare.height);
+
+            ctx.globalAlpha = 0.7;
+            ctx.strokeStyle = '#ff4400';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]);
+            ctx.strokeRect(flare.x, flare.y, flare.width, flare.height);
+            ctx.setLineDash([]);
+          }
+        } else if (flare.activeTimer > 0) {
+          // Active phase - intense solar flare effect
+          const intensityPulse = Math.sin(flare.pulsePhase) * 0.2 + 0.8;
+
+          // Inner core
+          const coreGrad = ctx.createLinearGradient(flare.x, flare.y, flare.x, flare.y + flare.height);
+          coreGrad.addColorStop(0, `rgba(255, 255, 200, ${0.7 * intensityPulse})`);
+          coreGrad.addColorStop(0.5, `rgba(255, 200, 100, ${0.9 * intensityPulse})`);
+          coreGrad.addColorStop(1, `rgba(255, 100, 0, ${0.7 * intensityPulse})`);
+          ctx.fillStyle = coreGrad;
+          ctx.fillRect(flare.x, flare.y, flare.width, flare.height);
+
+          // Plasma waves
+          ctx.globalAlpha = 0.5 * intensityPulse;
+          for (let i = 0; i < 5; i++) {
+            ctx.strokeStyle = `rgba(255, ${200 - i * 30}, 0, 0.6)`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            const waveOffset = (Date.now() / 50 + i * 30) % flare.width;
+            ctx.moveTo(flare.x + waveOffset, flare.y);
+            ctx.lineTo(flare.x + waveOffset, flare.y + flare.height);
+            ctx.stroke();
+          }
+
+          // Glow effect
+          ctx.globalAlpha = 0.3 * intensityPulse;
+          ctx.shadowColor = '#ffaa00';
+          ctx.shadowBlur = 40;
+          ctx.strokeStyle = '#ffaa00';
+          ctx.lineWidth = 20;
+          ctx.strokeRect(flare.x, flare.y, flare.width, flare.height);
+          ctx.shadowBlur = 0;
+        }
+
+        ctx.restore();
+      });
+
+      // Draw Black Holes
+      hazards.blackHoles.forEach(hole => {
+        ctx.save();
+
+        // Event horizon (outer pull zone)
+        const horizonPulse = Math.sin(Date.now() / 200) * 0.2 + 0.8;
+        ctx.globalAlpha = 0.1 * horizonPulse;
+        const horizonGrad = ctx.createRadialGradient(hole.x, hole.y, hole.radius, hole.x, hole.y, hole.eventHorizon);
+        horizonGrad.addColorStop(0, 'rgba(138, 0, 255, 0.4)');
+        horizonGrad.addColorStop(0.6, 'rgba(100, 0, 200, 0.2)');
+        horizonGrad.addColorStop(1, 'rgba(50, 0, 100, 0)');
+        ctx.fillStyle = horizonGrad;
+        ctx.beginPath();
+        ctx.arc(hole.x, hole.y, hole.eventHorizon, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Accretion disk (swirling matter)
+        ctx.globalAlpha = 0.4;
+        for (let i = 0; i < 3; i++) {
+          ctx.strokeStyle = `rgba(${150 + i * 30}, 0, ${255 - i * 40}, 0.6)`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          const diskRadius = hole.radius * (2 + i * 0.5);
+          const startAngle = hole.rotation + i * Math.PI / 3;
+          ctx.arc(hole.x, hole.y, diskRadius, startAngle, startAngle + Math.PI * 1.5);
+          ctx.stroke();
+        }
+
+        // Core (dark center)
+        ctx.globalAlpha = 0.95;
+        const coreGrad = ctx.createRadialGradient(hole.x, hole.y, 0, hole.x, hole.y, hole.radius);
+        coreGrad.addColorStop(0, '#000000');
+        coreGrad.addColorStop(0.7, '#0a0020');
+        coreGrad.addColorStop(1, '#4400aa');
+        ctx.fillStyle = coreGrad;
+        ctx.beginPath();
+        ctx.arc(hole.x, hole.y, hole.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Singularity point
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#8800ff';
+        ctx.shadowColor = '#aa00ff';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(hole.x, hole.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.restore();
+      });
+
+      // Draw Debris Storms
+      hazards.debrisStorms.forEach(storm => {
+        ctx.save();
+
+        // Storm boundary glow
+        ctx.globalAlpha = 0.15;
+        ctx.strokeStyle = '#997755';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(storm.x, storm.y, storm.width, storm.height);
+        ctx.setLineDash([]);
+
+        // Draw debris particles
+        ctx.globalAlpha = storm.opacity;
+        storm.particles.forEach(p => {
+          ctx.save();
+          ctx.translate(storm.x + p.x, storm.y + p.y);
+          ctx.rotate(p.rotation);
+
+          // Debris piece
+          ctx.fillStyle = '#776655';
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+
+          // Metallic highlights
+          ctx.fillStyle = '#998877';
+          ctx.fillRect(-p.size / 3, -p.size / 3, p.size / 2, p.size / 2);
+
+          ctx.restore();
+        });
+
+        // Storm density indicator
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = 'rgba(100, 80, 60, 0.2)';
+        ctx.fillRect(storm.x, storm.y, storm.width, storm.height);
 
         ctx.restore();
       });
@@ -18738,7 +18917,9 @@ const SpaceShooter = () => {
       const isBossRush = gameModeRef.current === 'bossRush';
 
       // Check if we should spawn a boss (enough kills accumulated)
-      if (!bossActiveRef.current && !bossRef.current && waveKillsRef.current >= waveKillsNeededRef.current) {
+      // Boss can only spawn if: 1) No mini-boss was spawned OR 2) Mini-boss was spawned and defeated
+      const miniBossRequirementMet = !miniBossSpawnedRef.current || miniBossDefeatedRef.current;
+      if (!bossActiveRef.current && !bossRef.current && waveKillsRef.current >= waveKillsNeededRef.current && miniBossRequirementMet) {
         console.log('[BOSS] Spawning boss! Wave:', waveRef.current, 'Kills:', waveKillsRef.current);
 
         // Create boss
@@ -18828,16 +19009,16 @@ const SpaceShooter = () => {
           empCharge: 0,
           lastEMP: Date.now() - 5000,
           empCooldown: isMegaBoss ? 8000 : isSuperBoss ? 10000 : 12000,
-          empRange: 250,
-          empDamage: 0,
+          empRange: isMegaBoss ? 350 : isSuperBoss ? 300 : 280, // Larger bosses have larger EMP range
+          empDamage: isMegaBoss ? 1.5 : 1, // All bosses can damage with EMP
           isCheckpointBoss: waveRef.current % 5 === 0,
           regenEMPFired: false
         };
 
         // Enhanced EMP for checkpoint bosses (waves 5, 10, 15, 20)
         if (bossRef.current.isCheckpointBoss) {
-          bossRef.current.empRange = 400; // Extra large radius
-          bossRef.current.empDamage = 2; // Can damage player
+          bossRef.current.empRange = 450; // Extra large radius
+          bossRef.current.empDamage = 2; // Enhanced damage for checkpoints
           bossRef.current.empCooldown *= 0.8; // Slightly faster cooldown
         }
 
@@ -18866,6 +19047,24 @@ const SpaceShooter = () => {
           flash: true,
           scale: 1.5
         });
+      }
+
+      // Show notification if kills reached but mini-boss must be defeated first
+      if (!bossActiveRef.current && !bossRef.current && waveKillsRef.current >= waveKillsNeededRef.current &&
+          miniBossSpawnedRef.current && !miniBossDefeatedRef.current && miniBossRef.current) {
+        // Show periodic reminder that mini-boss must be defeated
+        if (waveKillsRef.current === waveKillsNeededRef.current) {
+          floatingTextsRef.current.push({
+            x: GAME_WIDTH / 2,
+            y: GAME_HEIGHT / 2 + 40,
+            text: '⚔️ DEFEAT MINI-BOSS FIRST ⚔️',
+            color: '#ffaa00',
+            lifetime: 120,
+            vy: 0,
+            flash: true,
+            scale: 1.3
+          });
+        }
       }
 
       // In Boss Rush mode, spawn boss immediately
@@ -19194,6 +19393,10 @@ const SpaceShooter = () => {
             vy: (Math.random() - 0.5) * 2,
             health: isGiant ? Math.floor(size / 5) + 10 : Math.floor(size / 10) + 1, // Giant asteroids have more health
             isGiant: isGiant,
+            hasGravity: isGiant || Math.random() < 0.15, // Giant asteroids always have gravity, 15% chance for normal
+            gravityRadius: size * (isGiant ? 2.5 : 1.8),
+            gravityStrength: isGiant ? 0.25 : 0.12,
+            magneticCharge: Math.random() < 0.1 ? (Math.random() > 0.5 ? 'positive' : 'negative') : null, // 10% have magnetic charge
             color: asteroidColor,
             zone: planetTheme
           });
@@ -19221,6 +19424,91 @@ const SpaceShooter = () => {
             vx: -1 - Math.random() * 0.5
           });
         }
+        // Solar Flares - very rare screen-wide danger (starts wave 6)
+        else if (roll < 0.90 && waveNum >= 6 && hazards.solarFlares.length < 1) {
+          const flareHeight = 80 + Math.random() * 120;
+          const flareY = Math.random() * (GAME_HEIGHT - flareHeight);
+          hazards.solarFlares.push({
+            x: GAME_WIDTH,
+            y: flareY,
+            width: GAME_WIDTH,
+            height: flareHeight,
+            warningTimer: 120, // 2 seconds warning
+            activeTimer: 0,
+            activeDuration: 90, // 1.5 seconds active
+            intensity: 0,
+            pulsePhase: 0,
+            vx: -2
+          });
+
+          // Warning notification
+          floatingTextsRef.current.push({
+            x: GAME_WIDTH / 2,
+            y: flareY + flareHeight / 2,
+            text: '☀️ SOLAR FLARE WARNING ☀️',
+            color: '#ffaa00',
+            lifetime: 120,
+            vy: 0,
+            flash: true,
+            scale: 1.2
+          });
+        }
+        // Black Holes - extremely rare teleport zones (starts wave 8)
+        else if (roll < 0.93 && waveNum >= 8 && hazards.blackHoles.length < 1) {
+          hazards.blackHoles.push({
+            x: GAME_WIDTH + 100,
+            y: GAME_HEIGHT / 2,
+            radius: 50,
+            eventHorizon: 150,
+            strength: 0.8,
+            rotation: 0,
+            vx: -0.8,
+            teleportCooldown: 0,
+            teleportedObjects: new Set()
+          });
+
+          floatingTextsRef.current.push({
+            x: GAME_WIDTH / 2,
+            y: GAME_HEIGHT / 2 - 50,
+            text: '🌀 BLACK HOLE DETECTED 🌀',
+            color: '#8800ff',
+            lifetime: 150,
+            vy: 0,
+            flash: true,
+            scale: 1.3
+          });
+        }
+        // Debris Storms - bullet-blocking clouds (starts wave 7)
+        else if (roll < 0.96 && waveNum >= 7 && hazards.debrisStorms.length < 2) {
+          const stormWidth = 150 + Math.random() * 100;
+          const stormHeight = 100 + Math.random() * 150;
+          const particleCount = Math.floor(stormWidth * stormHeight / 100);
+          const particles = [];
+
+          for (let i = 0; i < particleCount; i++) {
+            particles.push({
+              x: Math.random() * stormWidth,
+              y: Math.random() * stormHeight,
+              vx: (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 2,
+              size: 2 + Math.random() * 5,
+              rotation: Math.random() * Math.PI * 2,
+              rotationSpeed: (Math.random() - 0.5) * 0.1
+            });
+          }
+
+          hazards.debrisStorms.push({
+            x: GAME_WIDTH,
+            y: Math.random() * (GAME_HEIGHT - stormHeight),
+            width: stormWidth,
+            height: stormHeight,
+            particles: particles,
+            density: 0.7,
+            vx: -1.5 - Math.random() * 1,
+            blocksShots: true,
+            opacity: 0.6
+          });
+        }
       }
 
       // Update atmospheric particles
@@ -19242,7 +19530,7 @@ const SpaceShooter = () => {
         obs.x += obs.vx;
 
         // Check collision with player
-        if (playerInvincibleRef.current <= 0 && !dashRef.current.active) {
+        if (playerInvincibleRef.current <= 0 && dashRef.current && !dashRef.current.active && playerRef.current) {
           const player = playerRef.current;
           if (player.x + PLAYER_WIDTH > obs.x &&
               player.x < obs.x + obs.width &&
@@ -19292,6 +19580,37 @@ const SpaceShooter = () => {
         asteroid.y += asteroid.vy;
         asteroid.rotation += asteroid.rotationSpeed;
 
+        // Apply gravitational pull if asteroid has gravity
+        if (asteroid.hasGravity && playerRef.current) {
+          const player = playerRef.current;
+          const dx = asteroid.x - (player.x + PLAYER_WIDTH / 2);
+          const dy = asteroid.y - (player.y + PLAYER_HEIGHT / 2);
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < asteroid.gravityRadius && dist > 10) {
+            const pullStrength = asteroid.gravityStrength * (1 - dist / asteroid.gravityRadius);
+            player.x += (dx / dist) * pullStrength * 2;
+            player.y += (dy / dist) * pullStrength * 2;
+          }
+
+          // Magnetic asteroids also affect bullets
+          if (asteroid.magneticCharge && bulletsRef.current.length > 0) {
+            bulletsRef.current.forEach(bullet => {
+              const bdx = asteroid.x - bullet.x;
+              const bdy = asteroid.y - bullet.y;
+              const bdist = Math.sqrt(bdx * bdx + bdy * bdy);
+
+              if (bdist < asteroid.gravityRadius * 1.2) {
+                const magnetStrength = asteroid.gravityStrength * 0.5 * (1 - bdist / (asteroid.gravityRadius * 1.2));
+                // Positive charge attracts, negative repels
+                const direction = asteroid.magneticCharge === 'positive' ? 1 : -1;
+                bullet.x += (bdx / bdist) * magnetStrength * 3 * direction;
+                bullet.y += (bdy / bdist) * magnetStrength * 3 * direction;
+              }
+            });
+          }
+        }
+
         // Bounce off top/bottom
         if (asteroid.y < asteroid.size || asteroid.y > GAME_HEIGHT - asteroid.size) {
           asteroid.vy *= -0.8;
@@ -19299,7 +19618,7 @@ const SpaceShooter = () => {
         }
 
         // Check collision with player (if not invincible or dashing)
-        if (playerInvincibleRef.current <= 0 && !dashRef.current.active && !upgradesRef.current.invincible) {
+        if (playerInvincibleRef.current <= 0 && dashRef.current && !dashRef.current.active && upgradesRef.current && !upgradesRef.current.invincible && playerRef.current) {
           const player = playerRef.current;
           const dx = (player.x + PLAYER_WIDTH / 2) - asteroid.x;
           const dy = (player.y + PLAYER_HEIGHT / 2) - asteroid.y;
@@ -19353,19 +19672,29 @@ const SpaceShooter = () => {
           scoreRef.current += points;
           setScore(scoreRef.current);
 
-          // Large asteroids split into smaller ones
-          if (asteroid.size > 30) {
-            for (let i = 0; i < 2; i++) {
-              const newSize = asteroid.size * 0.5;
+          // Enhanced splitting mechanic - more realistic fragmentation
+          if (asteroid.size > 25) {
+            const fragments = asteroid.isGiant ? 4 : (asteroid.size > 40 ? 3 : 2);
+            for (let i = 0; i < fragments; i++) {
+              const angle = (Math.PI * 2 / fragments) * i + Math.random() * 0.5;
+              const newSize = asteroid.size / (fragments === 4 ? 2.5 : 2);
+              const speed = 2 + Math.random() * 2;
+
               hazards.asteroids.push({
                 x: asteroid.x,
                 y: asteroid.y,
                 size: newSize,
                 rotation: Math.random() * Math.PI * 2,
                 rotationSpeed: (Math.random() - 0.5) * 0.08,
-                vx: asteroid.vx + (Math.random() - 0.5) * 3,
-                vy: (Math.random() - 0.5) * 4,
-                health: Math.floor(newSize / 10) + 1
+                vx: asteroid.vx + Math.cos(angle) * speed,
+                vy: asteroid.vy + Math.sin(angle) * speed,
+                health: Math.max(1, Math.floor(newSize / 10)),
+                hasGravity: asteroid.hasGravity && newSize > 30, // Smaller fragments may lose gravity
+                gravityRadius: newSize * 1.8,
+                gravityStrength: Math.max(0.08, asteroid.gravityStrength * 0.7),
+                magneticCharge: Math.random() < 0.5 ? asteroid.magneticCharge : null, // 50% inherit magnetic charge
+                color: asteroid.color,
+                zone: asteroid.zone
               });
             }
           }
@@ -19399,7 +19728,7 @@ const SpaceShooter = () => {
         }
 
         // Check player collision with active barrier
-        if (barrier.active && playerInvincibleRef.current <= 0 && !dashRef.current.active && !upgradesRef.current.invincible) {
+        if (barrier.active && playerInvincibleRef.current <= 0 && dashRef.current && !dashRef.current.active && upgradesRef.current && !upgradesRef.current.invincible && playerRef.current) {
           const player = playerRef.current;
           const barrierX = GAME_WIDTH - barrier.width;
           const barrierHeight = 8;
@@ -19488,6 +19817,177 @@ const SpaceShooter = () => {
         return well.x > -well.radius * 2;
       });
 
+      // Update Solar Flares
+      hazards.solarFlares = hazards.solarFlares.filter(flare => {
+        flare.x += flare.vx;
+        flare.pulsePhase += 0.1;
+
+        if (flare.warningTimer > 0) {
+          flare.warningTimer--;
+          // Start activation
+          if (flare.warningTimer === 0) {
+            flare.activeTimer = flare.activeDuration;
+            triggerScreenShake(10, 20);
+            soundSystem.playBossWarning();
+          }
+        } else if (flare.activeTimer > 0) {
+          flare.activeTimer--;
+          flare.intensity = 1.0;
+
+          // Damage player if in flare zone
+          if (playerRef.current && playerInvincibleRef.current <= 0 && upgradesRef.current) {
+            const player = playerRef.current;
+            const inFlareZone = player.y + PLAYER_HEIGHT > flare.y &&
+                               player.y < flare.y + flare.height &&
+                               player.x + PLAYER_WIDTH > flare.x &&
+                               player.x < flare.x + flare.width;
+
+            if (inFlareZone) {
+              // Solar flare damage
+              if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
+                upgradesRef.current.shieldHits--;
+                upgradesRef.current.shieldRechargeTimer = 180;
+                if (upgradesRef.current.shieldHits <= 0) upgradesRef.current.shield = false;
+                createShieldImpact(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2);
+                playerInvincibleRef.current = 15; // Brief invincibility
+              } else if (flare.activeTimer % 30 === 0) { // Damage every half second
+                soundSystem.playPlayerDestroy();
+                const newLives = livesRef.current - 1;
+                setLives(newLives);
+                livesRef.current = newLives;
+                playerInvincibleRef.current = 60;
+                createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
+                triggerScreenShake(12, 18);
+                if (newLives <= 0) {
+                  handleGameOver();
+                }
+              }
+            }
+          }
+        } else {
+          flare.intensity = Math.max(0, flare.intensity - 0.05);
+        }
+
+        return flare.x > -flare.width && flare.intensity > 0;
+      });
+
+      // Update Black Holes
+      hazards.blackHoles = hazards.blackHoles.filter(hole => {
+        hole.x += hole.vx;
+        hole.rotation += 0.05;
+        if (hole.teleportCooldown > 0) hole.teleportCooldown--;
+
+        // Apply extreme gravitational pull
+        if (playerRef.current && upgradesRef.current) {
+          const player = playerRef.current;
+          const dx = hole.x - (player.x + PLAYER_WIDTH / 2);
+          const dy = hole.y - (player.y + PLAYER_HEIGHT / 2);
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < hole.eventHorizon) {
+            // Strong pull toward black hole
+            const pullStrength = hole.strength * (1 - dist / hole.eventHorizon);
+            player.x += (dx / dist) * pullStrength * 5;
+            player.y += (dy / dist) * pullStrength * 5;
+
+            // Teleport player if they get too close to event horizon
+            if (dist < hole.radius * 1.5 && hole.teleportCooldown === 0) {
+              hole.teleportCooldown = 180; // 3 second cooldown
+
+              // Teleport to random safe location on left side
+              player.x = 50 + Math.random() * 150;
+              player.y = 50 + Math.random() * (GAME_HEIGHT - 100);
+              playerInvincibleRef.current = 90; // Brief invincibility after teleport
+
+              createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
+              triggerScreenShake(15, 25);
+
+              floatingTextsRef.current.push({
+                x: player.x + PLAYER_WIDTH / 2,
+                y: player.y - 30,
+                text: '🌀 TELEPORTED',
+                color: '#aa00ff',
+                lifetime: 90,
+                vy: -1.5,
+                flash: true,
+                scale: 1.3
+              });
+            }
+          }
+
+          // Pull enemies into black hole (and teleport them)
+          enemiesRef.current.forEach(enemy => {
+            const ex = enemy.x + (enemy.width || ENEMY_WIDTH) / 2;
+            const ey = enemy.y + (enemy.height || ENEMY_HEIGHT) / 2;
+            const edx = hole.x - ex;
+            const edy = hole.y - ey;
+            const edist = Math.sqrt(edx * edx + edy * edy);
+
+            if (edist < hole.eventHorizon) {
+              const pull = hole.strength * 0.4 * (1 - edist / hole.eventHorizon);
+              enemy.x += (edx / edist) * pull * 3;
+              enemy.y += (edy / edist) * pull * 3;
+
+              // Teleport enemy if it gets too close
+              if (edist < hole.radius * 2) {
+                enemy.x = GAME_WIDTH + 50;
+                enemy.y = Math.random() * (GAME_HEIGHT - 100) + 50;
+                createExplosion(ex, ey, 'small');
+              }
+            }
+          });
+        }
+
+        return hole.x > -hole.eventHorizon;
+      });
+
+      // Update Debris Storms
+      hazards.debrisStorms = hazards.debrisStorms.filter(storm => {
+        storm.x += storm.vx;
+
+        // Update storm particles
+        storm.particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rotation += p.rotationSpeed;
+
+          // Keep particles within storm bounds
+          if (p.x < 0) p.x = storm.width;
+          if (p.x > storm.width) p.x = 0;
+          if (p.y < 0) p.y = storm.height;
+          if (p.y > storm.height) p.y = 0;
+        });
+
+        // Block player bullets passing through storm
+        if (storm.blocksShots) {
+          bulletsRef.current = bulletsRef.current.filter(bullet => {
+            if (bullet.x > storm.x && bullet.x < storm.x + storm.width &&
+                bullet.y > storm.y && bullet.y < storm.y + storm.height) {
+              // 70% chance to block each frame bullet is in storm
+              if (Math.random() < storm.density) {
+                createExplosion(bullet.x, bullet.y, 'small');
+                return false;
+              }
+            }
+            return true;
+          });
+
+          // Also block enemy bullets
+          enemyBulletsRef.current = enemyBulletsRef.current.filter(bullet => {
+            if (bullet.x > storm.x && bullet.x < storm.x + storm.width &&
+                bullet.y > storm.y && bullet.y < storm.y + storm.height) {
+              if (Math.random() < storm.density * 0.5) { // Less blocking for enemy bullets
+                createExplosion(bullet.x, bullet.y, 'small');
+                return false;
+              }
+            }
+            return true;
+          });
+        }
+
+        return storm.x > -storm.width;
+      });
+
       // Update formation bonus display texts
       formationBonusDisplayRef.current = formationBonusDisplayRef.current.filter(bonus => {
         bonus.timer--;
@@ -19499,6 +19999,11 @@ const SpaceShooter = () => {
       if (miniBossRef.current) {
         const mb = miniBossRef.current;
         const player = playerRef.current;
+
+        // Safety check: if player doesn't exist, skip mini-boss update
+        if (!player) {
+          return;
+        }
 
         // Warning flash timer
         if (mb.warningTimer > 0) {
@@ -20575,18 +21080,19 @@ const SpaceShooter = () => {
           if (boss.y > boss.targetY) boss.y -= 2;
 
           // Check player collision with boss
-          const player = playerRef.current;
-          const playerCenterX = player.x + PLAYER_WIDTH / 2;
-          const playerCenterY = player.y + PLAYER_HEIGHT / 2;
-          const bossCenterX = boss.x + boss.width / 2;
-          const bossCenterY = boss.y + boss.height / 2;
-          const dx = playerCenterX - bossCenterX;
-          const dy = playerCenterY - bossCenterY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const collisionRadius = PLAYER_HITBOX_RADIUS + Math.min(boss.width, boss.height) / 3;
+          if (playerRef.current && dashRef.current && upgradesRef.current) {
+            const player = playerRef.current;
+            const playerCenterX = player.x + PLAYER_WIDTH / 2;
+            const playerCenterY = player.y + PLAYER_HEIGHT / 2;
+            const bossCenterX = boss.x + boss.width / 2;
+            const bossCenterY = boss.y + boss.height / 2;
+            const dx = playerCenterX - bossCenterX;
+            const dy = playerCenterY - bossCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const collisionRadius = PLAYER_HITBOX_RADIUS + Math.min(boss.width, boss.height) / 3;
 
-          if (playerInvincibleRef.current <= 0 && !dashRef.current.invincible && distance < collisionRadius) {
-            if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
+            if (playerInvincibleRef.current <= 0 && !dashRef.current.invincible && isFinite(distance) && distance < collisionRadius) {
+              if (upgradesRef.current.shield && upgradesRef.current.shieldHits > 0) {
               upgradesRef.current.shieldHits--;
               upgradesRef.current.shieldRechargeTimer = 180;
               if (upgradesRef.current.shieldHits <= 0) {
@@ -20608,6 +21114,7 @@ const SpaceShooter = () => {
                 handleGameOver();
               }
             }
+          }
           }
 
           // Boss shooting
@@ -20685,7 +21192,7 @@ const SpaceShooter = () => {
             }
 
             // Handle regen EMP expansion
-            if (boss.empActive && boss.regenEMPRange) {
+            if (boss.empActive && boss.regenEMPRange && playerRef.current && upgradesRef.current) {
               boss.empRadius += 15; // Fast expansion
               // Disable player weapons/shields if in range
               const playerCenterX = playerRef.current.x + PLAYER_WIDTH / 2;
@@ -20695,7 +21202,7 @@ const SpaceShooter = () => {
               const distToPlayer = Math.sqrt((playerCenterX - bossCenterX) ** 2 + (playerCenterY - bossCenterY) ** 2);
 
               // Disable shield when EMP wave passes player
-              if (Math.abs(distToPlayer - boss.empRadius) < 30 && upgradesRef.current.shield) {
+              if (isFinite(distToPlayer) && Math.abs(distToPlayer - boss.empRadius) < 30 && upgradesRef.current.shield) {
                 upgradesRef.current.shield = false;
                 upgradesRef.current.shieldHits = 0;
                 floatingTextsRef.current.push({
@@ -20965,7 +21472,7 @@ const SpaceShooter = () => {
               }
             }
 
-            if (boss.laserFiring) {
+            if (boss.laserFiring && playerRef.current && upgradesRef.current && dashRef.current) {
               boss.laserDuration--;
 
               // Laser damages player
@@ -21137,8 +21644,62 @@ const SpaceShooter = () => {
 
           // EMP (Electromagnetic Pulse) attack for all bosses (disabled during regen)
           if (boss.entered && !isRegenerating) {
-            // Start charging EMP
-            if (!boss.empCharging && !boss.empActive && currentTime - boss.lastEMP > boss.empCooldown) {
+            // Check for proximity-based defensive EMP or timer-based EMP
+            let proximityEMPTriggered = false;
+
+            // Proximity-based EMP defense - trigger when player gets too close
+            if (playerRef.current && !boss.empCharging && !boss.empActive && currentTime - boss.lastEMP > boss.empCooldown) {
+              const player = playerRef.current;
+              const playerCenterX = player.x + PLAYER_WIDTH / 2;
+              const playerCenterY = player.y + PLAYER_HEIGHT / 2;
+              const bossCenterX = boss.x + boss.width / 2;
+              const bossCenterY = boss.y + boss.height / 2;
+              const distanceToPlayer = Math.sqrt((playerCenterX - bossCenterX) ** 2 + (playerCenterY - bossCenterY) ** 2);
+
+              // Close range proximity threshold - boss defends when player gets too close
+              const proximityThreshold = boss.isCheckpointBoss ? 300 : 220;
+              const warningThreshold = proximityThreshold * 1.5; // 50% more distance for warning
+
+              if (isFinite(distanceToPlayer) && distanceToPlayer < proximityThreshold) {
+                // Instant defensive EMP burst!
+                console.log('[BOSS EMP] Proximity trigger! Distance:', distanceToPlayer.toFixed(1), 'Threshold:', proximityThreshold);
+                proximityEMPTriggered = true;
+                boss.empCharging = false;
+                boss.empActive = true;
+                boss.empRadius = 0;
+                boss.empHitPlayer = false;
+                boss.lastEMP = currentTime; // Set cooldown
+                soundSystem.playBossWarning();
+                triggerScreenShake(boss.isCheckpointBoss ? 18 : 12, boss.isCheckpointBoss ? 30 : 20);
+
+                floatingTextsRef.current.push({
+                  x: bossCenterX,
+                  y: bossCenterY - 60,
+                  text: '⚡ DEFENSIVE EMP ⚡',
+                  color: '#00ffff',
+                  lifetime: 90,
+                  vy: -1.5,
+                  flash: true,
+                  scale: 1.4
+                });
+              } else if (isFinite(distanceToPlayer) && distanceToPlayer < warningThreshold) {
+                // Player is getting close - show warning (but not too frequently)
+                if (Math.random() < 0.02) { // 2% chance per frame when in warning zone
+                  floatingTextsRef.current.push({
+                    x: bossCenterX,
+                    y: bossCenterY - 40,
+                    text: '! DANGER ZONE !',
+                    color: '#ffaa00',
+                    lifetime: 30,
+                    vy: -0.5,
+                    scale: 0.8
+                  });
+                }
+              }
+            }
+
+            // Start charging EMP (timer-based attack) - only if proximity didn't trigger
+            if (!proximityEMPTriggered && !boss.empCharging && !boss.empActive && currentTime - boss.lastEMP > boss.empCooldown) {
               boss.empCharging = true;
               boss.empCharge = 0;
 
@@ -21200,15 +21761,16 @@ const SpaceShooter = () => {
               }
 
               // Check if player is in range
-              const player = playerRef.current;
-              const px = player.x + PLAYER_WIDTH / 2;
-              const py = player.y + PLAYER_HEIGHT / 2;
-              const playerDx = px - bossCenterX;
-              const playerDy = py - bossCenterY;
-              const playerDistance = Math.sqrt(playerDx * playerDx + playerDy * playerDy);
+              if (playerRef.current && upgradesRef.current) {
+                const player = playerRef.current;
+                const px = player.x + PLAYER_WIDTH / 2;
+                const py = player.y + PLAYER_HEIGHT / 2;
+                const playerDx = px - bossCenterX;
+                const playerDy = py - bossCenterY;
+                const playerDistance = Math.sqrt(playerDx * playerDx + playerDy * playerDy);
 
-              // EMP wave hits player
-              if (Math.abs(playerDistance - boss.empRadius) < 35 && !boss.empHitPlayer) {
+                // EMP wave hits player
+                if (isFinite(playerDistance) && Math.abs(playerDistance - boss.empRadius) < 35 && !boss.empHitPlayer) {
                 boss.empHitPlayer = true;
 
                 // Disable shields
@@ -21225,11 +21787,11 @@ const SpaceShooter = () => {
                   });
                 }
 
-                // Checkpoint bosses also deal damage
-                if (boss.isCheckpointBoss && boss.empDamage > 0) {
+                // Boss EMP deals damage to player
+                if (boss.empDamage > 0 && playerInvincibleRef.current <= 0) {
                   player.health -= boss.empDamage;
-                  player.invincibleTimer = 30; // Brief invincibility
-                  triggerScreenShake(12, 20);
+                  playerInvincibleRef.current = 30; // Brief invincibility
+                  triggerScreenShake(boss.isCheckpointBoss ? 15 : 10, boss.isCheckpointBoss ? 25 : 15);
 
                   floatingTextsRef.current.push({
                     x: px,
@@ -21263,6 +21825,65 @@ const SpaceShooter = () => {
                   }
                 }
               }
+              }
+
+              // EMP disables and damages nearby enemy ships
+              enemiesRef.current = enemiesRef.current.filter(enemy => {
+                const ex = enemy.x + (enemy.width || ENEMY_WIDTH) / 2;
+                const ey = enemy.y + (enemy.height || ENEMY_HEIGHT) / 2;
+                const enemyDx = ex - bossCenterX;
+                const enemyDy = ey - bossCenterY;
+                const enemyDistance = Math.sqrt(enemyDx * enemyDx + enemyDy * enemyDy);
+
+                // If enemy is within the expanding EMP ring
+                if (isFinite(enemyDistance) && Math.abs(enemyDistance - boss.empRadius) < 40) {
+                  // Don't damage boss-spawned enemies (friendly fire prevention)
+                  if (!enemy.spawnedByBoss) {
+                    // Damage the enemy
+                    const empDamage = boss.isCheckpointBoss ? 3 : 2;
+                    enemy.health -= empDamage;
+
+                    createExplosion(ex, ey, 'small');
+
+                    floatingTextsRef.current.push({
+                      x: ex,
+                      y: ey - 20,
+                      text: '⚡ STUNNED',
+                      color: '#00ffff',
+                      lifetime: 60,
+                      vy: -1
+                    });
+
+                    // If enemy dies from EMP
+                    if (enemy.health <= 0) {
+                      createExplosion(ex, ey, enemy.type === 'heavy' ? 'heavy' : 'normal', true);
+                      const newScore = scoreRef.current + Math.floor(enemy.points * 0.5); // 50% points for EMP kills
+                      setScore(newScore);
+                      scoreRef.current = newScore;
+                      waveKillsRef.current++;
+                      sessionStatsRef.current.kills++;
+                      return false; // Remove enemy
+                    }
+                  }
+                }
+                return true; // Keep enemy
+              });
+
+              // EMP destroys enemy bullets in range
+              enemyBulletsRef.current = enemyBulletsRef.current.filter(bullet => {
+                const bx = bullet.x + (bullet.width || ENEMY_BULLET_WIDTH) / 2;
+                const by = bullet.y + (bullet.height || ENEMY_BULLET_HEIGHT) / 2;
+                const bulletDx = bx - bossCenterX;
+                const bulletDy = by - bossCenterY;
+                const bulletDistance = Math.sqrt(bulletDx * bulletDx + bulletDy * bulletDy);
+
+                // If bullet is within the expanding EMP ring
+                if (isFinite(bulletDistance) && Math.abs(bulletDistance - boss.empRadius) < 40) {
+                  createExplosion(bx, by, 'small');
+                  return false; // Destroy bullet
+                }
+                return true; // Keep bullet
+              });
 
               // EMP finished expanding
               if (boss.empRadius >= boss.empRange) {
@@ -21465,6 +22086,23 @@ const SpaceShooter = () => {
                   setTimeout(() => {
                     spawnPowerup(mb.x + mb.width / 2 - 30, mb.y + mb.height / 2 - 20);
                   }, 400);
+                }
+
+                // Mark mini-boss as defeated
+                miniBossDefeatedRef.current = true;
+
+                // Show notification if boss is now ready to spawn
+                if (waveKillsRef.current >= waveKillsNeededRef.current) {
+                  floatingTextsRef.current.push({
+                    x: GAME_WIDTH / 2,
+                    y: GAME_HEIGHT / 2 - 80,
+                    text: '🚨 BOSS INCOMING 🚨',
+                    color: '#ff0000',
+                    lifetime: 120,
+                    vy: -0.5,
+                    flash: true,
+                    scale: 1.6
+                  });
                 }
 
                 miniBossRef.current = null;
@@ -23553,6 +24191,13 @@ const SpaceShooter = () => {
         // Determine bullet dimensions
         const bulletW = bullet.width || ENEMY_BULLET_WIDTH;
         const bulletH = bullet.height || ENEMY_BULLET_HEIGHT;
+
+        // Get player reference with null check
+        const player = playerRef.current;
+        if (!player || !upgradesRef.current || !dashRef.current) {
+          // Remove bullet if player doesn't exist
+          return false;
+        }
 
         // Calculate positions once for both collision and graze checks
         const playerCenterX = player.x + PLAYER_WIDTH / 2;
@@ -27259,7 +27904,7 @@ const SpaceShooter = () => {
             <button
               className="touch-pause-btn"
               onClick={() => {
-                hapticFeedback('light');
+                triggerHaptic('light');
                 setGameState('paused');
               }}
               onTouchStart={(e) => e.preventDefault()}
@@ -27281,7 +27926,7 @@ const SpaceShooter = () => {
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
 
-                hapticFeedback('tap');
+                triggerHaptic('tap');
                 touchJoystickRef.current = {
                   active: true,
                   touchId: touch.identifier,
@@ -27372,7 +28017,7 @@ const SpaceShooter = () => {
                 className={`touch-btn touch-btn-shoot ${touchButtonsRef.current.shoot ? 'active' : ''}`}
                 onTouchStart={(e) => {
                   e.preventDefault();
-                  hapticFeedback('tap');
+                  triggerHaptic('tap');
                   touchButtonsRef.current.shoot = true;
                 }}
                 onTouchEnd={(e) => {
@@ -27387,7 +28032,7 @@ const SpaceShooter = () => {
                 className={`touch-btn touch-btn-dash ${touchButtonsRef.current.dash ? 'active' : ''}`}
                 onTouchStart={(e) => {
                   e.preventDefault();
-                  hapticFeedback('light');
+                  triggerHaptic('light');
                   touchButtonsRef.current.dash = true;
                 }}
                 onTouchEnd={(e) => {
@@ -27401,7 +28046,7 @@ const SpaceShooter = () => {
                 className={`touch-btn touch-btn-bomb ${touchButtonsRef.current.bomb ? 'active' : ''}`}
                 onTouchStart={(e) => {
                   e.preventDefault();
-                  hapticFeedback('heavy');
+                  triggerHaptic('heavy');
                   touchButtonsRef.current.bomb = true;
                 }}
                 onTouchEnd={(e) => {
@@ -27415,7 +28060,7 @@ const SpaceShooter = () => {
                 className={`touch-btn touch-btn-special ${touchButtonsRef.current.special ? 'active' : ''}`}
                 onTouchStart={(e) => {
                   e.preventDefault();
-                  hapticFeedback('light');
+                  triggerHaptic('light');
                   touchButtonsRef.current.special = true;
                 }}
                 onTouchEnd={(e) => {
