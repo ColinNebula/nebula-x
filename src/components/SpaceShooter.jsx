@@ -4126,7 +4126,7 @@ const SpaceShooter = () => {
     flybyFormationsRef.current = [];
     lastFlybySpawnRef.current = 0;
     lastSpawnRef.current = 0;
-    waveStartTimeRef.current = performance.now(); // Start grace period
+    waveStartTimeRef.current = 0; // Will be set on first frame with timestamp
     graceWarningShownRef.current = false; // Reset warning flag
     lastShotRef.current = 0;
     playerInvincibleRef.current = 999; // Invincible during carrier intro
@@ -16506,6 +16506,11 @@ const SpaceShooter = () => {
         }
       }
 
+      // Initialize wave start time on first frame after game starts (ensures consistent timestamp source)
+      if (waveStartTimeRef.current === 0 && gameStateRef.current === 'playing') {
+        waveStartTimeRef.current = timestamp;
+      }
+
       // Don't render at all during brand, cinematic, or splash screens
       // But clear the canvas to prevent old frames from showing through during fade transitions
       if (gameStateRef.current === 'brand' || gameStateRef.current === 'cinematic' || gameStateRef.current === 'splash') {
@@ -18841,7 +18846,7 @@ const SpaceShooter = () => {
               }
               waveKillsRef.current = 0;
               waveKillsNeededRef.current = 10 + (waveRef.current * 5);
-              waveStartTimeRef.current = performance.now(); // Reset grace period for new wave
+              waveStartTimeRef.current = timestamp; // Reset grace period for new wave
 
               // Clear boss bullets (enemies already cleared above)
               enemyBulletsRef.current = [];
@@ -23073,7 +23078,7 @@ const SpaceShooter = () => {
 
               waveKillsRef.current = 0;
               waveKillsNeededRef.current = 10 + (waveRef.current * 5);
-              waveStartTimeRef.current = performance.now(); // Reset grace period for new wave
+              waveStartTimeRef.current = timestamp; // Reset grace period for new wave
               graceWarningShownRef.current = false; // Reset warning flag
 
               // Clear boss bullets to avoid clutter
@@ -27254,7 +27259,7 @@ const SpaceShooter = () => {
                 <button
                   onClick={() => {
                     soundSystem.playUISparkle();
-                    waveStartTimeRef.current = performance.now();
+                    waveStartTimeRef.current = 0; // Will be set on next frame with timestamp
                     graceWarningShownRef.current = false;
 
                     // Start carrier intro - massive carrier drops off player ship
