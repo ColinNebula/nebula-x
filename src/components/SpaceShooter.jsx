@@ -1247,14 +1247,14 @@ const SpaceShooter = () => {
   // Mobile touch controls
   const [showMobileControls, setShowMobileControls] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
-  
+
   // OPTIMIZED: Touch input buffer system for better performance
   const touchInputBufferRef = useRef({
     joystick: { active: false, x: 0, y: 0, angle: 0, distance: 0 },
     buttons: { shoot: false, dash: false, bomb: false, special: false },
     needsUpdate: false
   });
-  
+
   const touchJoystickRef = useRef({
     active: false,
     startX: 0,
@@ -3090,12 +3090,12 @@ const SpaceShooter = () => {
       });
     }
   }, []);
-  
+
   // OPTIMIZED: Batch touch input processing (called once per frame in game loop)
   const processTouchInput = useCallback(() => {
     const joystick = touchJoystickRef.current;
     const buffer = touchInputBufferRef.current;
-    
+
     // Update joystick data
     buffer.joystick.active = joystick.active;
     if (joystick.active) {
@@ -3107,14 +3107,14 @@ const SpaceShooter = () => {
       buffer.joystick.x = 0;
       buffer.joystick.y = 0;
     }
-    
+
     // Update button states
     const buttons = touchButtonsRef.current;
     buffer.buttons.shoot = buttons.shoot;
     buffer.buttons.dash = buttons.dash;
     buffer.buttons.bomb = buttons.bomb;
     buffer.buttons.special = buttons.special;
-    
+
     buffer.needsUpdate = false;
   }, []);
 
@@ -16696,6 +16696,9 @@ const SpaceShooter = () => {
             carrierIntroRef.current = null;
             // Remove invincibility
             playerInvincibleRef.current = 60; // Give 1 second buffer
+            // Reset grace period to ensure player has time to react
+            waveStartTimeRef.current = timestamp;
+            graceWarningShownRef.current = false;
           }
         }
       }
@@ -19125,8 +19128,8 @@ const SpaceShooter = () => {
       // In Boss Rush mode, spawn boss immediately
       // Boss spawning handled by game loop based on kill count
 
-      // Show "DANGER INCOMING" warning when grace period ends
-      if (gracePeriodOver && !graceWarningShownRef.current && !bossActiveRef.current && !isBossRush) {
+      // Show "DANGER INCOMING" warning when grace period ends (but not during carrier intro)
+      if (gracePeriodOver && !carrierIntroActive && !graceWarningShownRef.current && !bossActiveRef.current && !isBossRush) {
         graceWarningShownRef.current = true;
 
         // Enhanced floating text warning
@@ -19194,8 +19197,8 @@ const SpaceShooter = () => {
         }, 500);
       }
 
-      // Skip regular enemy spawning in Boss Rush mode
-      if (!isBossRush && gracePeriodOver && !bossActiveRef.current && timestamp - lastSpawnRef.current > SPAWN_RATE / (1 + waveRef.current * 0.1)) {
+      // Skip regular enemy spawning in Boss Rush mode or during carrier intro
+      if (!isBossRush && !carrierIntroActive && gracePeriodOver && !bossActiveRef.current && timestamp - lastSpawnRef.current > SPAWN_RATE / (1 + waveRef.current * 0.1)) {
         spawnEnemy();
         lastSpawnRef.current = timestamp;
       }
@@ -19205,9 +19208,9 @@ const SpaceShooter = () => {
       const currentZone = getZoneForWave(waveRef.current);
       const formationChance = currentZone === WAVE_ZONES.saturn ? 0.45 : currentZone === WAVE_ZONES.mars ? 0.35 : 0.3;
 
-      // Skip in Boss Rush mode
+      // Skip in Boss Rush mode or during carrier intro
       const formationInterval = 8000 - Math.min(4000, waveRef.current * 300); // 8s at wave 1, down to 4s
-      if (!isBossRush && gracePeriodOver && !bossActiveRef.current && waveRef.current >= 2 &&
+      if (!isBossRush && !carrierIntroActive && gracePeriodOver && !bossActiveRef.current && waveRef.current >= 2 &&
           timestamp - lastFormationSpawnRef.current > formationInterval) {
         if (Math.random() < formationChance) { // Zone-modified chance
           spawnFormation();
@@ -19217,7 +19220,7 @@ const SpaceShooter = () => {
 
       // Spawn flyby formations periodically (starts wave 3, every ~12 seconds)
       const flybyInterval = 12000 - Math.min(5000, waveRef.current * 400); // 12s down to 7s
-      if (gracePeriodOver && !bossActiveRef.current && waveRef.current >= 3 &&
+      if (!carrierIntroActive && gracePeriodOver && !bossActiveRef.current && waveRef.current >= 3 &&
           timestamp - lastFlybySpawnRef.current > flybyInterval) {
         // Check if there isn't already an active flyby in progress
         const activeFlyby = flybyFormationsRef.current.find(g => g.phase === 'entering');
@@ -19278,7 +19281,7 @@ const SpaceShooter = () => {
       // Spawn mini-boss periodically (starts wave 2, once per wave)
       // Spawns when player has killed 40-60% of enemies needed for boss
       const miniBossKillThreshold = Math.floor(waveKillsNeededRef.current * 0.5); // 50% progress
-      if (!isBossRush && gracePeriodOver && !bossActiveRef.current && !miniBossRef.current &&
+      if (!isBossRush && !carrierIntroActive && gracePeriodOver && !bossActiveRef.current && !miniBossRef.current &&
           !miniBossSpawnedRef.current && waveRef.current >= 2 &&
           waveKillsRef.current >= miniBossKillThreshold) {
         spawnMiniBoss();
@@ -27988,20 +27991,20 @@ const SpaceShooter = () => {
                 joystick.startY = centerY;
                 joystick.currentX = touch.clientX - rect.left;
                 joystick.currentY = touch.clientY - rect.top;
-                
+
                 // Calculate angle and distance immediately
                 const deltaX = joystick.currentX - joystick.startX;
                 const deltaY = joystick.currentY - joystick.startY;
                 joystick.angle = Math.atan2(deltaY, deltaX);
                 joystick.distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                
+
                 scheduleJoystickUpdate();
               }}
               onTouchMove={(e) => {
                 // OPTIMIZED: Minimal calculation, just update position
                 const joystick = touchJoystickRef.current;
                 if (!joystick.active) return;
-                
+
                 // Find the touch that matches our joystick
                 for (let i = 0; i < e.touches.length; i++) {
                   if (e.touches[i].identifier === joystick.touchId) {
@@ -28009,13 +28012,13 @@ const SpaceShooter = () => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     joystick.currentX = touch.clientX - rect.left;
                     joystick.currentY = touch.clientY - rect.top;
-                    
+
                     // Calculate angle and distance
                     const deltaX = joystick.currentX - joystick.startX;
                     const deltaY = joystick.currentY - joystick.startY;
                     joystick.angle = Math.atan2(deltaY, deltaX);
                     joystick.distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                    
+
                     scheduleJoystickUpdate();
                     break;
                   }

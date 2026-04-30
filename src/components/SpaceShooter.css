@@ -3129,6 +3129,184 @@
   text-shadow: 0 0 10px #ff4444;
 }
 
+.game-over-title {
+  font-size: 2.5rem;
+  letter-spacing: 4px;
+  margin-bottom: 30px;
+  animation: glitchTitle 0.3s infinite;
+}
+
+@keyframes glitchTitle {
+  0%, 90%, 100% {
+    transform: translate(0);
+  }
+  30% {
+    transform: translate(-2px, 2px);
+  }
+  60% {
+    transform: translate(2px, -2px);
+  }
+}
+
+/* ========== EPIC SCORE DISPLAY ========== */
+.epic-score-container {
+  position: relative;
+  margin: 40px auto;
+  padding: 30px;
+  background: linear-gradient(135deg,
+    rgba(255, 215, 0, 0.1) 0%,
+    rgba(255, 140, 0, 0.15) 50%,
+    rgba(255, 69, 0, 0.1) 100%);
+  border: 3px solid;
+  border-image: linear-gradient(45deg, #ffd700, #ff8c00, #ff4500) 1;
+  border-radius: 20px;
+  box-shadow:
+    0 0 30px rgba(255, 215, 0, 0.3),
+    0 0 60px rgba(255, 140, 0, 0.2),
+    inset 0 0 30px rgba(255, 215, 0, 0.1);
+  animation: scoreGlow 2s ease-in-out infinite;
+}
+
+@keyframes scoreGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 30px rgba(255, 215, 0, 0.3),
+      0 0 60px rgba(255, 140, 0, 0.2),
+      inset 0 0 30px rgba(255, 215, 0, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 50px rgba(255, 215, 0, 0.5),
+      0 0 100px rgba(255, 140, 0, 0.3),
+      inset 0 0 50px rgba(255, 215, 0, 0.2);
+  }
+}
+
+.score-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1rem;
+  color: #ffd700;
+  text-shadow:
+    0 0 10px #ffd700,
+    0 0 20px #ff8c00;
+  letter-spacing: 3px;
+  margin-bottom: 15px;
+  animation: pulseLetter 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseLetter {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.score-display {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 4rem;
+  color: #ffffff;
+  text-shadow:
+    0 0 20px #ffd700,
+    0 0 40px #ff8c00,
+    0 0 60px #ff4500,
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  letter-spacing: 8px;
+  font-weight: bold;
+  animation: scoreEnter 0.5s ease-out, scorePulse 2s ease-in-out infinite 0.5s;
+  line-height: 1.2;
+}
+
+@keyframes scoreEnter {
+  0% {
+    transform: scale(0) rotate(-10deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scorePulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow:
+      0 0 20px #ffd700,
+      0 0 40px #ff8c00,
+      0 0 60px #ff4500,
+      2px 2px 4px rgba(0, 0, 0, 0.8);
+  }
+  50% {
+    transform: scale(1.05);
+    text-shadow:
+      0 0 30px #ffd700,
+      0 0 60px #ff8c00,
+      0 0 90px #ff4500,
+      2px 2px 6px rgba(0, 0, 0, 0.8);
+  }
+}
+
+.score-fireworks {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  font-size: 2rem;
+  animation: fireworksBurst 0.6s ease-out forwards;
+}
+
+@keyframes fireworksBurst {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateY(-10px);
+    opacity: 1;
+  }
+}
+
+.score-fireworks .firework {
+  animation: fireworkFloat 2s ease-in-out infinite;
+}
+
+.score-fireworks .firework:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.score-fireworks .firework:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.score-fireworks .firework:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes fireworkFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(5deg);
+  }
+  75% {
+    transform: translateY(-5px) rotate(-5deg);
+  }
+}
+
 /* Challenge Mode Game Over Stats */
 .challenge-game-over-stats {
   background: linear-gradient(180deg,
@@ -4232,6 +4410,33 @@
   .game-over h2 {
     font-size: 1.2rem !important;
     margin-bottom: 10px !important;
+  }
+
+  .game-over-title {
+    font-size: 1.2rem !important;
+    letter-spacing: 2px !important;
+    margin-bottom: 15px !important;
+  }
+
+  .epic-score-container {
+    margin: 15px auto !important;
+    padding: 15px 10px !important;
+  }
+
+  .score-label {
+    font-size: 0.6rem !important;
+    letter-spacing: 2px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .score-display {
+    font-size: 2rem !important;
+    letter-spacing: 3px !important;
+  }
+
+  .score-fireworks {
+    font-size: 1.3rem !important;
+    top: -12px !important;
   }
 
   .final-score {
@@ -6687,6 +6892,33 @@
 
   .upgrade-shop-header h2 {
     font-size: 1rem;
+  }
+
+  /* Mobile Game Over Score Styling */
+  .game-over-title {
+    font-size: 1.3rem !important;
+    letter-spacing: 2px !important;
+  }
+
+  .epic-score-container {
+    margin: 20px auto !important;
+    padding: 15px 10px !important;
+    border-radius: 15px !important;
+  }
+
+  .score-label {
+    font-size: 0.65rem !important;
+    letter-spacing: 2px !important;
+  }
+
+  .score-display {
+    font-size: 2.2rem !important;
+    letter-spacing: 3px !important;
+  }
+
+  .score-fireworks {
+    font-size: 1.2rem !important;
+    top: -10px !important;
   }
 }
 
