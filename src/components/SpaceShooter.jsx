@@ -17371,7 +17371,7 @@ const SpaceShooter = () => {
         const sharePressed = gamepad.buttons[8]?.pressed || false;
         const hasLaser = upgradesRef.current.rapidFire >= 3;
         const triangleBombTrigger = !hasLaser && gamepad.buttons[3]?.pressed && gamepadButtonsRef.current.triangleHoldTime > 18; // 0.3s hold
-        const gpBomb = sharePressed || triangleBombTrigger;
+        const gpBomb = sharePressed || triangleBombTrigger || touchButtonsRef.current.bomb;
 
         // Track Triangle button hold time for bomb alt-trigger (only when laser not available)
         if (!hasLaser && gamepad.buttons[3]?.pressed) {
@@ -17556,9 +17556,10 @@ const SpaceShooter = () => {
       // Apply touch joystick input (overrides keyboard) - OPTIMIZED VERSION
       if (touchJoystickRef.current.active) {
         // OPTIMIZED: Calculate once and store in refs during touch events
-        // Here wejust read the pre-calculated values
+        // Here we just read the pre-calculated values
         const sensitivity = userSettingsRef.current?.joystick?.sensitivity || 1.2;
         const deadZone = userSettingsRef.current?.joystick?.deadZone || 0.12;
+        const deltaX = touchJoystickRef.current.currentX - touchJoystickRef.current.startX;
         const deltaY = touchJoystickRef.current.currentY - touchJoystickRef.current.startY;
         const rawDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
@@ -17614,8 +17615,8 @@ const SpaceShooter = () => {
       if (inputX > 0.1) movingRight = true;
       if (inputX < -0.1) movingLeft = true;
 
-      // Handle dash input (custom keys or L3/R3 on gamepad)
-      const dashInput = controls.dash.some(k => keysRef.current[k]) || gpDash;
+      // Handle dash input (custom keys, gamepad, or touch button)
+      const dashInput = controls.dash.some(k => keysRef.current[k]) || gpDash || touchButtonsRef.current.dash;
       if (dashInput && !dashRef.current.active && dashRef.current.cooldown <= 0 && (inputX !== 0 || inputY !== 0)) {
         // Trigger dash in current movement direction
         soundSystem.playDash();
@@ -18172,7 +18173,7 @@ const SpaceShooter = () => {
       // Activated by Triangle button or L key (separate from regular shooting)
       const canUseLaser = upgradesRef.current.rapidFire >= 3;
       const playerLaser = playerLaserRef.current;
-      const laserInput = controls.special.some(k => keysRef.current[k]) || gpLaser;
+      const laserInput = controls.special.some(k => keysRef.current[k]) || gpLaser || touchButtonsRef.current.special;
 
       if (canUseLaser && laserInput && !isChargingRef.current) {
         // Charge the laser while holding fire
@@ -28091,7 +28092,7 @@ const SpaceShooter = () => {
                   e.stopPropagation(); // OPTIMIZED: Only stop propagation
                   triggerHaptic('tap');
                   touchButtonsRef.current.shoot = true;
-                  touchButtonsRef.current.shootStartTime = performance.now();
+                  // Don't set shootStartTime here - let game loop handle timing with RAF timestamp
                 }}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
