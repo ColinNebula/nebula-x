@@ -1264,6 +1264,7 @@ const SpaceShooter = () => {
   // Mobile touch controls
   const [showMobileControls, setShowMobileControls] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [joystickState, setJoystickState] = useState({ active: false, x: 0, y: 0 }); // For visual updates
 
   // OPTIMIZED: Touch input buffer system for better performance
   const touchInputBufferRef = useRef({
@@ -3108,6 +3109,13 @@ const SpaceShooter = () => {
       touchJoystickRef.current.updateScheduled = true;
       requestAnimationFrame(() => {
         touchJoystickRef.current.updateScheduled = false;
+        // Update state to force visual re-render
+        const joystick = touchJoystickRef.current;
+        setJoystickState({
+          active: joystick.active,
+          x: joystick.currentX,
+          y: joystick.currentY
+        });
       });
     }
   }, []);
@@ -28031,17 +28039,24 @@ const SpaceShooter = () => {
               className={`touch-joystick joystick-${userSettings.joystick?.size || 'medium'}`}
               style={{
                 opacity: userSettings.joystick?.opacity || 0.85,
-                filter: touchJoystickRef.current.active ? 'brightness(1.2)' : 'brightness(1)'
+                filter: joystickState.active ? 'brightness(1.2)' : 'brightness(1)'
               }}
               onPointerDown={(e) => {
                 // Only handle touch/pen, ignore mouse
                 if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
 
+                console.log('🕹️ Joystick touched:', e.pointerType);
+
                 // Capture pointer to get all events even if finger moves off element
                 e.currentTarget.setPointerCapture(e.pointerId);
 
-                const rect = joystickBoundsRef.current; // ✅ FAST - cached bounds
-                if (!rect) return;
+                // Get cached bounds or fallback to live calculation
+                let rect = joystickBoundsRef.current;
+                if (!rect) {
+                  rect = e.currentTarget.getBoundingClientRect();
+                  joystickBoundsRef.current = rect; // Cache for next time
+                  console.log('Bounds not cached, calculated on demand:', rect);
+                }
 
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
@@ -28061,14 +28076,19 @@ const SpaceShooter = () => {
                 joystick.angle = fastAtan2(deltaY, deltaX);
                 joystick.distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
+                console.log('Joystick active:', { angle: joystick.angle, distance: joystick.distance });
                 scheduleJoystickUpdate();
               }}
               onPointerMove={(e) => {
                 const joystick = touchJoystickRef.current;
                 if (!joystick.active || e.pointerId !== joystick.touchId) return;
 
-                const rect = joystickBoundsRef.current; // ✅ FAST - cached bounds
-                if (!rect) return;
+                // Get cached bounds or fallback to live calculation
+                let rect = joystickBoundsRef.current;
+                if (!rect) {
+                  rect = e.currentTarget.getBoundingClientRect();
+                  joystickBoundsRef.current = rect; // Cache for next time
+                }
 
                 // Process coalesced events (batched touch updates)
                 const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
@@ -28114,6 +28134,9 @@ const SpaceShooter = () => {
                 joystick.active = false;
                 joystick.touchId = null;
                 joystick.distance = 0;
+
+                // Update visual state
+                setJoystickState({ active: false, x: 0, y: 0 });
               }}
               onPointerCancel={(e) => {
                 const joystick = touchJoystickRef.current;
@@ -28122,13 +28145,16 @@ const SpaceShooter = () => {
                 joystick.active = false;
                 joystick.touchId = null;
                 joystick.distance = 0;
+
+                // Update visual state
+                setJoystickState({ active: false, x: 0, y: 0 });
               }}
             >
               {/* Always show base when controls are visible */}
               <div className="joystick-base" style={{
                 left: '50%',
                 top: '50%',
-                opacity: touchJoystickRef.current.active ? 1 : 0.5
+                opacity: joystickState.active ? 1 : 0.5
               }} />
 
               {/* Range indicator (optional visual guide) */}
@@ -28136,16 +28162,16 @@ const SpaceShooter = () => {
                 <div className="joystick-range" style={{
                   left: '50%',
                   top: '50%',
-                  opacity: touchJoystickRef.current.active ? 0.3 : 0.15
+                  opacity: joystickState.active ? 0.3 : 0.15
                 }} />
               )}
 
               {/* Active stick */}
-              {touchJoystickRef.current.active && (
+              {joystickState.active && (
                 <>
                   <div className="joystick-stick" style={{
-                    left: touchJoystickRef.current.currentX,
-                    top: touchJoystickRef.current.currentY
+                    left: joystickState.x,
+                    top: joystickState.y
                   }} />
 
                   {/* Direction indicator line */}
@@ -28178,6 +28204,7 @@ const SpaceShooter = () => {
 
                   triggerHaptic('tap');
                   touchButtonsRef.current.shoot = true;
+                  console.log('🔫 FIRE button pressed');
                 }}
                 onPointerUp={(e) => {
                   e.stopPropagation();
