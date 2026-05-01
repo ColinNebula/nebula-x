@@ -5858,7 +5858,8 @@
   width: 150px;
   height: 150px;
   z-index: 1000;
-  touch-action: none;
+  touch-action: none; /* CRITICAL: Prevents browser gestures */
+  pointer-events: auto; /* CRITICAL: Ensures pointer events work */
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -6074,7 +6075,8 @@
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
-  touch-action: manipulation; /* OPTIMIZED: Prevent double-tap zoom delay */
+  touch-action: none; /* CRITICAL: Maximum performance, no browser gestures */
+  pointer-events: auto; /* CRITICAL: Ensures pointer events work */
   display: flex;
   flex-direction: column;
   align-items: center;
