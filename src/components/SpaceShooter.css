@@ -3522,7 +3522,7 @@
 
 /* Quit Confirmation Modal */
 .quit-confirm-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -3531,7 +3531,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 10000;
   animation: fadeIn 0.2s ease;
 }
 
@@ -5817,8 +5817,7 @@
 .touch-pause-btn {
   position: fixed;
   top: max(15px, env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
+  right: 15px;
   padding: 12px 24px;
   background: linear-gradient(135deg, rgba(0, 255, 255, 0.4) 0%, rgba(0, 200, 255, 0.3) 100%);
   border: 2px solid rgba(0, 255, 255, 0.6);
@@ -5843,7 +5842,7 @@
 }
 
 .touch-pause-btn:active {
-  transform: translateX(-50%) scale(0.94);
+  transform: scale(0.94);
   background: linear-gradient(135deg, rgba(0, 255, 136, 0.6) 0%, rgba(0, 220, 110, 0.5) 100%);
   border-color: rgba(0, 255, 136, 1);
   border-width: 3px;
