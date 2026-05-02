@@ -46,20 +46,42 @@ class SoundSystem {
     this.masterVolume = 0.5;
     this.musicVolume = 0.3;
     this.sfxVolume = 0.6;
-    // Pre-loaded Audio templates — cloneNode() is O(1), avoids decode on every shot
-    this._shootTemplate = null;
-    this._enemyShootTemplate = null;
+    // Reusable HTMLAudio voice pools for bursty SFX (prevents dropped playback under load)
+    this._audioPools = new Map();
+    this._audioPoolIndex = new Map();
   }
 
-  // Lazily pre-load a reusable Audio template and return a clone
-  _cloneAudio(templateKey, src, volume) {
-    if (!this[templateKey]) {
-      this[templateKey] = new Audio(src);
-      this[templateKey].volume = volume;
+  // Build a fixed voice pool so rapid-fire SFX stay audible even with many concurrent shots.
+  _ensureAudioPool(poolKey, src, poolSize = 8) {
+    if (this._audioPools.has(poolKey)) return;
+    const voices = [];
+    for (let i = 0; i < poolSize; i++) {
+      const a = new Audio(src);
+      a.preload = 'auto';
+      a.volume = 1;
+      voices.push(a);
     }
-    const clone = this[templateKey].cloneNode();
-    clone.volume = volume;
-    return clone;
+    this._audioPools.set(poolKey, voices);
+    this._audioPoolIndex.set(poolKey, 0);
+  }
+
+  _playFromPool(poolKey, src, volume, playbackRate = 1, poolSize = 8) {
+    this._ensureAudioPool(poolKey, src, poolSize);
+    const voices = this._audioPools.get(poolKey);
+    let index = this._audioPoolIndex.get(poolKey) || 0;
+    const voice = voices[index];
+    this._audioPoolIndex.set(poolKey, (index + 1) % voices.length);
+
+    try {
+      voice.pause();
+      voice.currentTime = 0;
+      voice.volume = Math.max(0, Math.min(1, volume));
+      voice.playbackRate = playbackRate;
+      voice.play().catch(() => {});
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   setMasterVolume(value) {
@@ -121,19 +143,50 @@ class SoundSystem {
   // Laser/bullet shot sound
   playShoot(pitch = 1) {
     if (!this.initialized) return;
+    this.resume();
+    const played = this._playFromPool('shoot', asset('main-weapons.wav'), 0.25 * this.sfxVolume, pitch, 12);
+    if (played) return;
+
+    // Fallback: tiny synthetic click so shots are still audible.
     try {
-      const shootSound = this._cloneAudio('_shootTemplate', asset('main-weapons.wav'), 0.25 * this.sfxVolume);
-      shootSound.playbackRate = pitch;
-      shootSound.play().catch(() => {});
+      const ctx = this.audioContext;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(900 * pitch, now);
+      osc.frequency.exponentialRampToValueAtTime(300 * pitch, now + 0.04);
+      gain.gain.setValueAtTime(0.05 * this.sfxVolume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(now);
+      osc.stop(now + 0.05);
     } catch (e) {}
   }
 
   // Enemy shoot sound (distinct from player)
   playEnemyShoot() {
     if (!this.initialized) return;
+    this.resume();
+    const played = this._playFromPool('enemyShoot', asset('enemy-guns.mp3'), 0.2 * this.sfxVolume, 1, 10);
+    if (played) return;
+
+    // Fallback: short harsher blip for enemy fire.
     try {
-      const enemyGunSound = this._cloneAudio('_enemyShootTemplate', asset('enemy-guns.mp3'), 0.2);
-      enemyGunSound.play().catch(() => {});
+      const ctx = this.audioContext;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(220, now + 0.05);
+      gain.gain.setValueAtTime(0.04 * this.sfxVolume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(now);
+      osc.stop(now + 0.06);
     } catch (e) {}
   }
 
@@ -232,12 +285,15 @@ class SoundSystem {
   // Wave cannon fire sound
   playWaveCannonFire() {
     if (!this.initialized) return;
+    this.resume();
+    let played = false;
     try {
-      const waveCannonSound = new Audio(asset('power-weapons.wav'));
-      waveCannonSound.volume = this.sfxGain.gain.value;
-      waveCannonSound.play().catch(() => {});
-    } catch (e) {
-      // Fallback to synthesized sound if audio file fails
+      played = this._playFromPool('waveCannon', asset('power-weapons.wav'), 0.45 * this.sfxVolume, 1, 4);
+      if (played) return;
+    } catch (e) {}
+
+    // Fallback to synthesized sound if audio file fails
+    try {
       const ctx = this.audioContext;
       const now = ctx.currentTime;
 
@@ -272,7 +328,7 @@ class SoundSystem {
       osc2.start(now);
       osc1.stop(now + 0.4);
       osc2.stop(now + 0.4);
-    }
+    } catch (e) {}
   }
 
   // Explosion sounds (different sizes)
@@ -2219,6 +2275,7 @@ const SpaceShooter = () => {
   const explosionSpriteLoadedRef = useRef(false);
   const explosionAtlasRef = useRef(null); // TexturePacker JSON data
   const explosionAtlasLoadedRef = useRef(false);
+  const explosionAnimCacheRef = useRef({}); // prefix -> [{ name, frame }]
   const asteroidImageRef = useRef(null); // Asteroid sprite image
   const asteroidImageLoadedRef = useRef(false);
   const pickupEffectsRef = useRef([]);
@@ -4687,6 +4744,43 @@ const SpaceShooter = () => {
     return localStorage.getItem('nebulaXSaveGame') !== null;
   }, []);
 
+  // Build a cached animation map once so explosion spawns avoid repeated atlas scans.
+  const buildExplosionAnimationCache = useCallback((atlasData) => {
+    const cache = {};
+    if (!atlasData?.frames) return cache;
+
+    for (const [name, data] of Object.entries(atlasData.frames)) {
+      const m = name.match(/^(expl_\d+_)(\d+)\.[^.]+$/i);
+      if (!m) continue;
+      const prefix = m[1];
+      const index = Number(m[2]);
+      if (!cache[prefix]) cache[prefix] = [];
+      cache[prefix].push({ name, index, frame: data.frame });
+    }
+
+    for (const prefix of Object.keys(cache)) {
+      cache[prefix].sort((a, b) => a.index - b.index);
+    }
+
+    return cache;
+  }, []);
+
+  // Standardized async image loader for all sprite assets.
+  const loadImageAsset = useCallback((src) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = async () => {
+        try {
+          if (img.decode) await img.decode();
+        } catch (e) {}
+        resolve(img);
+      };
+      img.onerror = reject;
+      img.src = src;
+    });
+  }, []);
+
   // Load explosion sprite sheet with TexturePacker JSON support
   useEffect(() => {
     let mounted = true;
@@ -4698,54 +4792,53 @@ const SpaceShooter = () => {
 
     const loadDelay = isMobileDevice ? 800 : 0;
 
-    const loadExplosionAssets = () => {
+    const loadExplosionAssets = async () => {
       // First, try to load the TexturePacker JSON
       fetch(asset('explosions.json'))
         .then(response => response.json())
-        .then(atlasData => {
+        .then(async (atlasData) => {
           if (!mounted) return;
 
           explosionAtlasRef.current = atlasData;
           explosionAtlasLoadedRef.current = true;
-          console.log('[EXPLOSION] Atlas JSON loaded:', {
+          explosionAnimCacheRef.current = buildExplosionAnimationCache(atlasData);
+          debugLog('[EXPLOSION] Atlas JSON loaded:', {
             frames: Object.keys(atlasData.frames).length,
             imageSize: atlasData.meta.size
           });
 
           // Now load the sprite image
-          const img = new Image();
-          img.onload = () => {
+          try {
+            const img = await loadImageAsset(asset('explosions.png'));
             if (!mounted) return;
             explosionSpriteRef.current = img;
             explosionSpriteLoadedRef.current = true;
-            console.log('[EXPLOSION] Sprite loaded successfully:', {
+            debugLog('[EXPLOSION] Sprite loaded successfully:', {
               size: `${img.width}x${img.height}`,
               atlasFrames: Object.keys(atlasData.frames).length
             });
-          };
-          img.onerror = () => {
-            console.warn('[EXPLOSION] Failed to load sprite image');
+          } catch (e) {
+            debugWarn('[EXPLOSION] Failed to load sprite image');
             explosionSpriteLoadedRef.current = false;
-          };
-          img.src = asset('explosions.png');
+          }
         })
         .catch(err => {
-          console.warn('[EXPLOSION] Failed to load atlas JSON, falling back to legacy sprite:', err);
+          debugWarn('[EXPLOSION] Failed to load atlas JSON, falling back to legacy sprite:', err);
 
           // Fallback to legacy explosion2.png without atlas
-          const img = new Image();
-          img.onload = () => {
-            if (!mounted) return;
-            explosionSpriteRef.current = img;
-            explosionSpriteLoadedRef.current = true;
-            explosionAtlasLoadedRef.current = false;
-            console.log('[EXPLOSION] Legacy sprite loaded (no atlas)');
-          };
-          img.onerror = () => {
-            console.warn('[EXPLOSION] Failed to load sprite, using particle effects only');
-            explosionSpriteLoadedRef.current = false;
-          };
-          img.src = asset('explosion2.png');
+          loadImageAsset(asset('explosion2.png'))
+            .then(img => {
+              if (!mounted) return;
+              explosionSpriteRef.current = img;
+              explosionSpriteLoadedRef.current = true;
+              explosionAtlasLoadedRef.current = false;
+              explosionAnimCacheRef.current = {};
+              debugLog('[EXPLOSION] Legacy sprite loaded (no atlas)');
+            })
+            .catch(() => {
+              debugWarn('[EXPLOSION] Failed to load sprite, using particle effects only');
+              explosionSpriteLoadedRef.current = false;
+            });
         });
     };
 
@@ -4754,7 +4847,7 @@ const SpaceShooter = () => {
     // Set a timeout to mark as failed if not loaded within 5 seconds
     const failTimeout = setTimeout(() => {
       if (!explosionSpriteLoadedRef.current) {
-        console.warn('[EXPLOSION] Sprite load timeout, using particle effects');
+        debugWarn('[EXPLOSION] Sprite load timeout, using particle effects');
       }
     }, 5000 + loadDelay);
 
@@ -4763,27 +4856,25 @@ const SpaceShooter = () => {
       clearTimeout(timeout);
       clearTimeout(failTimeout);
     };
-  }, []);
+  }, [buildExplosionAnimationCache, loadImageAsset]);
 
   // Load asteroid sprite image
   useEffect(() => {
     let mounted = true;
 
-    const loadAsteroidImage = () => {
-      const img = new Image();
-      img.onload = () => {
+    const loadAsteroidImage = async () => {
+      try {
+        const img = await loadImageAsset(asset('astroids_01.png'));
         if (!mounted) return;
         asteroidImageRef.current = img;
         asteroidImageLoadedRef.current = true;
-        console.log('[ASTEROID] Sprite loaded successfully:', {
+        debugLog('[ASTEROID] Sprite loaded successfully:', {
           size: `${img.width}x${img.height}`
         });
-      };
-      img.onerror = () => {
-        console.warn('[ASTEROID] Failed to load sprite image, using procedural rendering');
+      } catch (e) {
+        debugWarn('[ASTEROID] Failed to load sprite image, using procedural rendering');
         asteroidImageLoadedRef.current = false;
-      };
-      img.src = asset('astroids_01.png');
+      }
     };
 
     loadAsteroidImage();
@@ -4791,7 +4882,7 @@ const SpaceShooter = () => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [loadImageAsset]);
 
   // Trigger screen shake
   const triggerScreenShake = useCallback((intensity, duration) => {
@@ -5157,10 +5248,8 @@ const SpaceShooter = () => {
         default: spriteSize = 200;
       }
 
+      let atlasFramesForPrimary = null;
       if (useAtlas) {
-        // TexturePacker format - use frames from JSON
-        const atlas = explosionAtlasRef.current;
-
         // Select explosion type based on size
         let explosionPrefix;
         switch (size) {
@@ -5171,31 +5260,25 @@ const SpaceShooter = () => {
           default: explosionPrefix = 'expl_01_';
         }
 
-        // Filter frames for this explosion type and sort
-        const allFrameNames = Object.keys(atlas.frames);
-        const frameNames = allFrameNames
-          .filter(name => name.startsWith(explosionPrefix))
-          .sort();
+        atlasFramesForPrimary = explosionAnimCacheRef.current[explosionPrefix] || null;
+      }
 
-        // Get first frame data
-        const frameName = frameNames[0];
-        const frameData = atlas.frames[frameName];
+      if (atlasFramesForPrimary && atlasFramesForPrimary.length > 0) {
+        const frameCount = atlasFramesForPrimary.length;
 
         const explosion = {
           x,
           y,
           isSprite: true,
           isAtlas: true,
-          atlasFrameNames: frameNames, // Store all frame names for cycling
-          frameName: frameName,
-          frameData: frameData,
+          atlasFrames: atlasFramesForPrimary,
           frame: 0,
-          totalFrames: frameNames.length, // Number of frames in atlas
+          totalFrames: frameCount, // Number of frames in atlas
           frameTimer: 0,
           frameDelay: size === 'boss' ? 2 : 2, // Faster animation for multi-frame
           spriteSize: spriteSize,
-          lifetime: frameNames.length * 2, // Match frame count * delay
-          maxLifetime: frameNames.length * 2,
+          lifetime: frameCount * 2, // Match frame count * delay
+          maxLifetime: frameCount * 2,
           startTime: Date.now(),
           particles: [],
           scale: 1.0,
@@ -5231,35 +5314,26 @@ const SpaceShooter = () => {
           const dist = 40 + Math.random() * 30;
 
           if (useAtlas) {
-            const atlas = explosionAtlasRef.current;
-
             // Use different explosion types for variety
             const explosionTypes = ['expl_02_', 'expl_03_', 'expl_04_', 'expl_06_'];
             const explosionPrefix = explosionTypes[i % explosionTypes.length];
-
-            const allFrameNames = Object.keys(atlas.frames);
-            const frameNames = allFrameNames
-              .filter(name => name.startsWith(explosionPrefix))
-              .sort();
-
-            const frameName = frameNames[0];
-            const frameData = atlas.frames[frameName];
+            const cachedFrames = explosionAnimCacheRef.current[explosionPrefix] || [];
+            const frameCount = cachedFrames.length;
+            if (frameCount === 0) continue;
 
             explosionsRef.current.push({
               x: x + Math.cos(angle) * dist,
               y: y + Math.sin(angle) * dist,
               isSprite: true,
               isAtlas: true,
-              atlasFrameNames: frameNames,
-              frameName: frameName,
-              frameData: frameData,
+              atlasFrames: cachedFrames,
               frame: 0,
-              totalFrames: frameNames.length,
+              totalFrames: frameCount,
               frameTimer: 0,
               frameDelay: 2,
               spriteSize: 100 + Math.random() * 40,
-              lifetime: frameNames.length * 2,
-              maxLifetime: frameNames.length * 2,
+              lifetime: frameCount * 2,
+              maxLifetime: frameCount * 2,
               startTime: Date.now(),
               particles: [],
               scale: 0.6 + Math.random() * 0.4,
@@ -7586,37 +7660,20 @@ const SpaceShooter = () => {
 
           let frameWidth, frameHeight, srcX, srcY, currentFrame;
 
-          if (explosion.isAtlas && explosion.frameData) {
+          if (explosion.isAtlas) {
             // TexturePacker atlas format - cycle through frames
             currentFrame = explosion.frame; // Use the frame counter from update loop
 
-            // Get current frame data from atlas
-            if (explosion.atlasFrameNames && explosion.atlasFrameNames.length > 0) {
-              const currentFrameName = explosion.atlasFrameNames[Math.min(currentFrame, explosion.atlasFrameNames.length - 1)];
-              const currentFrameData = explosionAtlasRef.current.frames[currentFrameName];
-
-              if (currentFrameData) {
-                const frameData = currentFrameData.frame;
-                srcX = frameData.x;
-                srcY = frameData.y;
-                frameWidth = frameData.w;
-                frameHeight = frameData.h;
-              } else {
-                // Fallback to stored frameData
-                const frameData = explosion.frameData.frame;
-                srcX = frameData.x;
-                srcY = frameData.y;
-                frameWidth = frameData.w;
-                frameHeight = frameData.h;
-              }
-            } else {
-              // Single frame atlas
-              const frameData = explosion.frameData.frame;
+            // Use precomputed atlas frame rectangles from explosion spawn path.
+            if (explosion.atlasFrames && explosion.atlasFrames.length > 0) {
+              const currentFrameData = explosion.atlasFrames[Math.min(currentFrame, explosion.atlasFrames.length - 1)];
+              const frameData = currentFrameData.frame;
               srcX = frameData.x;
               srcY = frameData.y;
               frameWidth = frameData.w;
               frameHeight = frameData.h;
-              currentFrame = 0;
+            } else {
+              return;
             }
           } else {
             // Legacy horizontal strip format
