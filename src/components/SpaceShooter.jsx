@@ -651,8 +651,33 @@ class SoundSystem {
     osc.stop(now + 0.1);
   }
 
-  // Boss warning sound
+  // Boss warning sound – plays the power-bass transition WAV with synth fallback
   playBossWarning() {
+    if (!this.initialized) return;
+
+    // Resume context if suspended (mobile / autoplay policy)
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume().catch(() => {});
+    }
+
+    // Try to play the dedicated boss-emerge WAV
+    try {
+      const audio = new Audio(asset('mixkit-synthetic-power-bass-transition-2296.wav'));
+      // Route through sfxGain volume: sfxGain.gain is a WebAudio param, read it directly
+      audio.volume = Math.min(1, (this.sfxGain?.gain?.value ?? 0.8) * 1.0);
+      const playPromise = audio.play();
+      if (playPromise) {
+        playPromise.catch(() => this._playBossWarningSynth());
+      }
+      return;
+    } catch (_e) {
+      // Fall through to synth
+    }
+
+    this._playBossWarningSynth();
+  }
+
+  _playBossWarningSynth() {
     if (!this.initialized) return;
     const ctx = this.audioContext;
     const now = ctx.currentTime;
