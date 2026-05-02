@@ -27,6 +27,12 @@ const asset = (path) => {
   return `${base}${path.replace(/^\//, '')}`;
 };
 
+// Runtime debug logging switches (default OFF to avoid gameplay overhead)
+const DEBUG_LOGS_ENABLED = false;
+const GAMEPAD_DEBUG_ENABLED = false;
+const debugLog = (...args) => { if (DEBUG_LOGS_ENABLED) console.log(...args); };
+const debugWarn = (...args) => { if (DEBUG_LOGS_ENABLED) console.warn(...args); };
+
 // ============= WEB AUDIO SOUND SYSTEM =============
 class SoundSystem {
   constructor() {
@@ -2590,7 +2596,26 @@ const SpaceShooter = () => {
     maxFrameHistory: 60, // Track 1 second of frame times
     culledObjects: 0, // Count culled objects for stats
     particlePooling: true, // Enable particle pooling
-    lodDistance: 300 // Distance threshold for LOD
+    lodDistance: 300, // Distance threshold for LOD
+    lodTier: 0, // 0=full, 1=reduced, 2=minimal
+    spawnBudget: {
+      enemyBullets: 999,
+      effects: 999,
+      usedEnemyBullets: 0,
+      usedEffects: 0,
+      droppedEnemyBullets: 0,
+      droppedEffects: 0
+    },
+    profile: {
+      updateMs: 0,
+      collisionMs: 0,
+      renderMs: 0,
+      frameMs: 0,
+      totalEntities: 0,
+      enemyBullets: 0,
+      droppedEffects: 0,
+      droppedEnemyBullets: 0
+    }
   });
   const userSettingsRef = useRef(null); // Sync ref for settings access in game loop
   const starGradientsRef = useRef(new Map()); // Cache star gradients for performance
@@ -4879,10 +4904,18 @@ const SpaceShooter = () => {
   // Create impact particles when bullets hit enemies
   const createImpactParticles = useCallback((x, y, color = '#ffaa00', count = 6) => {
     const perfMode = userSettingsRef.current?.performanceMode;
+    const perfData = performanceRef.current;
+    const budget = perfData.spawnBudget;
     if (perfMode && Math.random() > 0.5) return; // Skip some impacts in perf mode
 
-    const actualCount = perfMode ? Math.ceil(count * 0.5) : count;
+    const tierScale = perfData.lodTier === 2 ? 0.3 : (perfData.lodTier === 1 ? 0.6 : 1.0);
+    const actualCount = Math.max(1, Math.ceil((perfMode ? count * 0.5 : count) * tierScale));
     for (let i = 0; i < actualCount; i++) {
+      if (budget.usedEffects >= budget.effects) {
+        budget.droppedEffects += (actualCount - i);
+        break;
+      }
+      budget.usedEffects++;
       const angle = (i / actualCount) * Math.PI * 2;
       const speed = 3 + Math.random() * 4; // Increased speed
       impactParticlesRef.current.push({
@@ -4907,10 +4940,18 @@ const SpaceShooter = () => {
   // Create spark particles for special effects
   const createSparkParticles = useCallback((x, y, count = 4, spreadAngle = Math.PI * 2) => {
     const perfMode = userSettingsRef.current?.performanceMode;
+    const perfData = performanceRef.current;
+    const budget = perfData.spawnBudget;
     if (perfMode && Math.random() > 0.6) return;
 
-    const actualCount = perfMode ? Math.ceil(count * 0.6) : count;
+    const tierScale = perfData.lodTier === 2 ? 0.3 : (perfData.lodTier === 1 ? 0.6 : 1.0);
+    const actualCount = Math.max(1, Math.ceil((perfMode ? count * 0.6 : count) * tierScale));
     for (let i = 0; i < actualCount; i++) {
+      if (budget.usedEffects >= budget.effects) {
+        budget.droppedEffects += (actualCount - i);
+        break;
+      }
+      budget.usedEffects++;
       const angle = Math.random() * spreadAngle - spreadAngle / 2;
       const speed = 5 + Math.random() * 5; // Increased speed
       sparkParticlesRef.current.push({
@@ -16458,6 +16499,42 @@ const SpaceShooter = () => {
                            pickupEffectsRef.current.length + powerupsRef.current.length +
                            asteroidCount;
 
+      // LOD tier based on rolling frame time and FPS
+      const rollingFrameTime = perfData.frameTimeHistory.length > 0
+        ? perfData.frameTimeHistory.reduce((a, b) => a + b, 0) / perfData.frameTimeHistory.length
+        : perfData.frameBudget;
+      const lodTier = (rollingFrameTime > 22 || fpsData.fps < 40) ? 2 :
+                      (rollingFrameTime > 16.67 || fpsData.fps < 55) ? 1 : 0;
+      perfData.lodTier = lodTier;
+
+      // Per-frame spawn budgets (enemy bullets + non-critical effects)
+      const budget = perfData.spawnBudget;
+      const bossBudgetScale = bossActiveRef.current ? 1 : 2;
+      budget.enemyBullets = (lodTier === 2 ? 12 : lodTier === 1 ? 24 : 48) * bossBudgetScale;
+      budget.effects = (lodTier === 2 ? 24 : lodTier === 1 ? 50 : 100) * bossBudgetScale;
+      budget.usedEnemyBullets = 0;
+      budget.usedEffects = 0;
+      budget.droppedEnemyBullets = 0;
+      budget.droppedEffects = 0;
+
+      // Lightweight per-frame profiling snapshot
+      perfData.profile.totalEntities = totalEntities;
+      perfData.profile.enemyBullets = enemyBulletsRef.current.length;
+
+      const spendSpawnBudget = (kind, amount = 1, critical = false) => {
+        if (critical) return true;
+        if (kind === 'enemyBullets' && (!bossActiveRef.current || lodTier === 0)) return true;
+        const cap = kind === 'enemyBullets' ? budget.enemyBullets : budget.effects;
+        const usedKey = kind === 'enemyBullets' ? 'usedEnemyBullets' : 'usedEffects';
+        const droppedKey = kind === 'enemyBullets' ? 'droppedEnemyBullets' : 'droppedEffects';
+        if (budget[usedKey] + amount > cap) {
+          budget[droppedKey] += amount;
+          return false;
+        }
+        budget[usedKey] += amount;
+        return true;
+      };
+
       if (timestamp - fpsData.lastTime >= 1000) {
         fpsData.fps = fpsData.frames;
         fpsData.frames = 0;
@@ -16474,8 +16551,8 @@ const SpaceShooter = () => {
         const hasPerformanceIssue = fpsData.fps < 45 || avgFrameTime > perfData.frameBudget * 1.5;
 
         if (isActiveGameplay && hasPerformanceIssue) {
-          const bossStatus = bossActiveRef.current ? ' | 🔥 BOSS BATTLE ACTIVE' : '';
-          console.warn(`[PERFORMANCE] Low FPS: ${fpsData.fps}${bossStatus} | Entities: ${totalEntities} (Asteroids: ${asteroidCount}, Enemy Bullets: ${enemyBulletsRef.current.length}) | Frame time: ${avgFrameTime.toFixed(2)}ms`);
+          const bossStatus = bossActiveRef.current ? ' | BOSS BATTLE ACTIVE' : '';
+          debugWarn(`[PERFORMANCE] Low FPS: ${fpsData.fps}${bossStatus} | Entities: ${totalEntities} (Asteroids: ${asteroidCount}, Enemy Bullets: ${enemyBulletsRef.current.length}) | Frame time: ${avgFrameTime.toFixed(2)}ms`);
         }
 
         // Adaptive quality based on FPS and frame budget
@@ -16486,7 +16563,7 @@ const SpaceShooter = () => {
             // If FPS is consistently low (3+ seconds), reduce quality
             if (perfData.lowFpsFrames >= 3 && perfData.adaptiveQuality > 0.4) {
               perfData.adaptiveQuality = Math.max(0.4, perfData.adaptiveQuality - 0.15);
-              console.log(`[PERFORMANCE] FPS low (${fpsData.fps}), frame time ${avgFrameTime.toFixed(2)}ms, reducing quality to ${perfData.adaptiveQuality.toFixed(1)}x`);
+              debugLog(`[PERFORMANCE] FPS low (${fpsData.fps}), frame time ${avgFrameTime.toFixed(2)}ms, reducing quality to ${perfData.adaptiveQuality.toFixed(1)}x`);
             }
           } else if (fpsData.fps >= 58 && avgFrameTime < perfData.frameBudget * 0.8) {
             // FPS is good, gradually restore quality
@@ -16500,7 +16577,7 @@ const SpaceShooter = () => {
         // Emergency performance mode if entity count is very high
         if (totalEntities > 800) {
           perfData.adaptiveQuality = Math.min(perfData.adaptiveQuality, 0.5);
-          console.log(`[PERFORMANCE] Emergency mode: ${totalEntities} entities (${asteroidCount} asteroids), forcing quality to 0.5x`);
+          debugLog(`[PERFORMANCE] Emergency mode: ${totalEntities} entities (${asteroidCount} asteroids), forcing quality to 0.5x`);
         }
       }
 
@@ -16513,7 +16590,7 @@ const SpaceShooter = () => {
         // Scale based on FPS - much more aggressive when FPS is terrible
         const bossBulletCap = fpsData.fps < 30 ? 25 : (fpsData.fps < 50 ? 35 : 55);
         if (enemyBulletCount > bossBulletCap) {
-          console.warn(`[BOSS PERFORMANCE] Capping enemy bullets from ${enemyBulletCount} to ${bossBulletCap} (FPS: ${fpsData.fps})`);
+          debugWarn(`[BOSS PERFORMANCE] Capping enemy bullets from ${enemyBulletCount} to ${bossBulletCap} (FPS: ${fpsData.fps})`);
           enemyBulletsRef.current = enemyBulletsRef.current.slice(-bossBulletCap);
         }
 
@@ -16551,7 +16628,7 @@ const SpaceShooter = () => {
       if (fpsData.fps < 45 || totalEntities > 600) {
         // Cap asteroids if they're causing issues
         if (asteroidCount > 20 && hazardsRef.current?.asteroids) {
-          console.warn(`[PERFORMANCE] Capping asteroids from ${asteroidCount} to 20`);
+          debugWarn(`[PERFORMANCE] Capping asteroids from ${asteroidCount} to 20`);
           hazardsRef.current.asteroids = hazardsRef.current.asteroids.slice(0, 20);
         }
 
@@ -16906,7 +16983,7 @@ const SpaceShooter = () => {
       const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
 
       // Debug: Always log gamepad polling status AND note gamepad code is ONLY running in 'playing' state
-      if (!window._gamepadPollLogged) {
+      if (GAMEPAD_DEBUG_ENABLED && !window._gamepadPollLogged) {
         console.log('🎮 Polling gamepads... Found:', gamepads.length, 'GameState:', gameStateRef.current);
         console.warn('⚠️ NOTE: This gamepad code ONLY runs when GameState === "playing"! Currently:', gameStateRef.current);
         for (let i = 0; i < gamepads.length; i++) {
@@ -16937,7 +17014,7 @@ const SpaceShooter = () => {
               gamepad = freshGamepads[i];
 
               // Debug: Log when gamepad is found and selected
-              if (!window._gamepadSelectedLogged) {
+              if (GAMEPAD_DEBUG_ENABLED && !window._gamepadSelectedLogged) {
                 console.log('✅ Gamepad FOUND in slot', i, '| connected flag:', gamepad.connected, '| id:', gamepad.id);
                 console.log('   Buttons:', gamepad.buttons.length, '| First 10 buttons:',
                   Array.from({length: Math.min(10, gamepad.buttons.length)}).map((_, idx) =>
@@ -16960,7 +17037,7 @@ const SpaceShooter = () => {
       }
 
       // Debug: Log if no gamepad found
-      if (!gamepad && !window._noGamepadLogged) {
+      if (GAMEPAD_DEBUG_ENABLED && !gamepad && !window._noGamepadLogged) {
         console.warn('⚠️ No connected gamepad found in any slot');
         window._noGamepadLogged = true;
         setTimeout(() => { window._noGamepadLogged = false; }, 5000);
@@ -16973,7 +17050,7 @@ const SpaceShooter = () => {
 
       if (gamepad) {
         // Debug: One-time alert when gamepad is first detected
-        if (!window._gamepadAlertShown) {
+        if (GAMEPAD_DEBUG_ENABLED && !window._gamepadAlertShown) {
           alert(`🎮 PS4 Controller Detected!\n\nName: ${gamepad.id}\nButtons: ${gamepad.buttons.length}\nAxes: ${gamepad.axes.length}\n\nCheck console (F12) for more details.`);
           console.log('🎮 GAMEPAD FULL INFO:', gamepad);
           console.log('🎮 Buttons array:', gamepad.buttons);
@@ -16982,7 +17059,7 @@ const SpaceShooter = () => {
         }
 
         // Debug: Log axes availability
-        if (!window._axesDebugLogged && gamepad.axes) {
+        if (GAMEPAD_DEBUG_ENABLED && !window._axesDebugLogged && gamepad.axes) {
           console.log('🎮 Gamepad axes available:', gamepad.axes.length, 'Values:', gamepad.axes.map(a => a.toFixed(2)));
           window._axesDebugLogged = true;
           setTimeout(() => { window._axesDebugLogged = false; }, 2000);
@@ -16994,7 +17071,7 @@ const SpaceShooter = () => {
         const axisY = gamepad.axes && gamepad.axes[1] !== undefined ? gamepad.axes[1] : 0;
 
         // Debug: Log stick values when moved
-        if (!window._stickDebugLogged && (Math.abs(axisX) > 0.2 || Math.abs(axisY) > 0.2)) {
+        if (GAMEPAD_DEBUG_ENABLED && !window._stickDebugLogged && (Math.abs(axisX) > 0.2 || Math.abs(axisY) > 0.2)) {
           console.log('🕹️ LEFT STICK MOVED! - X:', axisX.toFixed(3), 'Y:', axisY.toFixed(3), '| GameState:', gameStateRef.current);
           console.log('🕹️ Deadzone:', deadzone, '| Will move?', Math.abs(axisX) > deadzone || Math.abs(axisY) > deadzone);
           console.log('🕹️ All axes:', gamepad.axes.map((a, i) => `${i}:${a.toFixed(2)}`).join(' '));
@@ -20946,6 +21023,7 @@ const SpaceShooter = () => {
 
       // Enemy movement, behaviors and collision detection (consolidated into single filter)
       let collisionChecks = 0;
+      const enemyBulletCountBeforeUpdate = enemyBulletsRef.current.length;
       enemiesRef.current = enemiesRef.current.filter(enemy => {
         try {
         // Apply time warp slowdown
@@ -21045,6 +21123,7 @@ const SpaceShooter = () => {
     });
 
 
+      const collisionPhaseStart = performance.now();
       // Check bullet-enemy collisions — SpatialGrid reduces O(n×m) to ~O(n)
       const collGrid = performanceRef.current.spatialGrid;
       if (collGrid) {
@@ -21073,10 +21152,11 @@ const SpaceShooter = () => {
         const candidateEnemies = collGrid
           ? collGrid.query(bulletX, bulletY, bulletW, bulletH)
           : enemiesRef.current;
+        const candidateEnemySet = collGrid ? new Set(candidateEnemies) : null;
 
         enemiesRef.current = enemiesRef.current.filter(enemy => {
-          // Skip enemies not in the spatial query result (fast path)
-          if (collGrid && !candidateEnemies.includes(enemy)) return true;
+          // O(1) membership check instead of Array.includes() in hot collision path
+          if (candidateEnemySet && !candidateEnemySet.has(enemy)) return true;
 
           const ew = enemy.width || ENEMY_WIDTH;
           const eh = enemy.height || ENEMY_HEIGHT;
@@ -21174,6 +21254,7 @@ const SpaceShooter = () => {
 
               // Crit spark burst
               for (let i = 0; i < 6; i++) {
+                if (!spendSpawnBudget('effects')) break;
                 const angle = (Math.PI * 2 / 6) * i;
                 sparkParticlesRef.current.push({
                   x: enemy.x + ew / 2,
@@ -21207,14 +21288,14 @@ const SpaceShooter = () => {
             waveKillsRef.current++;
             sessionStatsRef.current.kills++;
 
-            console.log('[ENEMY KILL] Enemy destroyed. Roll for powerup...');
+            debugLog('[ENEMY KILL] Enemy destroyed. Roll for powerup...');
             // Elite enemies have much higher power-up drop chance
             const dropChance = enemy.isElite ? POWERUP_DROP_CHANCE * 2.5 : POWERUP_DROP_CHANCE;
             if (Math.random() < dropChance) {
-              console.log('[ENEMY KILL] Drop chance success! Elite:', enemy.isElite, 'Spawning powerup.');
+              debugLog('[ENEMY KILL] Drop chance success! Elite:', enemy.isElite, 'Spawning powerup.');
               spawnPowerup(enemy.x + ew / 2, enemy.y + eh / 2);
             } else {
-              console.log('[ENEMY KILL] Drop chance failed. Chance:', dropChance);
+              debugLog('[ENEMY KILL] Drop chance failed. Chance:', dropChance);
             }
             return false; // Remove enemy
           }
@@ -21223,6 +21304,7 @@ const SpaceShooter = () => {
 
         return !bulletHit; // Remove bullet if it hit
       });
+      perfData.profile.collisionMs = performance.now() - collisionPhaseStart;
 
       // Update boss
       if (bossRef.current) {
@@ -24318,6 +24400,16 @@ const SpaceShooter = () => {
       }
     });
 
+      // Boss-fight spawn budget controller for enemy bullets
+      const enemyBulletAdds = enemyBulletsRef.current.length - enemyBulletCountBeforeUpdate;
+      if (bossActiveRef.current && perfData.lodTier > 0 && enemyBulletAdds > perfData.spawnBudget.enemyBullets) {
+        const keepCount = enemyBulletCountBeforeUpdate + perfData.spawnBudget.enemyBullets;
+        const dropped = Math.max(0, enemyBulletsRef.current.length - keepCount);
+        if (dropped > 0) {
+          enemyBulletsRef.current = enemyBulletsRef.current.slice(0, keepCount);
+          perfData.spawnBudget.droppedEnemyBullets += dropped;
+        }
+      }
 
       // Update enemy bullets
       const bulletSpeedMult = (gameModeRef.current === 'practice' && practiceSettingsRef.current.slowBullets) ? 0.5 : 1;
@@ -24955,11 +25047,18 @@ const SpaceShooter = () => {
         return !missileHit;
       });
 
+      const renderStartTime = performance.now();
       render(ctx, timestamp);
+      const renderEndTime = performance.now();
 
       // Track frame time for performance monitoring
-      const frameEndTime = performance.now();
+      const frameEndTime = renderEndTime;
       const frameTime = frameEndTime - frameStartTime;
+      perfData.profile.renderMs = renderEndTime - renderStartTime;
+      perfData.profile.updateMs = Math.max(0, frameTime - perfData.profile.renderMs - perfData.profile.collisionMs);
+      perfData.profile.frameMs = frameTime;
+      perfData.profile.droppedEffects = perfData.spawnBudget.droppedEffects;
+      perfData.profile.droppedEnemyBullets = perfData.spawnBudget.droppedEnemyBullets;
       perfData.frameTimeHistory.push(frameTime);
       if (perfData.frameTimeHistory.length > perfData.maxFrameHistory) {
         perfData.frameTimeHistory.shift();
@@ -24968,7 +25067,7 @@ const SpaceShooter = () => {
       // Warn if single frame took too long during boss battles (indicates lag spike)
       // Only warn if we're actually in gameplay and have entities
       if (frameTime > 50 && bossActiveRef.current && gameStateRef.current === 'playing' && totalEntities > 10) {
-        console.warn(`[FRAME SPIKE] Boss battle frame took ${frameTime.toFixed(1)}ms (entities: ${totalEntities}, bullets: ${enemyBulletsRef.current.length})`);
+        debugWarn(`[FRAME SPIKE] Boss battle frame took ${frameTime.toFixed(1)}ms (entities: ${totalEntities}, bullets: ${enemyBulletsRef.current.length})`);
       }
 
       animationFrameRef.current = requestAnimationFrame(gameLoop);
