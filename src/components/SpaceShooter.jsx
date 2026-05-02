@@ -40,6 +40,20 @@ class SoundSystem {
     this.masterVolume = 0.5;
     this.musicVolume = 0.3;
     this.sfxVolume = 0.6;
+    // Pre-loaded Audio templates — cloneNode() is O(1), avoids decode on every shot
+    this._shootTemplate = null;
+    this._enemyShootTemplate = null;
+  }
+
+  // Lazily pre-load a reusable Audio template and return a clone
+  _cloneAudio(templateKey, src, volume) {
+    if (!this[templateKey]) {
+      this[templateKey] = new Audio(src);
+      this[templateKey].volume = volume;
+    }
+    const clone = this[templateKey].cloneNode();
+    clone.volume = volume;
+    return clone;
   }
 
   setMasterVolume(value) {
@@ -102,8 +116,7 @@ class SoundSystem {
   playShoot(pitch = 1) {
     if (!this.initialized) return;
     try {
-      const shootSound = new Audio(asset('main-weapons.wav'));
-      shootSound.volume = 0.25 * this.sfxVolume;
+      const shootSound = this._cloneAudio('_shootTemplate', asset('main-weapons.wav'), 0.25 * this.sfxVolume);
       shootSound.playbackRate = pitch;
       shootSound.play().catch(() => {});
     } catch (e) {}
@@ -113,8 +126,7 @@ class SoundSystem {
   playEnemyShoot() {
     if (!this.initialized) return;
     try {
-      const enemyGunSound = new Audio(asset('enemy-guns.mp3'));
-      enemyGunSound.volume = 0.2;
+      const enemyGunSound = this._cloneAudio('_enemyShootTemplate', asset('enemy-guns.mp3'), 0.2);
       enemyGunSound.play().catch(() => {});
     } catch (e) {}
   }
@@ -2559,6 +2571,10 @@ const SpaceShooter = () => {
 
   // Performance tracking refs
   const fpsRef = useRef({ frames: 0, lastTime: 0, fps: 60 });
+  // Monotonic counter for stable bullet IDs — avoids position-string keys in motionBlurTrailsRef
+  const bulletIdCounterRef = useRef(0);
+  // Frame counter for staggered AI updates
+  const frameCountRef = useRef(0);
   const performanceRef = useRef({
     autoReduceEffects: false,
     objectCount: 0,
@@ -9732,7 +9748,8 @@ const SpaceShooter = () => {
 // Enhanced motion blur trails (reduce during high load)
         const skipTrails = fpsRef.current.fps < 50 || bulletsRef.current.length > 200;
         if (!perfMode && !skipTrails && bullet.vx && bullet.vy) {
-          const bulletId = bullet.x + '_' + bullet.y;
+          // Use stable bullet.id — position-based keys change every frame and break the cache
+          const bulletId = bullet.id != null ? bullet.id : (bullet.x + '_' + bullet.y);
           let trail = motionBlurTrailsRef.current.get(bulletId) || [];
 
           // Add current position to trail (fewer positions during load)
@@ -9753,10 +9770,10 @@ const SpaceShooter = () => {
 
           motionBlurTrailsRef.current.set(bulletId, trail);
 
-          // Clean up old trails
-          if (motionBlurTrailsRef.current.size > 200) {
+          // Clean up stale trails — keep map bounded
+          if (motionBlurTrailsRef.current.size > 300) {
             const keys = Array.from(motionBlurTrailsRef.current.keys());
-            keys.slice(0, 50).forEach(key => motionBlurTrailsRef.current.delete(key));
+            keys.slice(0, 100).forEach(key => motionBlurTrailsRef.current.delete(key));
           }
         }
 
@@ -9859,9 +9876,10 @@ const SpaceShooter = () => {
           // Animated trail length based on speed and weapon level
           const trailLength = perfMode ? 12 : (20 + (bullet.weaponLevel || 1) * 2);
 
-          // Outer glow effect - enhanced for higher weapon levels
+          // Outer glow effect - skip when many entities are on screen (GPU blur pass is expensive)
+          const skipGlow = totalEntities > 150 || fpsRef.current.fps < 55;
           ctx.shadowColor = bulletColor;
-          ctx.shadowBlur = perfMode ? 6 : (15 + (bullet.weaponLevel || 1) * 2);
+          ctx.shadowBlur = skipGlow ? 0 : (perfMode ? 6 : (15 + (bullet.weaponLevel || 1) * 2));
 
           // Elongated gradient trail behind bullet
           const trailGrad = ctx.createLinearGradient(bullet.x - trailLength, bullet.y, bullet.x, bullet.y);
@@ -9916,7 +9934,7 @@ const SpaceShooter = () => {
 
       // Draw enemy bullets - use reduced effects during boss battles for performance
       // Enhanced with aggressive culling and LOD
-      const reducedBulletEffects = bossActiveRef.current && !perfMode;
+      const reducedBulletEffects = (bossActiveRef.current && !perfMode) || totalEntities > 150 || fpsRef.current.fps < 55;
       let renderedBullets = 0;
       // More aggressive limits based on FPS
       const fpsBasedLimit = fpsRef.current.fps < 50 ? 80 : (fpsRef.current.fps < 55 ? 150 : 300);
@@ -18112,33 +18130,39 @@ const SpaceShooter = () => {
         return p.lifetime > 0 && p.size > 0.1;
       });
 
-      // Update bullet trails
-      bulletTrailsRef.current = bulletTrailsRef.current.filter(trail => {
-        trail.lifetime--;
-        trail.size *= 0.92;
-        trail.alpha *= 0.88;
-        return trail.lifetime > 0 && trail.alpha > 0.05;
-      });
-
-      // Limit bullet trails during boss fights to prevent excessive buildup (lower limit for better performance)
-      if (bossActiveRef.current && bulletTrailsRef.current.length > 100) {
-        bulletTrailsRef.current = bulletTrailsRef.current.slice(-100);
+      // Update bullet trails — write-pointer: no new array allocation
+      {
+        const bt = bulletTrailsRef.current;
+        let w = 0;
+        const bossTrailCap = bossActiveRef.current ? 100 : Infinity;
+        for (let i = 0; i < bt.length; i++) {
+          const trail = bt[i];
+          trail.lifetime--;
+          trail.size *= 0.92;
+          trail.alpha *= 0.88;
+          if (trail.lifetime > 0 && trail.alpha > 0.05 && w < bossTrailCap) {
+            bt[w++] = trail;
+          }
+        }
+        bt.length = w;
       }
 
-      // Update missile trails
-      missileTrailsRef.current = missileTrailsRef.current.filter(trail => {
-        trail.lifetime--;
-        trail.size *= 0.94;
-        trail.alpha *= 0.9;
-        if (trail.isSmoke) {
-          trail.y -= 0.3; // Smoke rises slightly
+      // Update missile trails — write-pointer: no new array allocation
+      {
+        const mt = missileTrailsRef.current;
+        let w = 0;
+        const bossMissileCap = bossActiveRef.current ? 60 : Infinity;
+        for (let i = 0; i < mt.length; i++) {
+          const trail = mt[i];
+          trail.lifetime--;
+          trail.size *= 0.94;
+          trail.alpha *= 0.9;
+          if (trail.isSmoke) trail.y -= 0.3;
+          if (trail.lifetime > 0 && trail.alpha > 0.05 && w < bossMissileCap) {
+            mt[w++] = trail;
+          }
         }
-        return trail.lifetime > 0 && trail.alpha > 0.05;
-      });
-
-      // Limit missile trails during boss fights to prevent excessive buildup (lower limit for better performance)
-      if (bossActiveRef.current && missileTrailsRef.current.length > 60) {
-        missileTrailsRef.current = missileTrailsRef.current.slice(-60);
+        mt.length = w;
       }
 
       // Update option satellite positions (follow player trail)
@@ -18426,6 +18450,7 @@ const SpaceShooter = () => {
           const yOffset = Math.sin(angle) * 15; // Vertical spread
 
           bulletsRef.current.push({
+            id: ++bulletIdCounterRef.current,
             x: player.x + PLAYER_WIDTH,
             y: player.y + PLAYER_HEIGHT / 2 - BULLET_HEIGHT / 2 + yOffset,
             polarity: polarityRef.current,
@@ -20837,6 +20862,9 @@ const SpaceShooter = () => {
       let hitPlayer = false;
       const timeWarpModifier = upgradesRef.current.timeWarp ? 0.3 : 1.0;
 
+      // Increment frame counter (used for staggered AI updates below)
+      frameCountRef.current++;
+
       // Track off-screen enemies for directional threat indicators (throttled for performance)
       offScreenTrackingFrameRef.current++;
       if (offScreenTrackingFrameRef.current % 3 === 0) { // Update every 3 frames
@@ -21017,7 +21045,17 @@ const SpaceShooter = () => {
     });
 
 
-      // Check bullet-enemy collisions
+      // Check bullet-enemy collisions — SpatialGrid reduces O(n×m) to ~O(n)
+      const collGrid = performanceRef.current.spatialGrid;
+      if (collGrid) {
+        collGrid.clear();
+        enemiesRef.current.forEach(enemy => {
+          const ew = enemy.width || ENEMY_WIDTH;
+          const eh = enemy.height || ENEMY_HEIGHT;
+          collGrid.insert(enemy, enemy.x, enemy.y, ew, eh);
+        });
+      }
+
       bulletsRef.current = bulletsRef.current.filter(bullet => {
         let bulletHit = false;
         const bulletW = bullet.isWaveCannon ? bullet.size : BULLET_WIDTH;
@@ -21031,7 +21069,15 @@ const SpaceShooter = () => {
           bullet.hitEnemies = [];
         }
 
+        // Use spatial grid to get only nearby enemies instead of all enemies
+        const candidateEnemies = collGrid
+          ? collGrid.query(bulletX, bulletY, bulletW, bulletH)
+          : enemiesRef.current;
+
         enemiesRef.current = enemiesRef.current.filter(enemy => {
+          // Skip enemies not in the spatial query result (fast path)
+          if (collGrid && !candidateEnemies.includes(enemy)) return true;
+
           const ew = enemy.width || ENEMY_WIDTH;
           const eh = enemy.height || ENEMY_HEIGHT;
 
@@ -23161,6 +23207,7 @@ const SpaceShooter = () => {
       });
 
       // Update pickup effects (debris, sparks from explosions, etc.)
+      // pickup effects — write-pointer: no new array allocation
       pickupEffectsRef.current = pickupEffectsRef.current.filter(effect => {
         effect.lifetime--;
 
@@ -23218,21 +23265,26 @@ const SpaceShooter = () => {
         return effect.lifetime > 0;
       });
 
-      // Update visual effects (other special effects)
-      specialEffectsRef.current = specialEffectsRef.current.filter(effect => {
-        effect.lifetime--;
-        if (effect.type === 'ring') {
-          effect.radius += (effect.maxRadius - effect.radius) * 0.2;
-        } else if (effect.type === 'sparkle') {
-          effect.x += effect.vx;
-          effect.y += effect.vy;
-          effect.vx *= 0.92;
-          effect.vy *= 0.92;
-          effect.size *= 0.95;
+      // Update visual effects (other special effects) — write-pointer
+      {
+        const se = specialEffectsRef.current;
+        let w = 0;
+        for (let i = 0; i < se.length; i++) {
+          const effect = se[i];
+          effect.lifetime--;
+          if (effect.type === 'ring') {
+            effect.radius += (effect.maxRadius - effect.radius) * 0.2;
+          } else if (effect.type === 'sparkle') {
+            effect.x += effect.vx;
+            effect.y += effect.vy;
+            effect.vx *= 0.92;
+            effect.vy *= 0.92;
+            effect.size *= 0.95;
+          }
+          if (effect.lifetime > 0) se[w++] = effect;
         }
-
-        return effect.lifetime > 0;
-      });
+        se.length = w;
+      }
 
       // Performance caps - limit array sizes during intense battles
       const MAX_PICKUP_EFFECTS = bossActiveRef.current ? 80 : 150;
@@ -23241,26 +23293,23 @@ const SpaceShooter = () => {
       const MAX_ENEMY_BULLETS = bossActiveRef.current ? 100 : 200;
 
       if (pickupEffectsRef.current.length > MAX_PICKUP_EFFECTS) {
-        pickupEffectsRef.current = pickupEffectsRef.current.slice(-MAX_PICKUP_EFFECTS);
+        pickupEffectsRef.current.length = MAX_PICKUP_EFFECTS;
       }
 
-      // Update floating texts
-      floatingTextsRef.current = floatingTextsRef.current.filter(text => {
-        text.lifetime--;
-        text.y += text.vy;
-        text.vy *= 0.98;
-
-        // Handle horizontal movement for damage numbers
-        if (text.vx) {
-          text.x += text.vx;
-          text.vx *= 0.95; // Slow down horizontal drift
+      // Update floating texts — write-pointer
+      {
+        const ft = floatingTextsRef.current;
+        let w = 0;
+        const cap = MAX_FLOATING_TEXTS;
+        for (let i = 0; i < ft.length; i++) {
+          const text = ft[i];
+          text.lifetime--;
+          text.y += text.vy;
+          text.vy *= 0.98;
+          if (text.vx) { text.x += text.vx; text.vx *= 0.95; }
+          if (text.lifetime > 0 && w < cap) ft[w++] = text;
         }
-
-        return text.lifetime > 0;
-      });
-
-      if (floatingTextsRef.current.length > MAX_FLOATING_TEXTS) {
-        floatingTextsRef.current = floatingTextsRef.current.slice(-MAX_FLOATING_TEXTS);
+        ft.length = w;
       }
 
       // Update explosions
@@ -24036,8 +24085,12 @@ const SpaceShooter = () => {
         }
 
         // Enemy shooting - skip if too many bullets on screen
+        // AI stride: stagger shooting decisions across 4 frames to spread CPU cost.
+        // Use enemy index mod 4 by checking if this enemy's slot aligns with current frame.
         const tooManyBullets = enemyBulletsRef.current.length > 120;
-        const shouldShoot = enemy.canShoot && currentTime - enemy.lastShot > ENEMY_FIRE_RATE;
+        const enemyIdx = enemiesRef.current.indexOf(enemy);
+        const aiThisFrame = (frameCountRef.current + enemyIdx) % 4 === 0;
+        const shouldShoot = aiThisFrame && enemy.canShoot && currentTime - enemy.lastShot > ENEMY_FIRE_RATE;
 
         if (shouldShoot && !tooManyBullets) {
           if (enemy.type === 'turret') {
