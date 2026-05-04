@@ -16888,7 +16888,7 @@ const SpaceShooter = () => {
             // Show drop-off message
             floatingTextsRef.current.push({
               x: GAME_WIDTH / 2,
-              y: 120,
+              y: GAME_HEIGHT / 2 - 80,
               text: `🚀 WAVE ${waveRef.current} - DEPLOYING! 🚀`,
               color: '#00ffff',
               lifetime: 120,
