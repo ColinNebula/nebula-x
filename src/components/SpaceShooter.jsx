@@ -1233,6 +1233,30 @@ const getZoneForWave = (waveNum) => {
   return WAVE_ZONES.uranus;
 };
 
+const getZoneKeyForWave = (waveNum) => {
+  if (waveNum >= 1 && waveNum <= 4) return 'moon';
+  if (waveNum >= 5 && waveNum <= 8) return 'mars';
+  if (waveNum >= 9 && waveNum <= 12) return 'jupiter';
+  if (waveNum >= 13 && waveNum <= 16) return 'saturn';
+  return 'uranus';
+};
+
+const NEBULA_ZONE_PALETTES = {
+  moon: ['#7c88cc', '#97a4e8', '#8d94d6', '#9ca8f0'],
+  mars: ['#b85e40', '#d47b5a', '#e08f6e', '#c46a4a'],
+  jupiter: ['#b36c3d', '#cf8751', '#9a5a37', '#d99b6b'],
+  saturn: ['#a79a66', '#c7b476', '#d9c98c', '#b8aa72'],
+  uranus: ['#5fa8c4', '#78c2dc', '#94d4ee', '#66b7d3']
+};
+
+const STORM_ZONE_KEYS = new Set(['jupiter']);
+
+const hexToRgba = (hex, alpha = 1) => {
+  const safe = /^#([0-9a-fA-F]{6})$/.test(hex || '') ? hex : '#88aaff';
+  const rgb = safe.match(/[0-9a-fA-F]{2}/g).map((x) => parseInt(x, 16));
+  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${Math.max(0, Math.min(1, alpha))})`;
+};
+
 // Attack family color coding improves readability and fairness by making intent obvious.
 const ATTACK_FAMILY_COLORS = {
   standard: { core: '#ffffff', glow: '#9aa8ff', trail: '#cfd7ff' },
@@ -2381,6 +2405,7 @@ const SpaceShooter = () => {
   const bloomCtxRef = useRef(null);
   const chromaticAberrationRef = useRef({ active: false, intensity: 0 }); // RGB split effect
   const nebulaParticlesRef = useRef([]); // Animated nebula clouds
+  const distantLightningRef = useRef({ cooldown: 90, flash: 0, x: GAME_WIDTH * 0.7, hue: '#9ecbff' }); // Storm-zone far lightning
   const timeScaleRef = useRef(1); // Slow-motion effect (1 = normal, 0.5 = half speed)
   const impactPulseTokenRef = useRef(0); // Guards short hit-stop resets from overlapping pulses
   const motionBlurTrailsRef = useRef(new Map()); // Trail data for bullets/ships
@@ -6767,19 +6792,39 @@ const SpaceShooter = () => {
       bloomCtxRef.current = bloomCanvasRef.current.getContext('2d', { willReadFrequently: true });
     }
 
-    // Initialize nebula cloud particles
+    // Initialize layered nebula particles (3-5 depth layers depending on post tier/perf).
     if (nebulaParticlesRef.current.length === 0) {
-      for (let i = 0; i < 25; i++) {
-        nebulaParticlesRef.current.push({
-          x: Math.random() * GAME_WIDTH,
-          y: Math.random() * GAME_HEIGHT,
-          size: 80 + Math.random() * 120,
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: 0.2 + Math.random() * 0.4,
-          opacity: 0.08 + Math.random() * 0.12,
-          color: ['#4444ff', '#ff44ff', '#44ffff', '#ff8844'][Math.floor(Math.random() * 4)],
-          phase: Math.random() * Math.PI * 2
-        });
+      const zoneKey = getZoneKeyForWave(waveRef.current);
+      const palette = NEBULA_ZONE_PALETTES[zoneKey] || NEBULA_ZONE_PALETTES.moon;
+      const userTier = userSettingsRef.current?.postProcessingTier || 'auto';
+      const autoTier = userSettingsRef.current?.performanceMode ? 'low' : 'high';
+      const effectiveTier = userTier === 'auto' ? autoTier : userTier;
+      const layerCount = effectiveTier === 'high' ? 5 : (effectiveTier === 'medium' ? 4 : 3);
+
+      const layerDefs = [
+        { count: 8, speedY: 0.05, speedX: 0.015, sizeMin: 140, sizeMax: 220, opacityMin: 0.045, opacityMax: 0.08, parallax: 0.08 },
+        { count: 7, speedY: 0.08, speedX: 0.02, sizeMin: 120, sizeMax: 190, opacityMin: 0.05, opacityMax: 0.09, parallax: 0.12 },
+        { count: 6, speedY: 0.11, speedX: 0.03, sizeMin: 95, sizeMax: 165, opacityMin: 0.06, opacityMax: 0.105, parallax: 0.17 },
+        { count: 5, speedY: 0.14, speedX: 0.04, sizeMin: 80, sizeMax: 140, opacityMin: 0.07, opacityMax: 0.12, parallax: 0.24 },
+        { count: 4, speedY: 0.18, speedX: 0.05, sizeMin: 64, sizeMax: 118, opacityMin: 0.08, opacityMax: 0.14, parallax: 0.32 }
+      ];
+
+      for (let layer = 0; layer < layerCount; layer++) {
+        const def = layerDefs[layer];
+        for (let i = 0; i < def.count; i++) {
+          nebulaParticlesRef.current.push({
+            x: Math.random() * GAME_WIDTH,
+            y: Math.random() * GAME_HEIGHT,
+            size: def.sizeMin + Math.random() * (def.sizeMax - def.sizeMin),
+            vx: (Math.random() - 0.5) * def.speedX,
+            vy: def.speedY + Math.random() * def.speedY,
+            opacity: def.opacityMin + Math.random() * (def.opacityMax - def.opacityMin),
+            phase: Math.random() * Math.PI * 2,
+            layer,
+            parallax: def.parallax,
+            colorIndex: Math.floor(Math.random() * palette.length)
+          });
+        }
       }
     }
 
@@ -6946,44 +6991,89 @@ const SpaceShooter = () => {
       });
       ctx.globalAlpha = 1;
 
-      // ========== DRAW ANIMATED NEBULA CLOUDS ==========
+      // ========== DRAW LAYERED PARALLAX NEBULA CLOUDS ==========
       // Skip nebula when FPS is low or many entities on screen
       const skipNebula = perfMode || fpsRef.current.fps < 50 || totalEntities > 500;
       if (!skipNebula) {
+        const zoneKey = getZoneKeyForWave(waveRef.current);
+        const palette = NEBULA_ZONE_PALETTES[zoneKey] || NEBULA_ZONE_PALETTES.moon;
         ctx.save();
         nebulaParticlesRef.current.forEach(cloud => {
           // Update cloud movement
           if (gameStateRef.current === 'playing') {
             cloud.x += cloud.vx;
             cloud.y += cloud.vy;
-            cloud.phase += 0.01;
+            cloud.phase += 0.008 + (cloud.layer || 0) * 0.001;
 
             // Wrap around screen
             if (cloud.y > GAME_HEIGHT + cloud.size) {
               cloud.y = -cloud.size;
               cloud.x = Math.random() * GAME_WIDTH;
+              cloud.colorIndex = (cloud.colorIndex + 1 + Math.floor(Math.random() * 2)) % palette.length;
             }
             if (cloud.x < -cloud.size) cloud.x = GAME_WIDTH + cloud.size;
             if (cloud.x > GAME_WIDTH + cloud.size) cloud.x = -cloud.size;
           }
 
+          const baseColor = palette[cloud.colorIndex % palette.length];
+          const accentColor = palette[(cloud.colorIndex + 1) % palette.length];
+          const drawX = ((cloud.x - (planetScrollRef.current * (cloud.parallax || 0.1))) % (GAME_WIDTH + cloud.size * 2)) - cloud.size;
+
           // Pulsating opacity
-          const pulseOpacity = cloud.opacity * (0.8 + Math.sin(cloud.phase) * 0.2);
+          const pulseOpacity = cloud.opacity * (0.78 + Math.sin(cloud.phase) * 0.22);
 
           // Draw nebula with radial gradient
           const gradient = ctx.createRadialGradient(
-            cloud.x, cloud.y, 0,
-            cloud.x, cloud.y, cloud.size
+            drawX, cloud.y, 0,
+            drawX, cloud.y, cloud.size
           );
-          gradient.addColorStop(0, cloud.color + Math.floor(pulseOpacity * 255).toString(16).padStart(2, '0'));
-          gradient.addColorStop(0.5, cloud.color + Math.floor(pulseOpacity * 0.6 * 255).toString(16).padStart(2, '0'));
-          gradient.addColorStop(1, cloud.color + '00');
+          gradient.addColorStop(0, hexToRgba(baseColor, pulseOpacity));
+          gradient.addColorStop(0.55, hexToRgba(accentColor, pulseOpacity * 0.58));
+          gradient.addColorStop(1, hexToRgba(baseColor, 0));
 
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.arc(cloud.x, cloud.y, cloud.size, 0, Math.PI * 2);
+          ctx.arc(drawX, cloud.y, cloud.size, 0, Math.PI * 2);
           ctx.fill();
         });
+
+        // Distant lightning flicker for storm zones (Jovian + storm weather).
+        const weatherType = weatherSystemRef.current?.type;
+        const stormWeather = weatherSystemRef.current?.active && (weatherType === 'ion_storm' || weatherType === 'nebula_storm');
+        const isStormZone = STORM_ZONE_KEYS.has(zoneKey) || stormWeather;
+        const lightning = distantLightningRef.current;
+        if (isStormZone) {
+          if (lightning.cooldown > 0) {
+            lightning.cooldown--;
+          } else if (Math.random() < (perfMode ? 0.0012 : 0.0032)) {
+            lightning.flash = 2 + Math.floor(Math.random() * 3);
+            lightning.cooldown = 120 + Math.floor(Math.random() * 220);
+            lightning.x = GAME_WIDTH * (0.55 + Math.random() * 0.35);
+            lightning.hue = Math.random() > 0.5 ? '#a8cfff' : '#b5a6ff';
+          }
+
+          if (lightning.flash > 0) {
+            const flashAlpha = perfMode ? 0.06 : 0.1;
+            const boltH = GAME_HEIGHT * (0.26 + Math.random() * 0.18);
+            const boltX = lightning.x + Math.sin(timestamp * 0.02) * 8;
+
+            ctx.strokeStyle = hexToRgba(lightning.hue, flashAlpha * lightning.flash);
+            ctx.lineWidth = 2;
+            ctx.shadowColor = lightning.hue;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.moveTo(boltX, 0);
+            ctx.lineTo(boltX - 10, boltH * 0.35);
+            ctx.lineTo(boltX + 8, boltH * 0.62);
+            ctx.lineTo(boltX - 6, boltH);
+            ctx.stroke();
+
+            ctx.fillStyle = hexToRgba(lightning.hue, flashAlpha * 0.45 * lightning.flash);
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            lightning.flash--;
+          }
+        }
         ctx.restore();
       }
 
