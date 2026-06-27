@@ -2859,6 +2859,21 @@ const SpaceShooter = () => {
     lastDamageTime: 0     // Timestamp of last damage application
   });
 
+  // Lightweight zone atmosphere moments (brief visual refresh bursts at milestones).
+  const zoneAtmosphereEventRef = useRef({
+    active: false,
+    type: null,           // 'ion_rain' | 'dust_gusts' | 'ring_glints' | 'aurora_curtains'
+    intensity: 0,
+    timer: 0,
+    duration: 0,
+    particles: [],
+    curtains: [],
+    color: '#88ccff',
+    lastMilestoneWave: 0,
+    lastSeenWave: 1,
+    nextMilestoneGap: 4
+  });
+
   // Destructible environment objects
   const destructiblesRef = useRef([]);
   const DESTRUCTIBLE_TYPES = {
@@ -3233,7 +3248,8 @@ const SpaceShooter = () => {
     hexSegments: [1,1,1,1,1,1], // 6 hexagonal segments (1 = active, 0 = damaged)
     pulseIntensity: 0, // Flash on hit
     rotationAngle: 0, // Rotating elements
-    chargeParticles: [] // Charging particles when recharging
+    chargeParticles: [], // Charging particles when recharging
+    refractionPhase: 0
   });
 
   // Ship ability effects tracking
@@ -4476,6 +4492,20 @@ const SpaceShooter = () => {
       nextWeatherWave: 3 + Math.floor(Math.random() * 3) // Random wave between 3-5
     };
 
+    zoneAtmosphereEventRef.current = {
+      active: false,
+      type: null,
+      intensity: 0,
+      timer: 0,
+      duration: 0,
+      particles: [],
+      curtains: [],
+      color: '#88ccff',
+      lastMilestoneWave: 0,
+      lastSeenWave: waveRef.current || 1,
+      nextMilestoneGap: 4
+    };
+
     // Initialize destructible objects (spawn some at start)
     destructiblesRef.current = [];
     if (gameMode !== 'practice') {
@@ -4546,7 +4576,8 @@ const SpaceShooter = () => {
       hexSegments: [1,1,1,1,1,1],
       pulseIntensity: 0,
       rotationAngle: 0,
-      chargeParticles: []
+      chargeParticles: [],
+      refractionPhase: 0
     };
     // Reset new features
     polarityRef.current = 'light';
@@ -5049,8 +5080,15 @@ const SpaceShooter = () => {
       angle: angle,
       intensity: 1.0,
       timer: 30,
-      radius: 20
+      radius: 20,
+      travel: 0,
+      travelSpeed: 0.08 + Math.random() * 0.06,
+      direction: Math.random() > 0.5 ? 1 : -1,
+      bandWidth: 0.22 + Math.random() * 0.16
     });
+    if (shieldEffectsRef.current.impacts.length > 10) {
+      shieldEffectsRef.current.impacts.shift();
+    }
 
     // Flash the shield
     shieldEffectsRef.current.pulseIntensity = 1.0;
@@ -6536,6 +6574,115 @@ const SpaceShooter = () => {
     soundSystem.playBossWarning?.();
   }, []);
 
+  const spawnZoneAtmosphereMoment = useCallback((targetWave = waveRef.current) => {
+    const nextGap = (zoneAtmosphereEventRef.current?.nextMilestoneGap || 4) === 4 ? 5 : 4;
+    const zoneKey = getZoneKeyForWave(targetWave);
+    const perfMode = userSettingsRef.current?.performanceMode;
+    const eventByZone = {
+      moon: 'aurora_curtains',
+      mars: 'dust_gusts',
+      jupiter: 'ion_rain',
+      saturn: 'ring_glints',
+      uranus: 'aurora_curtains'
+    };
+    const type = eventByZone[zoneKey] || 'ion_rain';
+
+    const defs = {
+      ion_rain: { duration: 180, color: '#8fe6ff', count: perfMode ? 34 : 58, label: 'ION RAIN' },
+      dust_gusts: { duration: 170, color: '#d89b6a', count: perfMode ? 28 : 46, label: 'DUST GUST' },
+      ring_glints: { duration: 160, color: '#ffe3a2', count: perfMode ? 26 : 44, label: 'RING GLINTS' },
+      aurora_curtains: { duration: 190, color: '#8dffd8', count: perfMode ? 20 : 34, label: 'AURORA' }
+    };
+
+    const def = defs[type] || defs.ion_rain;
+    const particles = [];
+    const curtains = [];
+
+    if (type === 'ion_rain') {
+      for (let i = 0; i < def.count; i++) {
+        particles.push({
+          x: Math.random() * GAME_WIDTH,
+          y: Math.random() * GAME_HEIGHT,
+          vx: -1.4 - Math.random() * 0.7,
+          vy: 3.2 + Math.random() * 2.4,
+          len: 10 + Math.random() * 12,
+          alpha: 0.2 + Math.random() * 0.45
+        });
+      }
+    } else if (type === 'dust_gusts') {
+      for (let i = 0; i < def.count; i++) {
+        particles.push({
+          x: Math.random() * GAME_WIDTH,
+          y: Math.random() * GAME_HEIGHT,
+          vx: -1.2 - Math.random() * 1.6,
+          vy: (Math.random() - 0.5) * 0.6,
+          size: 1.4 + Math.random() * 2.8,
+          alpha: 0.18 + Math.random() * 0.35,
+          swirl: Math.random() * Math.PI * 2
+        });
+      }
+    } else if (type === 'ring_glints') {
+      for (let i = 0; i < def.count; i++) {
+        particles.push({
+          x: Math.random() * GAME_WIDTH,
+          y: Math.random() * GAME_HEIGHT,
+          vx: -0.8 - Math.random() * 1.4,
+          vy: (Math.random() - 0.5) * 0.35,
+          twinkle: Math.random() * Math.PI * 2,
+          size: 1 + Math.random() * 2,
+          alpha: 0.25 + Math.random() * 0.4
+        });
+      }
+    } else {
+      for (let i = 0; i < def.count; i++) {
+        particles.push({
+          x: Math.random() * GAME_WIDTH,
+          y: Math.random() * GAME_HEIGHT * 0.8,
+          vx: -0.3 - Math.random() * 0.6,
+          vy: 0.05 + Math.random() * 0.2,
+          alpha: 0.12 + Math.random() * 0.25,
+          size: 1 + Math.random() * 1.8
+        });
+      }
+
+      const curtainCount = perfMode ? 2 : 3;
+      for (let i = 0; i < curtainCount; i++) {
+        curtains.push({
+          x: GAME_WIDTH * (0.2 + i * 0.3),
+          width: GAME_WIDTH * (0.22 + Math.random() * 0.1),
+          hue: 130 + i * 28 + Math.random() * 12,
+          phase: Math.random() * Math.PI * 2,
+          sway: 24 + Math.random() * 18,
+          alpha: 0.2 + Math.random() * 0.2
+        });
+      }
+    }
+
+    zoneAtmosphereEventRef.current = {
+      active: true,
+      type,
+      intensity: 0,
+      timer: def.duration,
+      duration: def.duration,
+      particles,
+      curtains,
+      color: def.color,
+      lastMilestoneWave: targetWave,
+      lastSeenWave: targetWave,
+      nextMilestoneGap: nextGap
+    };
+
+    floatingTextsRef.current.push({
+      x: GAME_WIDTH / 2,
+      y: 88,
+      text: def.label,
+      color: def.color,
+      lifetime: 72,
+      vy: -0.2,
+      scale: 1.0
+    });
+  }, []);
+
   // Spawn destructible space object
   const spawnDestructible = useCallback(() => {
     const types = Object.keys(DESTRUCTIBLE_TYPES);
@@ -6565,6 +6712,77 @@ const SpaceShooter = () => {
       planet.rotation += planet.rotationSpeed;
       planet.cloudRotation += planet.rotationSpeed * 1.5;
     });
+
+    const zoneEvent = zoneAtmosphereEventRef.current;
+    const currentWave = waveRef.current;
+
+    // Trigger brief atmosphere moments on milestone waves.
+    if (zoneEvent.lastSeenWave !== currentWave) {
+      zoneEvent.lastSeenWave = currentWave;
+      const cadenceGap = zoneEvent.nextMilestoneGap || 4;
+      const nextMilestoneWave = (zoneEvent.lastMilestoneWave || 0) + cadenceGap;
+      const isMilestoneWave = currentWave >= 4 && currentWave >= nextMilestoneWave;
+      if (isMilestoneWave && zoneEvent.lastMilestoneWave !== currentWave) {
+        spawnZoneAtmosphereMoment(currentWave);
+      }
+    }
+
+    if (zoneEvent.active) {
+      zoneEvent.timer--;
+      const lifeRatio = zoneEvent.timer / Math.max(1, zoneEvent.duration);
+      zoneEvent.intensity = Math.min(1, Math.max(0, Math.min(1, (1 - lifeRatio) * 5) * Math.min(1, lifeRatio * 6)));
+
+      if (zoneEvent.type === 'ion_rain') {
+        zoneEvent.particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.y > GAME_HEIGHT + p.len) {
+            p.y = -p.len;
+            p.x = Math.random() * GAME_WIDTH;
+          }
+          if (p.x < -30) p.x = GAME_WIDTH + 30;
+        });
+      } else if (zoneEvent.type === 'dust_gusts') {
+        zoneEvent.particles.forEach(p => {
+          p.swirl += 0.07;
+          p.x += p.vx;
+          p.y += p.vy + Math.sin(p.swirl) * 0.35;
+          if (p.x < -20) {
+            p.x = GAME_WIDTH + 20;
+            p.y = Math.random() * GAME_HEIGHT;
+          }
+          if (p.y < -20) p.y = GAME_HEIGHT + 20;
+          if (p.y > GAME_HEIGHT + 20) p.y = -20;
+        });
+      } else if (zoneEvent.type === 'ring_glints') {
+        zoneEvent.particles.forEach(p => {
+          p.twinkle += 0.18;
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < -20) {
+            p.x = GAME_WIDTH + 20;
+            p.y = Math.random() * GAME_HEIGHT;
+          }
+        });
+      } else {
+        zoneEvent.particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < -10) p.x = GAME_WIDTH + 10;
+          if (p.y > GAME_HEIGHT) p.y = 0;
+        });
+        zoneEvent.curtains.forEach(c => {
+          c.phase += 0.02;
+        });
+      }
+
+      if (zoneEvent.timer <= 0) {
+        zoneEvent.active = false;
+        zoneEvent.intensity = 0;
+        zoneEvent.particles = [];
+        zoneEvent.curtains = [];
+      }
+    }
 
     // Update weather system
     const weather = weatherSystemRef.current;
@@ -6664,7 +6882,7 @@ const SpaceShooter = () => {
       // Remove if off-screen
       return obj.y < GAME_HEIGHT + 100;
     });
-  }, []);
+  }, [spawnZoneAtmosphereMoment]);
   // ==================== END ENVIRONMENTAL FUNCTIONS ====================
 
   // Spawn a mini-boss (elite enemy mid-wave)
@@ -9102,6 +9320,46 @@ const SpaceShooter = () => {
           // Guard against non-finite values for shield rendering
           if (isFinite(centerX) && isFinite(centerY) && isFinite(shieldRadiusX) && isFinite(shieldRadiusY)) {
 
+            // Shaderless fake refraction: clipped layered gradients with animated offset.
+            if (!perfMode) {
+              ctx.save();
+              ctx.beginPath();
+              ctx.ellipse(centerX, centerY, shieldRadiusX, shieldRadiusY, 0, 0, Math.PI * 2);
+              ctx.clip();
+
+              const refractPulse = 0.35 + shieldBrightness * 0.35 + shieldFx.pulseIntensity * 0.2;
+              const sweepX = centerX + Math.sin(shieldFx.refractionPhase) * shieldRadiusX * 0.5;
+              const sweepY = centerY + Math.cos(shieldFx.refractionPhase * 0.8) * shieldRadiusY * 0.35;
+
+              const refractA = ctx.createLinearGradient(
+                sweepX - shieldRadiusX,
+                sweepY - shieldRadiusY,
+                sweepX + shieldRadiusX,
+                sweepY + shieldRadiusY
+              );
+              refractA.addColorStop(0, 'rgba(255,255,255,0)');
+              refractA.addColorStop(0.45, `rgba(255,255,255,${0.03 + refractPulse * 0.05})`);
+              refractA.addColorStop(0.55, `rgba(150,240,255,${0.05 + refractPulse * 0.08})`);
+              refractA.addColorStop(1, 'rgba(255,255,255,0)');
+              ctx.fillStyle = refractA;
+              ctx.fillRect(centerX - shieldRadiusX - 16, centerY - shieldRadiusY - 16, shieldRadiusX * 2 + 32, shieldRadiusY * 2 + 32);
+
+              const refractB = ctx.createRadialGradient(
+                centerX + Math.cos(shieldFx.refractionPhase * 1.3) * shieldRadiusX * 0.22,
+                centerY + Math.sin(shieldFx.refractionPhase * 1.1) * shieldRadiusY * 0.18,
+                shieldRadiusX * 0.12,
+                centerX,
+                centerY,
+                shieldRadiusX * 1.05
+              );
+              refractB.addColorStop(0, `rgba(255,255,255,${0.02 + refractPulse * 0.05})`);
+              refractB.addColorStop(0.55, `rgba(120,220,255,${0.015 + refractPulse * 0.04})`);
+              refractB.addColorStop(1, 'rgba(0,0,0,0)');
+              ctx.fillStyle = refractB;
+              ctx.fillRect(centerX - shieldRadiusX - 12, centerY - shieldRadiusY - 12, shieldRadiusX * 2 + 24, shieldRadiusY * 2 + 24);
+              ctx.restore();
+            }
+
             // Impact flash overlay
             if (shieldFx.pulseIntensity > 0.1) {
               ctx.globalAlpha = shieldFx.pulseIntensity * 0.6;
@@ -9344,19 +9602,41 @@ const SpaceShooter = () => {
 
             // Draw impact ripples
             shieldFx.impacts.forEach(impact => {
-              ctx.globalAlpha = impact.intensity * 0.7;
+              const travelAngle = impact.angle + impact.travel * impact.direction;
+              const arcHalf = impact.bandWidth;
+
+              // Surface ripple traveling along shield shell.
+              ctx.globalAlpha = impact.intensity * 0.72;
               ctx.strokeStyle = '#ffffff';
-              ctx.lineWidth = 3;
+              ctx.lineWidth = 2.6;
               ctx.beginPath();
-              ctx.arc(impact.x, impact.y, impact.radius, impact.angle - 0.5, impact.angle + 0.5);
+              ctx.ellipse(centerX, centerY, shieldRadiusX * 1.01, shieldRadiusY * 1.01, 0, travelAngle - arcHalf, travelAngle + arcHalf);
               ctx.stroke();
 
-              // Secondary ripple
-              ctx.globalAlpha = impact.intensity * 0.4;
+              // Trailing wave behind the traveling crest.
+              ctx.globalAlpha = impact.intensity * 0.42;
               ctx.strokeStyle = '#00ffff';
-              ctx.lineWidth = 2;
+              ctx.lineWidth = 1.9;
               ctx.beginPath();
-              ctx.arc(impact.x, impact.y, impact.radius * 0.6, impact.angle - 0.8, impact.angle + 0.8);
+              ctx.ellipse(
+                centerX,
+                centerY,
+                shieldRadiusX * (0.94 + impact.intensity * 0.08),
+                shieldRadiusY * (0.94 + impact.intensity * 0.08),
+                0,
+                travelAngle - arcHalf * 1.8,
+                travelAngle + arcHalf * 1.8
+              );
+              ctx.stroke();
+
+              // Local burst still blooms outward from the actual hit point.
+              const hitX = centerX + Math.cos(impact.angle) * shieldRadiusX;
+              const hitY = centerY + Math.sin(impact.angle) * shieldRadiusY;
+              ctx.globalAlpha = impact.intensity * 0.36;
+              ctx.strokeStyle = '#a8f4ff';
+              ctx.lineWidth = 1.6;
+              ctx.beginPath();
+              ctx.arc(hitX, hitY, impact.radius * 0.55, impact.angle - 0.9, impact.angle + 0.9);
               ctx.stroke();
             });
 
@@ -11232,6 +11512,95 @@ const SpaceShooter = () => {
           ctx.globalAlpha = weather.effects.visibilityReduction * weather.intensity * 0.5;
           ctx.fillStyle = weatherDef.color;
           ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        }
+
+        ctx.restore();
+      }
+
+      // ========== DRAW ZONE ATMOSPHERE MOMENTS ==========
+      const zoneEvent = zoneAtmosphereEventRef.current;
+      if (zoneEvent.active && zoneEvent.intensity > 0) {
+        ctx.save();
+        ctx.globalAlpha = zoneEvent.intensity;
+
+        if (zoneEvent.type === 'ion_rain') {
+          ctx.strokeStyle = '#8fe6ff';
+          ctx.lineCap = 'round';
+          zoneEvent.particles.forEach(p => {
+            ctx.globalAlpha = zoneEvent.intensity * p.alpha;
+            ctx.lineWidth = 1.1;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x - p.vx * 1.8, p.y - p.len);
+            ctx.stroke();
+          });
+        } else if (zoneEvent.type === 'dust_gusts') {
+          zoneEvent.particles.forEach(p => {
+            ctx.globalAlpha = zoneEvent.intensity * p.alpha;
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3.2);
+            grad.addColorStop(0, 'rgba(255, 215, 160, 0.28)');
+            grad.addColorStop(1, 'rgba(150, 95, 60, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 3.2, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        } else if (zoneEvent.type === 'ring_glints') {
+          zoneEvent.particles.forEach(p => {
+            const twinkle = 0.4 + Math.sin(p.twinkle) * 0.6;
+            ctx.globalAlpha = zoneEvent.intensity * p.alpha * twinkle;
+            ctx.strokeStyle = '#ffe3a2';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(p.x - p.size * 2, p.y);
+            ctx.lineTo(p.x + p.size * 2, p.y);
+            ctx.moveTo(p.x, p.y - p.size * 1.8);
+            ctx.lineTo(p.x, p.y + p.size * 1.8);
+            ctx.stroke();
+          });
+        } else if (zoneEvent.type === 'aurora_curtains') {
+          zoneEvent.curtains.forEach(c => {
+            const topY = -20;
+            const bottomY = GAME_HEIGHT * 0.72;
+            const sway = Math.sin(c.phase) * c.sway;
+
+            const curtain = ctx.createLinearGradient(c.x + sway, topY, c.x - sway * 0.4, bottomY);
+            curtain.addColorStop(0, `hsla(${c.hue}, 95%, 72%, 0)`);
+            curtain.addColorStop(0.28, `hsla(${c.hue}, 95%, 72%, ${c.alpha * 0.5})`);
+            curtain.addColorStop(0.7, `hsla(${c.hue + 22}, 90%, 66%, ${c.alpha * 0.35})`);
+            curtain.addColorStop(1, `hsla(${c.hue + 40}, 90%, 66%, 0)`);
+
+            ctx.fillStyle = curtain;
+            ctx.beginPath();
+            ctx.moveTo(c.x - c.width * 0.5 + sway, topY);
+            ctx.bezierCurveTo(
+              c.x - c.width * 0.2,
+              GAME_HEIGHT * 0.26,
+              c.x - c.width * 0.35,
+              GAME_HEIGHT * 0.48,
+              c.x - c.width * 0.15,
+              bottomY
+            );
+            ctx.lineTo(c.x + c.width * 0.15, bottomY);
+            ctx.bezierCurveTo(
+              c.x + c.width * 0.35,
+              GAME_HEIGHT * 0.48,
+              c.x + c.width * 0.2,
+              GAME_HEIGHT * 0.26,
+              c.x + c.width * 0.5 + sway,
+              topY
+            );
+            ctx.closePath();
+            ctx.fill();
+          });
+
+          zoneEvent.particles.forEach(p => {
+            ctx.globalAlpha = zoneEvent.intensity * p.alpha;
+            ctx.fillStyle = '#c9fff0';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          });
         }
 
         ctx.restore();
@@ -24456,6 +24825,7 @@ const SpaceShooter = () => {
 
         // Rotate shield elements
         shieldFx.rotationAngle += 0.02;
+        shieldFx.refractionPhase += 0.035;
 
         // Decay pulse intensity
         if (shieldFx.pulseIntensity > 0) {
@@ -24467,6 +24837,7 @@ const SpaceShooter = () => {
           impact.timer--;
           impact.radius += 3;
           impact.intensity *= 0.92;
+          impact.travel += impact.travelSpeed;
           return impact.timer > 0;
         });
 
