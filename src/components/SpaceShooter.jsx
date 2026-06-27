@@ -1233,6 +1233,68 @@ const getZoneForWave = (waveNum) => {
   return WAVE_ZONES.uranus;
 };
 
+// Attack family color coding improves readability and fairness by making intent obvious.
+const ATTACK_FAMILY_COLORS = {
+  standard: { core: '#ffffff', glow: '#9aa8ff', trail: '#cfd7ff' },
+  aimed: { core: '#7ef8ff', glow: '#00cfff', trail: '#a2fdff' },
+  ambush: { core: '#c7a3ff', glow: '#6a3bff', trail: '#d7c2ff' },
+  explosive: { core: '#ffd06b', glow: '#ff6a00', trail: '#ffb347' },
+  beam: { core: '#9effff', glow: '#00d2ff', trail: '#baffff' },
+  spiral: { core: '#ff9dff', glow: '#ff00ff', trail: '#ffc3ff' },
+  wave: { core: '#9fffd6', glow: '#00ffaa', trail: '#beffe8' },
+  sniper: { core: '#ffaeae', glow: '#ff0033', trail: '#ffd0d0' },
+  artillery: { core: '#ffd7b5', glow: '#ff5a00', trail: '#ffbd8e' },
+  fire: { core: '#fff1b6', glow: '#ff4e00', trail: '#ffba71' },
+  ice: { core: '#e9ffff', glow: '#00d9ff', trail: '#b8f6ff' },
+  pulse: { core: '#fff7ad', glow: '#d8ff00', trail: '#f2ff96' },
+  elite: { core: '#ffffff', glow: '#ff3ad8', trail: '#ffb2f0' }
+};
+
+const getAttackFamilyFromPattern = (pattern) => {
+  switch (pattern) {
+    case 'spread': return 'aimed';
+    case 'bombs': return 'explosive';
+    case 'chase': return 'aimed';
+    case 'laser': return 'beam';
+    case 'spawn': return 'elite';
+    case 'snipe': return 'sniper';
+    case 'barrage': return 'artillery';
+    case 'teleport': return 'ambush';
+    case 'pulse': return 'pulse';
+    case 'berserk': return 'aimed';
+    case 'slow_tank': return 'artillery';
+    case 'heavy_artillery': return 'artillery';
+    case 'erratic_storm': return 'wave';
+    case 'defensive_ring': return 'pulse';
+    case 'ice_fortress': return 'beam';
+    default: return 'standard';
+  }
+};
+
+const getAttackFamilyFromBullet = (bullet) => {
+  if (bullet.attackFamily) return bullet.attackFamily;
+  if (bullet.isCannon) return 'artillery';
+  if (bullet.isFireBullet) return 'fire';
+  if (bullet.isIceBullet) return 'ice';
+  if (bullet.aimed) return 'aimed';
+  if (bullet.fromBehind) return 'ambush';
+  switch (bullet.type) {
+    case 'bomb': return 'explosive';
+    case 'laser': return 'beam';
+    case 'spiral': return 'spiral';
+    case 'wave': return 'wave';
+    case 'sniper': return 'sniper';
+    case 'pulse': return 'pulse';
+    case 'miniboss': return 'elite';
+    default: return 'standard';
+  }
+};
+
+const getAttackFamilyVisual = (bullet) => {
+  const family = getAttackFamilyFromBullet(bullet);
+  return ATTACK_FAMILY_COLORS[family] || ATTACK_FAMILY_COLORS.standard;
+};
+
 // Power-up types with rarity system
 const POWERUP_TYPES = {
   // Common power-ups (55% of drops)
@@ -2319,6 +2381,7 @@ const SpaceShooter = () => {
   const chromaticAberrationRef = useRef({ active: false, intensity: 0 }); // RGB split effect
   const nebulaParticlesRef = useRef([]); // Animated nebula clouds
   const timeScaleRef = useRef(1); // Slow-motion effect (1 = normal, 0.5 = half speed)
+  const impactPulseTokenRef = useRef(0); // Guards short hit-stop resets from overlapping pulses
   const motionBlurTrailsRef = useRef(new Map()); // Trail data for bullets/ships
   const challengeStatsRef = useRef({
     survivalTime: 0,        // Survival mode: total time survived
@@ -5105,8 +5168,68 @@ const SpaceShooter = () => {
            rect1.y + rect1.height > rect2.y;
   }, []);
 
+  const triggerImpactPulse = useCallback((kind = 'heavyHit') => {
+    const presets = {
+      heavyHit: {
+        timeScale: 0.88,
+        durationMs: 70,
+        chromaIntensity: 2.2,
+        chromaTimer: 10,
+        flashTimer: 7,
+        flashIntensity: 0.14,
+        flashColor: '#ffc27a'
+      },
+      weakPoint: {
+        timeScale: 0.84,
+        durationMs: 80,
+        chromaIntensity: 3.0,
+        chromaTimer: 12,
+        flashTimer: 8,
+        flashIntensity: 0.18,
+        flashColor: '#ffe37a'
+      },
+      playerDamage: {
+        timeScale: 0.78,
+        durationMs: 95,
+        chromaIntensity: 3.6,
+        chromaTimer: 14,
+        flashTimer: 9,
+        flashIntensity: 0.2,
+        flashColor: '#ff8a8a'
+      }
+    };
+
+    const preset = presets[kind] || presets.heavyHit;
+    const token = performance.now() + Math.random();
+    impactPulseTokenRef.current = token;
+
+    timeScaleRef.current = Math.min(timeScaleRef.current, preset.timeScale);
+
+    const chroma = chromaticAberrationRef.current || {};
+    chromaticAberrationRef.current = {
+      active: true,
+      intensity: Math.max(chroma.intensity || 0, preset.chromaIntensity),
+      timer: Math.max(chroma.timer || 0, preset.chromaTimer)
+    };
+
+    hitFlashRef.current = {
+      active: true,
+      timer: preset.flashTimer,
+      maxTimer: preset.flashTimer,
+      color: preset.flashColor,
+      intensity: preset.flashIntensity,
+      additive: true
+    };
+
+    setTimeout(() => {
+      if (impactPulseTokenRef.current === token && timeScaleRef.current >= preset.timeScale - 0.01) {
+        timeScaleRef.current = 1;
+      }
+    }, preset.durationMs);
+  }, []);
+
   // Create explosion effect
-  const createExplosion = useCallback((x, y, size = 'normal', useSprite = false) => {
+  const createExplosion = useCallback((x, y, size = 'normal', useSprite = false, applyTimeDilation = true) => {
     // Play explosion sound
     if (size === 'boss') {
       // Play boss destruction sound
@@ -5130,14 +5253,18 @@ const SpaceShooter = () => {
     if (size === 'boss') {
       triggerScreenShake(12, 30); // Big shake for boss
       // Trigger slow-motion and chromatic aberration for boss explosions
-      timeScaleRef.current = 0.3; // 30% speed
-      chromaticAberrationRef.current = { active: true, intensity: 8, timer: 45 };
-      setTimeout(() => { timeScaleRef.current = 1; }, 600); // Resume after 600ms
+      if (applyTimeDilation) {
+        timeScaleRef.current = 0.3; // 30% speed
+        chromaticAberrationRef.current = { active: true, intensity: 8, timer: 45 };
+        setTimeout(() => { timeScaleRef.current = 1; }, 600); // Resume after 600ms
+      }
     } else if (size === 'large' || size === 'heavy') {
       triggerScreenShake(6, 15); // Medium shake
-      timeScaleRef.current = 0.6; // 60% speed
-      chromaticAberrationRef.current = { active: true, intensity: 4, timer: 25 };
-      setTimeout(() => { timeScaleRef.current = 1; }, 300);
+      if (applyTimeDilation) {
+        timeScaleRef.current = 0.84; // Very short global dip for punch without lingering slowdown
+        chromaticAberrationRef.current = { active: true, intensity: 2.8, timer: 12 };
+        setTimeout(() => { timeScaleRef.current = 1; }, 110);
+      }
     } else if (size === 'missile') {
       triggerScreenShake(4, 10); // Small shake
     }
@@ -10179,6 +10306,7 @@ const SpaceShooter = () => {
         // Distance-based LOD for bullet effects
         const distToPlayer = getDistanceToPlayer(bullet.x, bullet.y);
         const lodLevel = getLODLevel(distToPlayer, performanceRef.current);
+        const familyVisual = getAttackFamilyVisual(bullet);
 
         // Bullet color based on type
         if (bullet.isCannon) {
@@ -10254,7 +10382,7 @@ const SpaceShooter = () => {
           const flicker = Math.sin(firePhase) * 0.2 + 0.8;
 
           // Outer fire glow
-          ctx.shadowColor = '#ff4400';
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = 15 * flicker;
 
           // Fire gradient
@@ -10262,7 +10390,7 @@ const SpaceShooter = () => {
           fireGrad.addColorStop(0, '#ffffff');
           fireGrad.addColorStop(0.3, '#ffff00');
           fireGrad.addColorStop(0.6, '#ff8800');
-          fireGrad.addColorStop(1, '#ff2200');
+          fireGrad.addColorStop(1, familyVisual.glow);
           ctx.fillStyle = fireGrad;
           ctx.beginPath();
           ctx.arc(0, 0, 8, 0, Math.PI * 2);
@@ -10299,7 +10427,7 @@ const SpaceShooter = () => {
           const shimmer = Math.sin(icePhase) * 0.15 + 0.85;
 
           // Outer ice glow
-          ctx.shadowColor = '#00ffff';
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = 12 * shimmer;
 
           // Ice gradient (crystalline look)
@@ -10307,7 +10435,7 @@ const SpaceShooter = () => {
           iceGrad.addColorStop(0, '#ffffff');
           iceGrad.addColorStop(0.4, '#88eeff');
           iceGrad.addColorStop(0.7, '#00ccff');
-          iceGrad.addColorStop(1, '#0066aa');
+          iceGrad.addColorStop(1, familyVisual.glow);
           ctx.fillStyle = iceGrad;
           ctx.beginPath();
           ctx.arc(0, 0, 7, 0, Math.PI * 2);
@@ -10348,8 +10476,8 @@ const SpaceShooter = () => {
           ctx.translate(bullet.x, bullet.y);
           ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
 
-          ctx.fillStyle = '#00ffff';
-          ctx.shadowColor = '#00ffff';
+          ctx.fillStyle = familyVisual.core;
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = reducedBulletEffects ? 6 : 12;
           ctx.beginPath();
           ctx.ellipse(0, 0, 8, 4, 0, 0, Math.PI * 2);
@@ -10365,17 +10493,14 @@ const SpaceShooter = () => {
 
           ctx.restore();
         } else if (bullet.fromBehind) {
-          // Ambush bullet (colored by polarity - coming from behind)
-          const bulletPolarity = bullet.polarity || 'light';
-          const bulletColor = bulletPolarity === 'light' ? '#ffffff' : '#8B00FF';
-          const bulletGlow = bulletPolarity === 'light' ? '#aaaaff' : '#4B0082';
-          ctx.fillStyle = bulletColor;
-          ctx.shadowColor = bulletGlow;
+          // Ambush bullet (family-coded)
+          ctx.fillStyle = familyVisual.core;
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = reducedBulletEffects ? 5 : 10;
           ctx.fillRect(bullet.x, bullet.y, ENEMY_BULLET_WIDTH, ENEMY_BULLET_HEIGHT);
           // Bullet trail (on left side since moving right) - skip in reduced mode
           if (!reducedBulletEffects) {
-            ctx.fillStyle = bulletPolarity === 'light' ? '#ccccff' : '#6B00AA';
+            ctx.fillStyle = familyVisual.trail;
             ctx.fillRect(bullet.x - 6, bullet.y + 1, 6, ENEMY_BULLET_HEIGHT - 2);
           }
         } else if (bullet.type === 'miniboss') {
@@ -10384,12 +10509,12 @@ const SpaceShooter = () => {
           ctx.translate(bullet.x, bullet.y);
           ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
 
-          ctx.shadowColor = bullet.color || '#ff00ff';
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = 15;
 
           const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 8);
-          gradient.addColorStop(0, '#ffffff');
-          gradient.addColorStop(0.5, bullet.color || '#ff00ff');
+          gradient.addColorStop(0, familyVisual.core);
+          gradient.addColorStop(0.5, familyVisual.glow);
           gradient.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = gradient;
           ctx.beginPath();
@@ -10400,15 +10525,15 @@ const SpaceShooter = () => {
         } else if (bullet.type === 'bomb') {
           // Bomb - large sphere with glow
           ctx.save();
-          ctx.shadowColor = bullet.color || '#ffaa00';
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = 20;
 
           const size = Math.max(1, bullet.size || 12);
           const gradient = ctx.createRadialGradient(bullet.x, bullet.y, 0, bullet.x, bullet.y, size);
-          gradient.addColorStop(0, '#ffffff');
-          gradient.addColorStop(0.3, '#ffff00');
-          gradient.addColorStop(0.7, '#ff6600');
-          gradient.addColorStop(1, '#aa0000');
+          gradient.addColorStop(0, familyVisual.core);
+          gradient.addColorStop(0.3, familyVisual.trail);
+          gradient.addColorStop(0.7, familyVisual.glow);
+          gradient.addColorStop(1, '#aa2200');
           ctx.fillStyle = gradient;
           ctx.beginPath();
           ctx.arc(bullet.x, bullet.y, size, 0, Math.PI * 2);
@@ -10427,13 +10552,13 @@ const SpaceShooter = () => {
           const w = bullet.width || 250;
           const h = bullet.height || 10;
 
-          ctx.shadowColor = bullet.color || '#00ffff';
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = 25;
 
           const gradient = ctx.createLinearGradient(bullet.x, bullet.y, bullet.x + w, bullet.y);
           gradient.addColorStop(0, 'rgba(255,255,255,0)');
-          gradient.addColorStop(0.1, bullet.color || '#00ffff');
-          gradient.addColorStop(0.9, bullet.color || '#00ffff');
+          gradient.addColorStop(0.1, familyVisual.glow);
+          gradient.addColorStop(0.9, familyVisual.glow);
           gradient.addColorStop(1, 'rgba(255,255,255,0)');
           ctx.fillStyle = gradient;
           ctx.fillRect(bullet.x, bullet.y, w, h);
@@ -10453,20 +10578,20 @@ const SpaceShooter = () => {
           ctx.save();
           ctx.translate(bullet.x, bullet.y);
 
-          ctx.shadowColor = '#ff00ff';
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = 12;
 
           const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 6);
-          gradient.addColorStop(0, '#ffffff');
-          gradient.addColorStop(0.4, '#ff88ff');
-          gradient.addColorStop(1, '#ff00ff');
+          gradient.addColorStop(0, familyVisual.core);
+          gradient.addColorStop(0.4, familyVisual.trail);
+          gradient.addColorStop(1, familyVisual.glow);
           ctx.fillStyle = gradient;
           ctx.beginPath();
           ctx.arc(0, 0, 6, 0, Math.PI * 2);
           ctx.fill();
 
           // Rotating trail
-          ctx.strokeStyle = 'rgba(255, 0, 255, 0.5)';
+          ctx.strokeStyle = familyVisual.trail;
           ctx.lineWidth = 2;
           const trailAngle = Math.atan2(bullet.vy, bullet.vx) + Math.PI;
           ctx.beginPath();
@@ -10480,21 +10605,21 @@ const SpaceShooter = () => {
           ctx.save();
           ctx.translate(bullet.x, bullet.y);
 
-          ctx.shadowColor = '#00ffaa';
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = 10;
 
           // Main orb
           const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 7);
-          gradient.addColorStop(0, '#ffffff');
-          gradient.addColorStop(0.4, '#88ffcc');
-          gradient.addColorStop(1, '#00ffaa');
+          gradient.addColorStop(0, familyVisual.core);
+          gradient.addColorStop(0.4, familyVisual.trail);
+          gradient.addColorStop(1, familyVisual.glow);
           ctx.fillStyle = gradient;
           ctx.beginPath();
           ctx.arc(0, 0, 7, 0, Math.PI * 2);
           ctx.fill();
 
           // Wave trail
-          ctx.strokeStyle = 'rgba(0, 255, 170, 0.6)';
+          ctx.strokeStyle = familyVisual.trail;
           ctx.lineWidth = 3;
           ctx.beginPath();
           for (let i = 0; i < 8; i++) {
@@ -10512,14 +10637,14 @@ const SpaceShooter = () => {
           ctx.translate(bullet.x, bullet.y);
           ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
 
-          ctx.shadowColor = '#ff0000';
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = 15;
 
           // Long tracer effect
           const gradient = ctx.createLinearGradient(-30, 0, 10, 0);
           gradient.addColorStop(0, 'rgba(255, 0, 0, 0)');
-          gradient.addColorStop(0.5, 'rgba(255, 100, 100, 0.5)');
-          gradient.addColorStop(1, '#ff0000');
+          gradient.addColorStop(0.5, familyVisual.trail);
+          gradient.addColorStop(1, familyVisual.glow);
           ctx.fillStyle = gradient;
           ctx.fillRect(-30, -3, 40, 6);
 
@@ -10530,24 +10655,20 @@ const SpaceShooter = () => {
           ctx.fill();
 
           // Bright tip
-          ctx.fillStyle = '#ff0000';
+          ctx.fillStyle = familyVisual.glow;
           ctx.beginPath();
           ctx.arc(8, 0, 3, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.restore();
         } else {
-          // Regular enemy bullet (colored by polarity)
-          const bulletPolarity = bullet.polarity || 'light';
-          const bulletColor = bulletPolarity === 'light' ? '#ffffff' : '#8B00FF';
-          const bulletGlow = bulletPolarity === 'light' ? '#aaaaff' : '#4B0082';
-          const trailColor = bulletPolarity === 'light' ? '#ccccff' : '#6B00AA';
-          ctx.fillStyle = bulletColor;
-          ctx.shadowColor = bulletGlow;
+          // Regular enemy bullet (family-coded)
+          ctx.fillStyle = familyVisual.core;
+          ctx.shadowColor = familyVisual.glow;
           ctx.shadowBlur = 8;
           ctx.fillRect(bullet.x, bullet.y, ENEMY_BULLET_WIDTH, ENEMY_BULLET_HEIGHT);
           // Bullet trail
-          ctx.fillStyle = trailColor;
+          ctx.fillStyle = familyVisual.trail;
           ctx.fillRect(bullet.x + ENEMY_BULLET_WIDTH, bullet.y + 1, 6, ENEMY_BULLET_HEIGHT - 2);
         }
       });
@@ -16400,12 +16521,17 @@ const SpaceShooter = () => {
       if (hitFlash?.active && hitFlash.timer > 0) {
         ctx.save();
         const t = hitFlash.timer;
-        const maxT = 14;
+        const maxT = hitFlash.maxTimer || 14;
         const alpha = (hitFlash.intensity || 0.2) * Math.min(1, t / maxT);
         const g = ctx.createRadialGradient(GAME_WIDTH / 2, GAME_HEIGHT / 2, 0, GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH * 0.75);
         g.addColorStop(0, `rgba(255,255,255,${alpha * 0.9})`);
         g.addColorStop(0.35, `${hitFlash.color || '#ffbb66'}33`);
         g.addColorStop(1, 'rgba(0,0,0,0)');
+        if (hitFlash.additive) {
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = `rgba(255,255,255,${alpha * 0.45})`;
+          ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        }
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
         hitFlash.timer--;
@@ -16434,7 +16560,9 @@ const SpaceShooter = () => {
         const boss = bossRef.current;
         if (boss && boss.entered) {
           const fireRatio = Math.min(1, (now - boss.lastShot) / Math.max(1, boss.fireRate || 2000));
-          drawTelegraph(boss.x + boss.width / 2, boss.y + boss.height / 2, Math.max(boss.width, boss.height) * 0.42, fireRatio, boss.zoneColor || '#ff6666');
+          const bossFamily = getAttackFamilyFromPattern(boss.zonePattern || 'standard');
+          const bossTelegraphColor = ATTACK_FAMILY_COLORS[bossFamily]?.glow || boss.zoneColor || '#ff6666';
+          drawTelegraph(boss.x + boss.width / 2, boss.y + boss.height / 2, Math.max(boss.width, boss.height) * 0.42, fireRatio, bossTelegraphColor);
 
           if (boss.phaseShiftFx && boss.phaseShiftFx > 0) {
             ctx.save();
@@ -16452,7 +16580,9 @@ const SpaceShooter = () => {
         const mb = miniBossRef.current;
         if (mb && mb.entered) {
           const mbRatio = Math.min(1, (now - (mb.lastShot || now)) / Math.max(1, mb.attackCooldown || 800));
-          drawTelegraph(mb.x + mb.width / 2, mb.y + mb.height / 2, Math.max(mb.width, mb.height) * 0.45, mbRatio, mb.color || '#ffaa44');
+          const miniBossFamily = getAttackFamilyFromPattern(mb.attackPattern || 'standard');
+          const miniBossTelegraphColor = ATTACK_FAMILY_COLORS[miniBossFamily]?.glow || mb.color || '#ffaa44';
+          drawTelegraph(mb.x + mb.width / 2, mb.y + mb.height / 2, Math.max(mb.width, mb.height) * 0.45, mbRatio, miniBossTelegraphColor);
         }
       }
 
@@ -20035,6 +20165,7 @@ const SpaceShooter = () => {
               const newLives = livesRef.current - 1;
               setLives(newLives);
               livesRef.current = newLives;
+              triggerImpactPulse('playerDamage');
               playerInvincibleRef.current = 120;
               createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
               triggerScreenShake(15, 20);
@@ -20123,6 +20254,7 @@ const SpaceShooter = () => {
               const newLives = livesRef.current - 1;
               setLives(newLives);
               livesRef.current = newLives;
+              triggerImpactPulse('playerDamage');
               playerInvincibleRef.current = 120;
               createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
               triggerScreenShake(15, 20);
@@ -20232,6 +20364,7 @@ const SpaceShooter = () => {
               const newLives = livesRef.current - 1;
               setLives(newLives);
               livesRef.current = newLives;
+              triggerImpactPulse('playerDamage');
               playerInvincibleRef.current = 120;
               createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
               triggerScreenShake(12, 15);
@@ -20275,6 +20408,7 @@ const SpaceShooter = () => {
               const newLives = livesRef.current - 1;
               setLives(newLives);
               livesRef.current = newLives;
+              triggerImpactPulse('playerDamage');
               playerInvincibleRef.current = 120;
               createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
               triggerScreenShake(10, 15);
@@ -20340,6 +20474,7 @@ const SpaceShooter = () => {
                 const newLives = livesRef.current - 1;
                 setLives(newLives);
                 livesRef.current = newLives;
+                triggerImpactPulse('playerDamage');
                 playerInvincibleRef.current = 60;
                 createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
                 triggerScreenShake(12, 18);
@@ -20710,6 +20845,7 @@ const SpaceShooter = () => {
                       vx: -8 * Math.cos(rad),
                       vy: 8 * Math.sin(rad),
                       type: 'miniboss',
+                      attackFamily: 'aimed',
                       color: mb.color
                     });
                   }
@@ -20724,6 +20860,7 @@ const SpaceShooter = () => {
                     vx: -4,
                     vy: 2,
                     type: 'bomb',
+                    attackFamily: 'explosive',
                     color: '#ffaa00',
                     size: 12
                   });
@@ -20741,6 +20878,7 @@ const SpaceShooter = () => {
                   vx: (dx / dist) * 10,
                   vy: (dy / dist) * 10,
                   type: 'miniboss',
+                  attackFamily: 'aimed',
                   color: '#ff00ff'
                 });
                 soundSystem.playEnemyShoot();
@@ -20754,6 +20892,7 @@ const SpaceShooter = () => {
                   vx: 0,
                   vy: 0,
                   type: 'laser',
+                  attackFamily: 'beam',
                   color: '#00ffff',
                   width: 250,
                   height: 10,
@@ -20818,6 +20957,7 @@ const SpaceShooter = () => {
                     vx: -6 * Math.cos(angle),
                     vy: 6 * Math.sin(angle),
                     type: 'miniboss',
+                    attackFamily: 'artillery',
                     color: '#888888',
                     size: 8
                   });
@@ -20843,6 +20983,7 @@ const SpaceShooter = () => {
                       vx: -9 * Math.cos(rad),
                       vy: 9 * Math.sin(rad),
                       type: 'miniboss',
+                      attackFamily: 'ambush',
                       color: '#9966ff'
                     });
                   });
@@ -20875,6 +21016,7 @@ const SpaceShooter = () => {
                     vx: Math.cos(angle) * pulseSpeed,
                     vy: Math.sin(angle) * pulseSpeed,
                     type: 'pulse',
+                    attackFamily: 'pulse',
                     color: '#ffff00',
                     size: 6
                   });
@@ -20901,6 +21043,7 @@ const SpaceShooter = () => {
                     vx: -berserkSpeed * Math.cos(angle),
                     vy: berserkSpeed * Math.sin(angle),
                     type: 'miniboss',
+                    attackFamily: 'aimed',
                     color: healthPercent < 0.3 ? '#ff0000' : '#ff2200'
                   });
                 }
@@ -20943,6 +21086,7 @@ const SpaceShooter = () => {
                     vx: (dx / dist) * 14,
                     vy: (dy / dist) * 14,
                     type: 'sniper',
+                    attackFamily: 'sniper',
                     color: '#ff0088',
                     size: 5
                   });
@@ -21536,6 +21680,10 @@ const SpaceShooter = () => {
             } else {
               createImpactParticles(bulletX, bulletY, '#ffaa00', 4);
             }
+
+            if (enemy.type === 'heavy' && (isCritical || enemy.health <= 0)) {
+              triggerImpactPulse('heavyHit');
+            }
             // ========== END FLOATING DAMAGE NUMBERS ==========
 
             if (enemy.health > 0) {
@@ -21636,6 +21784,7 @@ const SpaceShooter = () => {
               const newLives = livesRef.current - 1;
               setLives(newLives);
               livesRef.current = newLives;
+              triggerImpactPulse('playerDamage');
               playerInvincibleRef.current = 120;
               triggerGamepadVibration(0.7, 1.0, 300);
 
@@ -22030,6 +22179,7 @@ const SpaceShooter = () => {
                   const newLives = livesRef.current - 1;
                   setLives(newLives);
                   livesRef.current = newLives;
+                  triggerImpactPulse('playerDamage');
                   playerInvincibleRef.current = 120;
                   triggerGamepadVibration(boss.isExtraLargeLaser ? 1.0 : 0.7, 1.0, 400);
 
@@ -22340,6 +22490,7 @@ const SpaceShooter = () => {
                     const newLives = livesRef.current - 1;
                     setLives(newLives);
                     livesRef.current = newLives;
+                    triggerImpactPulse('playerDamage');
                     playerInvincibleRef.current = 120;
                     createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'large');
                     triggerScreenShake(20, 30);
@@ -22791,6 +22942,7 @@ const SpaceShooter = () => {
                   }
 
                   triggerScreenShake(4, 8);
+                  triggerImpactPulse('weakPoint');
                 }
               } else {
                 // Boss invulnerable from regeneration
@@ -23930,6 +24082,7 @@ const SpaceShooter = () => {
             const newLives = livesRef.current - 1;
             setLives(newLives);
             livesRef.current = newLives;
+            triggerImpactPulse('playerDamage');
             playerInvincibleRef.current = 120;
             createExplosion(px, py, 'large');
             triggerScreenShake(15, 20);
@@ -23974,6 +24127,7 @@ const SpaceShooter = () => {
           } else {
             livesRef.current -= dmg;
             setLives(livesRef.current);
+            triggerImpactPulse('playerDamage');
             playerInvincibleRef.current = 60; // Brief invincibility
             createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'small');
             soundSystem.playPlayerDestroy();
@@ -24135,6 +24289,7 @@ const SpaceShooter = () => {
               const newLives = livesRef.current - 1;
               setLives(newLives);
               livesRef.current = newLives;
+              triggerImpactPulse('playerDamage');
               playerInvincibleRef.current = 120;
               if (newLives <= 0) {
                 handleGameOver();
@@ -24382,6 +24537,7 @@ const SpaceShooter = () => {
                 const newLives = livesRef.current - 1;
                 setLives(newLives);
                 livesRef.current = newLives;
+                triggerImpactPulse('playerDamage');
                 playerInvincibleRef.current = 120;
                 if (newLives <= 0) handleGameOver();
               }
@@ -24891,7 +25047,7 @@ const SpaceShooter = () => {
 
         // Create massive explosion at player position
         const player = playerRef.current;
-        createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'boss', true);
+        createExplosion(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT / 2, 'boss', true, false);
 
         // Play loud explosion sound
         try {
@@ -24903,10 +25059,8 @@ const SpaceShooter = () => {
         // Trigger massive screen shake
         triggerScreenShake(15, 40);
 
-        // Trigger slow-motion and chromatic aberration
-        timeScaleRef.current = 0.2; // 20% speed for dramatic effect
-        chromaticAberrationRef.current = { active: true, intensity: 10, timer: 60 };
-        setTimeout(() => { timeScaleRef.current = 1; }, 800);
+        // Short impact dip + flash/chroma pulse for responsive combat feedback.
+        triggerImpactPulse('playerDamage');
 
         const newLives = livesRef.current - 1;
         setLives(newLives);
