@@ -1273,6 +1273,7 @@ const DEFAULT_USER_SETTINGS = {
   avatarColor: '#00ff88', // Custom avatar accent color
   difficulty: 'normal', // easy, normal, hard
   performanceMode: false, // Reduced visual effects for better performance
+  postProcessingTier: 'auto', // auto, off, low, medium, high
   showFPS: false, // Display FPS counter
   controls: {
     moveUp: ['KeyW', 'ArrowUp'],
@@ -2306,6 +2307,7 @@ const SpaceShooter = () => {
   const pickupEffectsRef = useRef([]);
   const floatingTextsRef = useRef([]);
   const specialEffectsRef = useRef([]); // Special visual effects
+  const impactDecalsRef = useRef([]); // Persistent scorch marks from explosions
   const muzzleFlashRef = useRef({ active: false, timer: 0, x: 0, y: 0 }); // Muzzle flash effect
   const hitFlashRef = useRef({ active: false, timer: 0 }); // Screen hit flash
   const levelFadeRef = useRef({ active: false, fadeIn: true, alpha: 1, showText: 'campaign' }); // campaign, survival, bossRush, timeAttack
@@ -2542,6 +2544,7 @@ const SpaceShooter = () => {
   const lastElectricityRef = useRef(0);
   const playerLaserRef = useRef({ charging: false, charge: 0, firing: false, duration: 0 }); // Player laser beam
   const screenShakeRef = useRef({ intensity: 0, duration: 0 }); // Screen shake effect
+  const cameraRigRef = useRef({ driftX: 0, driftY: 0, kickX: 0, kickY: 0 }); // Camera drift/kick smoothing
 
   // Graze System - reward near-misses
   const grazeRef = useRef({
@@ -4915,6 +4918,11 @@ const SpaceShooter = () => {
     if (intensity > screenShakeRef.current.intensity) {
       screenShakeRef.current = { intensity, duration };
     }
+
+    // Add a soft camera kick that eases out for extra impact feel.
+    const rig = cameraRigRef.current;
+    rig.kickX += (Math.random() - 0.5) * intensity * 0.6;
+    rig.kickY += (Math.random() - 0.5) * intensity * 0.6;
   }, []);
 
   // Create shield impact effect
@@ -5132,6 +5140,30 @@ const SpaceShooter = () => {
       setTimeout(() => { timeScaleRef.current = 1; }, 300);
     } else if (size === 'missile') {
       triggerScreenShake(4, 10); // Small shake
+    }
+
+    // Cinematic full-screen hit flash (brief and additive-feeling without extra passes).
+    const flashIntensity = size === 'boss' ? 0.35 : (size === 'large' || size === 'heavy' ? 0.2 : 0.12);
+    hitFlashRef.current = {
+      active: true,
+      timer: size === 'boss' ? 14 : 9,
+      color: size === 'boss' ? '#ff55cc' : '#ffbb66',
+      intensity: flashIntensity
+    };
+
+    // Add persistent scorch decals to make combat aftermath visible.
+    if (size !== 'small') {
+      const maxDecals = userSettingsRef.current?.performanceMode ? 20 : 40;
+      impactDecalsRef.current.push({
+        x,
+        y,
+        radius: size === 'boss' ? 70 : (size === 'large' || size === 'heavy' ? 42 : 28),
+        alpha: size === 'boss' ? 0.35 : 0.22,
+        lifetime: size === 'boss' ? 540 : 360
+      });
+      if (impactDecalsRef.current.length > maxDecals) {
+        impactDecalsRef.current = impactDecalsRef.current.slice(-maxDecals);
+      }
     }
 
     // Use sprite-based explosion for enemies (when sprite is available)
@@ -6707,6 +6739,16 @@ const SpaceShooter = () => {
         shake.intensity *= 0.9; // Decay intensity
       }
 
+      // Camera polish: soft velocity-follow drift + damping kick.
+      const rig = cameraRigRef.current;
+      const playerVelX = playerRef.current?.vx || 0;
+      const playerVelY = playerRef.current?.vy || 0;
+      rig.driftX = rig.driftX * 0.9 + playerVelX * 0.25;
+      rig.driftY = rig.driftY * 0.9 + playerVelY * 0.18;
+      rig.kickX *= 0.86;
+      rig.kickY *= 0.86;
+      ctx.translate(rig.driftX + rig.kickX, rig.driftY + rig.kickY);
+
       // Update zone transition effect
       if (zoneTransition) {
         const newProgress = zoneTransition.progress + (1 / zoneTransition.duration);
@@ -6800,6 +6842,51 @@ const SpaceShooter = () => {
           ctx.fillStyle = gradient;
           ctx.beginPath();
           ctx.arc(cloud.x, cloud.y, cloud.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+      }
+
+      // Extra depth layer: subtle nebula ribbons in higher-quality tiers.
+      const userTier = userSettingsRef.current?.postProcessingTier || 'auto';
+      const effectiveTier = userTier === 'auto'
+        ? (userSettingsRef.current?.performanceMode || fpsRef.current.fps < 45 ? 'low' : (fpsRef.current.fps < 55 ? 'medium' : 'high'))
+        : userTier;
+      if (!skipNebula && effectiveTier === 'high') {
+        ctx.save();
+        const t = timestamp * 0.00018;
+        for (let i = 0; i < 2; i++) {
+          const yBase = GAME_HEIGHT * (0.22 + i * 0.28);
+          const amp = 24 + i * 10;
+          ctx.beginPath();
+          ctx.moveTo(-40, yBase);
+          for (let x = -40; x <= GAME_WIDTH + 40; x += 28) {
+            const y = yBase + Math.sin((x * 0.01) + t + i * 1.7) * amp;
+            ctx.lineTo(x, y);
+          }
+          const ribbon = ctx.createLinearGradient(0, yBase - 50, 0, yBase + 50);
+          ribbon.addColorStop(0, 'rgba(90, 120, 255, 0)');
+          ribbon.addColorStop(0.5, i === 0 ? 'rgba(110, 90, 255, 0.11)' : 'rgba(80, 200, 255, 0.1)');
+          ribbon.addColorStop(1, 'rgba(90, 120, 255, 0)');
+          ctx.strokeStyle = ribbon;
+          ctx.lineWidth = 40 - i * 10;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // Draw persistent explosion scorch decals above deep background, below gameplay entities.
+      if (impactDecalsRef.current.length > 0) {
+        ctx.save();
+        impactDecalsRef.current.forEach(d => {
+          const alpha = Math.max(0, d.alpha * (d.lifetime / 540));
+          const g = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.radius);
+          g.addColorStop(0, `rgba(30, 20, 10, ${alpha})`);
+          g.addColorStop(0.7, `rgba(25, 15, 10, ${alpha * 0.6})`);
+          g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, d.radius, 0, Math.PI * 2);
           ctx.fill();
         });
         ctx.restore();
@@ -9836,9 +9923,11 @@ const SpaceShooter = () => {
       // Draw bullet trails (behind bullets)
       bulletTrailsRef.current.forEach(trail => {
         ctx.save();
-        ctx.globalAlpha = trail.alpha;
+        const level = trail.weaponLevel || 1;
+        const shimmerPulse = trail.shimmer ? (0.85 + Math.sin(Date.now() / 70 + trail.x) * 0.25) : 1;
+        ctx.globalAlpha = Math.min(1, trail.alpha * shimmerPulse);
         ctx.shadowColor = trail.glowColor;
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 6 + level * 2;
         ctx.fillStyle = trail.color;
         ctx.beginPath();
         ctx.arc(trail.x, trail.y, trail.size, 0, Math.PI * 2);
@@ -15925,6 +16014,15 @@ const SpaceShooter = () => {
         ctx.font = "24px \"Press Start 2P\", monospace";
         ctx.textAlign = 'center';
         const comboColor = kc.count >= 50 ? '#ff00ff' : kc.count >= 25 ? '#ff8800' : kc.count >= 10 ? '#ffff00' : '#ffffff';
+
+        // Ghost echoes for extra UI punch.
+        for (let i = 1; i <= 2; i++) {
+          ctx.globalAlpha = 0.15 / i;
+          ctx.fillStyle = comboColor;
+          ctx.fillText(`${kc.count} CHAIN`, i * 2, i * 2);
+        }
+        ctx.globalAlpha = 1;
+
         ctx.fillStyle = comboColor;
         ctx.shadowColor = comboColor;
         ctx.shadowBlur = 20;
@@ -16142,8 +16240,13 @@ const SpaceShooter = () => {
       }
 
       // ========== POST-PROCESSING EFFECTS ==========
+      const userPostTier = userSettingsRef.current?.postProcessingTier || 'auto';
+      const postTier = userPostTier === 'auto'
+        ? (userSettingsRef.current?.performanceMode || fpsRef.current.fps < 45 ? 'low' : (fpsRef.current.fps < 55 ? 'medium' : 'high'))
+        : userPostTier;
+
       // Apply bloom/glow effect (skip if FPS is low or many entities)
-      const skipBloom = perfMode || fpsRef.current.fps < 50 || totalEntities > 400;
+      const skipBloom = postTier === 'off' || postTier === 'low' || perfMode || fpsRef.current.fps < 50 || totalEntities > 400;
       if (!skipBloom && bloomCtxRef.current) {
         const bloomCtx = bloomCtxRef.current;
         const bloomCanvas = bloomCanvasRef.current;
@@ -16189,13 +16292,14 @@ const SpaceShooter = () => {
 
       // Apply chromatic aberration effect
       const chromaticAb = chromaticAberrationRef.current;
-      if (chromaticAb.active && chromaticAb.timer > 0) {
+      if (postTier !== 'off' && postTier !== 'low' && chromaticAb.active && chromaticAb.timer > 0) {
         chromaticAb.timer--;
         if (chromaticAb.timer <= 0) {
           chromaticAb.active = false;
         } else {
           // Create RGB channel separation effect
-          const intensity = chromaticAb.intensity * (chromaticAb.timer / 45);
+          const chromaScale = postTier === 'high' ? 1 : 0.65;
+          const intensity = chromaticAb.intensity * chromaScale * (chromaticAb.timer / 45);
           ctx.save();
 
           // Get canvas image data
@@ -16289,6 +16393,67 @@ const SpaceShooter = () => {
         }
 
         ctx.restore();
+      }
+
+      // Draw impact hit flash overlay (separate from danger flash).
+      const hitFlash = hitFlashRef.current;
+      if (hitFlash?.active && hitFlash.timer > 0) {
+        ctx.save();
+        const t = hitFlash.timer;
+        const maxT = 14;
+        const alpha = (hitFlash.intensity || 0.2) * Math.min(1, t / maxT);
+        const g = ctx.createRadialGradient(GAME_WIDTH / 2, GAME_HEIGHT / 2, 0, GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH * 0.75);
+        g.addColorStop(0, `rgba(255,255,255,${alpha * 0.9})`);
+        g.addColorStop(0.35, `${hitFlash.color || '#ffbb66'}33`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        hitFlash.timer--;
+        if (hitFlash.timer <= 0) hitFlash.active = false;
+        ctx.restore();
+      }
+
+      // Enemy telegraphs: show imminent attack rings for boss and mini-boss.
+      if (gameStateRef.current === 'playing') {
+        const now = Date.now();
+        const drawTelegraph = (x, y, radius, ratio, color) => {
+          if (ratio < 0.75) return;
+          const p = (ratio - 0.75) / 0.25;
+          ctx.save();
+          ctx.globalAlpha = 0.25 + p * 0.45;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2 + p * 2;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 14;
+          ctx.beginPath();
+          ctx.arc(x, y, radius + p * 18, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        };
+
+        const boss = bossRef.current;
+        if (boss && boss.entered) {
+          const fireRatio = Math.min(1, (now - boss.lastShot) / Math.max(1, boss.fireRate || 2000));
+          drawTelegraph(boss.x + boss.width / 2, boss.y + boss.height / 2, Math.max(boss.width, boss.height) * 0.42, fireRatio, boss.zoneColor || '#ff6666');
+
+          if (boss.phaseShiftFx && boss.phaseShiftFx > 0) {
+            ctx.save();
+            const fxRatio = boss.phaseShiftFx / 45;
+            ctx.globalAlpha = 0.4 * fxRatio;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(boss.x + boss.width / 2, boss.y + boss.height / 2, Math.max(boss.width, boss.height) * (0.7 + (1 - fxRatio) * 0.9), 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+
+        const mb = miniBossRef.current;
+        if (mb && mb.entered) {
+          const mbRatio = Math.min(1, (now - (mb.lastShot || now)) / Math.max(1, mb.attackCooldown || 800));
+          drawTelegraph(mb.x + mb.width / 2, mb.y + mb.height / 2, Math.max(mb.width, mb.height) * 0.45, mbRatio, mb.color || '#ffaa44');
+        }
       }
 
       // Draw Practice Mode HUD indicator
@@ -19122,21 +19287,26 @@ const SpaceShooter = () => {
       // Update player bullets and filter out off-screen bullets
       bulletsRef.current = bulletsRef.current.filter(bullet => {
         const bulletPolarity = bullet.polarity || 'light';
+        const weaponLevel = bullet.weaponLevel || 1;
         // Reduce trail generation during boss fights, skip entirely if FPS < 30
         const currentFPS = fpsRef.current.fps || 60;
-        let trailChance = bossActiveRef.current ? 0.2 : 0.5;
+        let trailChance = (bossActiveRef.current ? 0.2 : 0.45) + Math.min(0.18, (weaponLevel - 1) * 0.04);
         if (currentFPS < 30) trailChance = 0;
         else if (currentFPS < 45) trailChance *= 0.5;
 
         if (Math.random() < trailChance) {
+          const trailColor = bullet.weaponColor || (bulletPolarity === 'light' ? '#ffff00' : '#8B00FF');
+          const trailGlow = bullet.weaponColor || (bulletPolarity === 'light' ? '#ff8800' : '#4B0082');
           bulletTrailsRef.current.push({
             x: bullet.x - 2,
             y: bullet.y + BULLET_HEIGHT / 2,
-            size: 3 + Math.random() * 2,
-            color: bulletPolarity === 'light' ? '#ffff00' : '#8B00FF',
-            glowColor: bulletPolarity === 'light' ? '#ff8800' : '#4B0082',
-            lifetime: 8,
-            alpha: 0.8
+            size: 2.5 + weaponLevel * 0.45 + Math.random() * 1.5,
+            color: trailColor,
+            glowColor: trailGlow,
+            lifetime: 7 + weaponLevel,
+            alpha: 0.75 + weaponLevel * 0.04,
+            weaponLevel,
+            shimmer: Math.random() > 0.6
           });
         }
 
@@ -19293,6 +19463,7 @@ const SpaceShooter = () => {
           entered: false,
           phase: 0,
           phaseTimer: 0,
+          phaseShiftFx: 0,
           targetY: GAME_HEIGHT / 2 - BOSS_HEIGHT / 2,
           invincible: true, // Invulnerable until shields are destroyed
           spawnInvulnerable: true, // Track initial spawn invulnerability
@@ -21413,6 +21584,25 @@ const SpaceShooter = () => {
             boss.phaseTimer = 0;
             boss.phase = (boss.phase + 1) % 3;
             boss.targetY = 50 + Math.random() * (GAME_HEIGHT - boss.height - 100);
+
+            // Boss phase transition FX package.
+            boss.phaseShiftFx = 45;
+            triggerScreenShake(8, 16);
+            chromaticAberrationRef.current = { active: true, intensity: 5, timer: 24 };
+            floatingTextsRef.current.push({
+              x: boss.x + boss.width / 2,
+              y: boss.y - 24,
+              text: `PHASE ${boss.phase + 1}`,
+              color: boss.zoneColor || '#ff6666',
+              lifetime: 50,
+              vy: -0.8,
+              flash: true,
+              scale: 1.15
+            });
+          }
+
+          if (boss.phaseShiftFx && boss.phaseShiftFx > 0) {
+            boss.phaseShiftFx--;
           }
 
           // Move towards target
@@ -23456,6 +23646,20 @@ const SpaceShooter = () => {
           if (effect.lifetime > 0) se[w++] = effect;
         }
         se.length = w;
+      }
+
+      // Update persistent impact decals.
+      {
+        const decals = impactDecalsRef.current;
+        let w = 0;
+        const cap = userSettingsRef.current?.performanceMode ? 20 : 40;
+        for (let i = 0; i < decals.length; i++) {
+          const d = decals[i];
+          d.lifetime -= 1;
+          d.alpha *= 0.998;
+          if (d.lifetime > 0 && d.alpha > 0.02 && w < cap) decals[w++] = d;
+        }
+        decals.length = w;
       }
 
       // Performance caps - limit array sizes during intense battles
