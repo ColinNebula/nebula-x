@@ -5960,17 +5960,24 @@ const SpaceShooter = () => {
     const currentZoneName = Object.keys(WAVE_ZONES).find(key => WAVE_ZONES[key] === currentZone);
 
     // Filter formations suitable for current zone
-    const patternKeys = Object.keys(FORMATION_PATTERNS).filter(key => {
+    const allPatternKeys = Object.keys(FORMATION_PATTERNS);
+    const patternKeys = allPatternKeys.filter(key => {
       const pattern = FORMATION_PATTERNS[key];
       return !pattern.zones || pattern.zones.includes(currentZoneName);
     });
 
-    const patternKey = patternKeys[Math.floor(Math.random() * patternKeys.length)];
+    // Defensive fallback: if zone filtering yields no matches, use any available pattern.
+    const candidateKeys = patternKeys.length > 0 ? patternKeys : allPatternKeys;
+    if (candidateKeys.length === 0) return;
+
+    const patternKey = candidateKeys[Math.floor(Math.random() * candidateKeys.length)];
     const pattern = FORMATION_PATTERNS[patternKey];
+    if (!pattern || !Array.isArray(pattern.positions) || pattern.positions.length === 0) return;
 
     const groupId = nextFormationIdRef.current++;
     const baseY = 80 + Math.random() * (GAME_HEIGHT - 160); // Keep formation on screen
     const waveNum = waveRef.current;
+    const formationPolarity = Math.random() > 0.5 ? 'light' : 'dark';
 
     // Create the formation group
     formationsRef.current[groupId] = {
@@ -5985,7 +5992,6 @@ const SpaceShooter = () => {
     // Spawn each enemy in the formation
     pattern.positions.forEach((pos, index) => {
       // Formation enemies share polarity (either all light or all dark)
-      const formationPolarity = Math.random() > 0.5 ? 'light' : 'dark';
       const enemy = {
         x: GAME_WIDTH + pos.x,
         y: Math.max(20, Math.min(GAME_HEIGHT - 40, baseY + pos.y)),
@@ -7050,6 +7056,7 @@ const SpaceShooter = () => {
         ctx.save();
         const progress = zoneTransition.progress;
         const newZone = getZoneForWave(zoneTransition.toWave);
+        const zoneColor = /^#[0-9a-fA-F]{6}$/.test(newZone?.color || '') ? newZone.color : '#88aaff';
 
         // Fade overlay with zone color
         if (progress < 0.5) {
@@ -7060,7 +7067,7 @@ const SpaceShooter = () => {
         } else {
           // Then show zone flash
           const flashAlpha = (1 - progress) * 2;
-          const rgb = newZone.color.match(/\w\w/g).map(x => parseInt(x, 16));
+          const rgb = zoneColor.match(/[0-9a-fA-F]{2}/g).map(x => parseInt(x, 16));
           ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${flashAlpha * 0.5})`;
           ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
         }
@@ -7072,13 +7079,13 @@ const SpaceShooter = () => {
 
           ctx.font = "bold 32px 'Press Start 2P', monospace";
           ctx.textAlign = 'center';
-          ctx.fillStyle = newZone.color;
-          ctx.shadowColor = newZone.color;
+          ctx.fillStyle = zoneColor;
+          ctx.shadowColor = zoneColor;
           ctx.shadowBlur = 25;
           ctx.fillText('ENTERING', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30);
 
           ctx.font = "bold 40px 'Press Start 2P', monospace";
-          ctx.fillText(newZone.name, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
+          ctx.fillText(newZone?.name || 'NEW ZONE', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
 
           ctx.shadowBlur = 0;
           ctx.globalAlpha = 1;
@@ -16567,6 +16574,7 @@ const SpaceShooter = () => {
     };
 
     const gameLoop = (timestamp) => {
+      try {
       // Update FPS counter and adaptive performance
       const fpsData = fpsRef.current;
       const perfData = performanceRef.current;
@@ -25152,7 +25160,38 @@ const SpaceShooter = () => {
         debugWarn(`[FRAME SPIKE] Boss battle frame took ${frameTime.toFixed(1)}ms (entities: ${totalEntities}, bullets: ${enemyBulletsRef.current.length})`);
       }
 
-      animationFrameRef.current = requestAnimationFrame(gameLoop);
+      } catch (error) {
+        const waveNum = waveRef.current || 1;
+        const enemyCount = enemiesRef.current?.length || 0;
+        const playerBulletCount = bulletsRef.current?.length || 0;
+        const enemyBulletCount = enemyBulletsRef.current?.length || 0;
+        const gameStateNow = gameStateRef.current;
+
+        console.error('[GAME LOOP CRASH]', {
+          wave: waveNum,
+          gameState: gameStateNow,
+          enemyCount,
+          playerBulletCount,
+          enemyBulletCount,
+          error
+        });
+
+        // Attempt lightweight recovery so gameplay can continue instead of freezing.
+        if (Array.isArray(bulletsRef.current)) {
+          bulletsRef.current = bulletsRef.current.filter(b => b && Number.isFinite(b.x) && Number.isFinite(b.y));
+        }
+        if (Array.isArray(enemyBulletsRef.current)) {
+          enemyBulletsRef.current = enemyBulletsRef.current.filter(b => b && Number.isFinite(b.x) && Number.isFinite(b.y));
+        }
+        if (Array.isArray(enemiesRef.current)) {
+          enemiesRef.current = enemiesRef.current.filter(e => e && Number.isFinite(e.x) && Number.isFinite(e.y));
+        }
+        if (Array.isArray(powerupsRef.current)) {
+          powerupsRef.current = powerupsRef.current.filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.y));
+        }
+      } finally {
+        animationFrameRef.current = requestAnimationFrame(gameLoop);
+      }
     };
 
 
