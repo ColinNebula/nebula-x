@@ -10217,13 +10217,50 @@ const SpaceShooter = () => {
         ctx.save();
         const level = trail.weaponLevel || 1;
         const shimmerPulse = trail.shimmer ? (0.85 + Math.sin(Date.now() / 70 + trail.x) * 0.25) : 1;
+        const levelNorm = Math.max(0, Math.min(1, (level - 1) / 4));
+        const turbulence = trail.turbulence || 0;
+        const jitterTime = Date.now() * 0.025 + trail.x * 0.09 + trail.y * 0.07;
+        const jitterX = turbulence > 0 ? Math.sin(jitterTime) * turbulence : 0;
+        const jitterY = turbulence > 0 ? Math.cos(jitterTime * 1.2) * turbulence * 0.7 : 0;
+        const widthScale = trail.thickness || (0.9 + levelNorm * 1.4);
+        const hueShift = trail.hueShift || 0;
         ctx.globalAlpha = Math.min(1, trail.alpha * shimmerPulse);
         ctx.shadowColor = trail.glowColor;
-        ctx.shadowBlur = 6 + level * 2;
+        ctx.shadowBlur = 5 + level * 2.2 + widthScale * 2;
+        if (!perfMode && Math.abs(hueShift) > 0.01) {
+          const drift = levelNorm * 10 * Math.sin(Date.now() / 140 + trail.x * 0.03);
+          ctx.filter = `hue-rotate(${(hueShift + drift).toFixed(1)}deg) saturate(${(1 + levelNorm * 0.25).toFixed(2)})`;
+        }
         ctx.fillStyle = trail.color;
         ctx.beginPath();
-        ctx.arc(trail.x, trail.y, trail.size, 0, Math.PI * 2);
+        ctx.ellipse(
+          trail.x + jitterX,
+          trail.y + jitterY,
+          trail.size * (0.6 + widthScale * 0.45),
+          trail.size * (0.34 + widthScale * 0.2),
+          0,
+          0,
+          Math.PI * 2
+        );
         ctx.fill();
+
+        // Late levels occasionally fork into tiny sparks for a dramatic progression cue.
+        if (!perfMode && trail.forkIntensity > 0.12) {
+          const forkAlpha = Math.min(1, trail.alpha * trail.forkIntensity);
+          const forkLen = trail.size * (2.2 + trail.forkIntensity * 2.4);
+          const forkSpread = 0.3 + levelNorm * 0.35;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1 + levelNorm * 0.8;
+          ctx.globalAlpha = forkAlpha;
+          ctx.beginPath();
+          ctx.moveTo(trail.x + jitterX, trail.y + jitterY);
+          ctx.lineTo(trail.x - forkLen, trail.y - forkLen * forkSpread * 0.5);
+          ctx.moveTo(trail.x + jitterX, trail.y + jitterY);
+          ctx.lineTo(trail.x - forkLen * 0.85, trail.y + forkLen * forkSpread * 0.55);
+          ctx.stroke();
+        }
+
+        ctx.filter = 'none';
         ctx.shadowBlur = 0;
         ctx.restore();
       });
@@ -16704,6 +16741,59 @@ const SpaceShooter = () => {
         ctx.restore();
       }
 
+      // Boss phase transition overlay: temporary vignette + screen-space distortion ring.
+      const activeBoss = bossRef.current;
+      if (activeBoss?.phaseTransitionFx?.timer > 0) {
+        const phaseFx = activeBoss.phaseTransitionFx;
+        const fxRatio = phaseFx.timer / Math.max(1, phaseFx.maxTimer || 42);
+        const pulse = 0.78 + Math.sin(Date.now() * 0.024) * 0.22;
+        const fxColor = phaseFx.color || '#ff6666';
+
+        ctx.save();
+        const vignette = ctx.createRadialGradient(
+          GAME_WIDTH / 2,
+          GAME_HEIGHT / 2,
+          GAME_WIDTH * 0.2,
+          GAME_WIDTH / 2,
+          GAME_HEIGHT / 2,
+          GAME_WIDTH * 0.85
+        );
+        vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        vignette.addColorStop(1, hexToRgba(fxColor, (phaseFx.vignetteStrength || 0.34) * fxRatio * pulse));
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        ctx.restore();
+
+        const distortionRadius = (phaseFx.distortionRadius || 80) + (1 - fxRatio) * (GAME_WIDTH * 0.52);
+        const ringThickness = 4 + fxRatio * 18;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.2 + fxRatio * 0.3;
+        const ring = ctx.createRadialGradient(
+          phaseFx.x,
+          phaseFx.y,
+          Math.max(1, distortionRadius - ringThickness),
+          phaseFx.x,
+          phaseFx.y,
+          distortionRadius + ringThickness
+        );
+        ring.addColorStop(0, 'rgba(255,255,255,0)');
+        ring.addColorStop(0.35, hexToRgba(fxColor, 0.08 + fxRatio * 0.2));
+        ring.addColorStop(0.5, hexToRgba('#ffffff', 0.26 * fxRatio));
+        ring.addColorStop(0.65, hexToRgba(fxColor, 0.08 + fxRatio * 0.2));
+        ring.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = ring;
+        ctx.beginPath();
+        ctx.arc(phaseFx.x, phaseFx.y, distortionRadius + ringThickness + 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = hexToRgba(fxColor, 0.2 + fxRatio * 0.35);
+        ctx.lineWidth = 1.5 + fxRatio * 3;
+        ctx.beginPath();
+        ctx.arc(phaseFx.x, phaseFx.y, distortionRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       // Enemy telegraphs: show imminent attack rings/cones/outlines before dangerous attacks.
       if (gameStateRef.current === 'playing') {
         const now = Date.now();
@@ -18896,6 +18986,7 @@ const SpaceShooter = () => {
           trail.lifetime--;
           trail.size *= 0.92;
           trail.alpha *= 0.88;
+          if (trail.forkIntensity) trail.forkIntensity *= 0.9;
           if (trail.lifetime > 0 && trail.alpha > 0.05 && w < bossTrailCap) {
             bt[w++] = trail;
           }
@@ -19723,16 +19814,25 @@ const SpaceShooter = () => {
         if (Math.random() < trailChance) {
           const trailColor = bullet.weaponColor || (bulletPolarity === 'light' ? '#ffff00' : '#8B00FF');
           const trailGlow = bullet.weaponColor || (bulletPolarity === 'light' ? '#ff8800' : '#4B0082');
+          const levelNorm = Math.max(0, Math.min(1, (weaponLevel - 1) / 4));
+          const cleanStage = levelNorm < 0.25;
+          const turbulence = cleanStage ? 0 : (0.35 + levelNorm * 1.5);
+          const hueShift = cleanStage ? 0 : (8 + levelNorm * 34) * (Math.random() * 2 - 1);
+          const forkChance = (weaponLevel >= 4 && !perfMode) ? (0.025 + (weaponLevel - 4) * 0.03) : 0;
           bulletTrailsRef.current.push({
             x: bullet.x - 2,
             y: bullet.y + BULLET_HEIGHT / 2,
-            size: 2.5 + weaponLevel * 0.45 + Math.random() * 1.5,
+            size: 2.4 + weaponLevel * 0.5 + Math.random() * 1.35,
             color: trailColor,
             glowColor: trailGlow,
             lifetime: 7 + weaponLevel,
             alpha: 0.75 + weaponLevel * 0.04,
             weaponLevel,
-            shimmer: Math.random() > 0.6
+            shimmer: Math.random() > 0.6,
+            thickness: 0.85 + levelNorm * 1.5,
+            turbulence,
+            hueShift,
+            forkIntensity: Math.random() < forkChance ? (0.6 + levelNorm * 0.8) : 0
           });
         }
 
@@ -19886,10 +19986,12 @@ const SpaceShooter = () => {
           zoneColor: zoneModifier.color,
           zoneName: zoneModifier.description,
           speedMultiplier: zoneModifier.speedMult,
+          archetype: zoneModifier.attackPattern,
           entered: false,
           phase: 0,
           phaseTimer: 0,
           phaseShiftFx: 0,
+          phaseTransitionFx: null,
           targetY: GAME_HEIGHT / 2 - BOSS_HEIGHT / 2,
           invincible: true, // Invulnerable until shields are destroyed
           spawnInvulnerable: true, // Track initial spawn invulnerability
@@ -22030,9 +22132,159 @@ const SpaceShooter = () => {
             boss.targetY = 50 + Math.random() * (GAME_HEIGHT - boss.height - 100);
 
             // Boss phase transition FX package.
+            const centerX = boss.x + boss.width / 2;
+            const centerY = boss.y + boss.height / 2;
+            const bossFamily = getAttackFamilyFromPattern(boss.zonePattern || 'standard');
+            const phaseColor = ATTACK_FAMILY_COLORS[bossFamily]?.primary || boss.zoneColor || '#ff6666';
             boss.phaseShiftFx = 45;
-            triggerScreenShake(8, 16);
-            chromaticAberrationRef.current = { active: true, intensity: 5, timer: 24 };
+            boss.phaseTransitionFx = {
+              timer: 42,
+              maxTimer: 42,
+              x: centerX,
+              y: centerY,
+              color: phaseColor,
+              distortionRadius: Math.max(boss.width, boss.height) * 0.55,
+              vignetteStrength: 0.34
+            };
+
+            triggerScreenShake(10, 20);
+            chromaticAberrationRef.current = { active: true, intensity: 5.5, timer: 28 };
+
+            pickupEffectsRef.current.push({
+              type: 'shockwave',
+              x: centerX,
+              y: centerY,
+              radius: Math.max(boss.width, boss.height) * 0.45,
+              speed: 16,
+              color: phaseColor,
+              lifetime: 22,
+              maxLifetime: 22
+            });
+
+            const debrisBurstCount = userSettingsRef.current?.performanceMode ? 10 : 18;
+            for (let i = 0; i < debrisBurstCount; i++) {
+              const a = (Math.PI * 2 * i) / debrisBurstCount + (Math.random() - 0.5) * 0.3;
+              const speed = 2.5 + Math.random() * 5.5;
+              pickupEffectsRef.current.push({
+                type: 'debris',
+                x: centerX,
+                y: centerY,
+                vx: Math.cos(a) * speed,
+                vy: Math.sin(a) * speed,
+                gravity: 0.06 + Math.random() * 0.08,
+                color: i % 3 === 0 ? '#ffffff' : phaseColor,
+                size: 2 + Math.random() * 3.2,
+                rotation: Math.random() * Math.PI * 2,
+                angularVelocity: (Math.random() - 0.5) * 0.35,
+                lifetime: 30 + Math.floor(Math.random() * 20),
+                maxLifetime: 50
+              });
+            }
+
+            // Signature effect per boss archetype to make each transition instantly recognizable.
+            switch (boss.zonePattern) {
+              case 'slow_tank': {
+                for (let i = 0; i < 9; i++) {
+                  const a = (Math.PI * 2 * i) / 9;
+                  pickupEffectsRef.current.push({
+                    type: 'smoke',
+                    x: centerX + Math.cos(a) * 22,
+                    y: centerY + Math.sin(a) * 22,
+                    vx: Math.cos(a) * (1 + Math.random() * 1.4),
+                    vy: Math.sin(a) * (1 + Math.random() * 1.4) - 0.2,
+                    size: 10 + Math.random() * 8,
+                    expansion: 0.28,
+                    color: '#aab0ff',
+                    lifetime: 34,
+                    maxLifetime: 34
+                  });
+                }
+                break;
+              }
+              case 'heavy_artillery': {
+                for (let i = 0; i < 14; i++) {
+                  const a = Math.random() * Math.PI * 2;
+                  pickupEffectsRef.current.push({
+                    type: 'spark',
+                    x: centerX,
+                    y: centerY,
+                    vx: Math.cos(a) * (3.5 + Math.random() * 4),
+                    vy: Math.sin(a) * (3.5 + Math.random() * 4),
+                    size: 1.8 + Math.random() * 1.5,
+                    color: '#ff8833',
+                    color2: '#ffd088',
+                    trail: [],
+                    lifetime: 22,
+                    maxLifetime: 22
+                  });
+                }
+                break;
+              }
+              case 'erratic_storm': {
+                for (let i = 0; i < 12; i++) {
+                  const a = Math.random() * Math.PI * 2;
+                  pickupEffectsRef.current.push({
+                    type: 'sparkle',
+                    x: centerX + Math.cos(a) * (20 + Math.random() * 25),
+                    y: centerY + Math.sin(a) * (20 + Math.random() * 25),
+                    vx: Math.cos(a) * (1.5 + Math.random() * 2),
+                    vy: Math.sin(a) * (1.5 + Math.random() * 2),
+                    size: 3 + Math.random() * 2.5,
+                    color: '#ffd884',
+                    lifetime: 18,
+                    maxLifetime: 18
+                  });
+                }
+                break;
+              }
+              case 'defensive_ring': {
+                pickupEffectsRef.current.push({
+                  type: 'ring',
+                  x: centerX,
+                  y: centerY,
+                  radius: Math.max(boss.width, boss.height) * 0.38,
+                  maxRadius: Math.max(boss.width, boss.height) * 1.05,
+                  color: '#ffdd88',
+                  lifetime: 30,
+                  maxLifetime: 30
+                });
+                pickupEffectsRef.current.push({
+                  type: 'ring',
+                  x: centerX,
+                  y: centerY,
+                  radius: Math.max(boss.width, boss.height) * 0.22,
+                  maxRadius: Math.max(boss.width, boss.height) * 0.8,
+                  color: '#fff2b8',
+                  lifetime: 24,
+                  maxLifetime: 24
+                });
+                break;
+              }
+              case 'ice_fortress': {
+                for (let i = 0; i < 14; i++) {
+                  const a = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.2;
+                  const speed = 2 + Math.random() * 3.8;
+                  pickupEffectsRef.current.push({
+                    type: 'debris',
+                    x: centerX,
+                    y: centerY,
+                    vx: Math.cos(a) * speed,
+                    vy: Math.sin(a) * speed,
+                    gravity: 0.02,
+                    color: i % 2 === 0 ? '#b8eeff' : '#7fd3ff',
+                    size: 2.2 + Math.random() * 2.8,
+                    rotation: Math.random() * Math.PI * 2,
+                    angularVelocity: (Math.random() - 0.5) * 0.45,
+                    lifetime: 34,
+                    maxLifetime: 34
+                  });
+                }
+                break;
+              }
+              default:
+                break;
+            }
+
             floatingTextsRef.current.push({
               x: boss.x + boss.width / 2,
               y: boss.y - 24,
@@ -22047,6 +22299,12 @@ const SpaceShooter = () => {
 
           if (boss.phaseShiftFx && boss.phaseShiftFx > 0) {
             boss.phaseShiftFx--;
+          }
+
+          if (boss.phaseTransitionFx?.timer > 0) {
+            boss.phaseTransitionFx.timer--;
+          } else if (boss.phaseTransitionFx) {
+            boss.phaseTransitionFx = null;
           }
 
           // Move towards target
