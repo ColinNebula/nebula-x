@@ -2369,7 +2369,8 @@ const SpaceShooter = () => {
   const pickupEffectsRef = useRef([]);
   const floatingTextsRef = useRef([]);
   const specialEffectsRef = useRef([]); // Special visual effects
-  const impactDecalsRef = useRef([]); // Persistent scorch marks from explosions
+  const impactDecalsRef = useRef([]); // Temporary scorch marks from explosions
+  const impactDecalCursorRef = useRef(0); // Ring-buffer cursor for pooled decal writes
   const muzzleFlashRef = useRef({ active: false, timer: 0, x: 0, y: 0 }); // Muzzle flash effect
   const hitFlashRef = useRef({ active: false, timer: 0 }); // Screen hit flash
   const levelFadeRef = useRef({ active: false, fadeIn: true, alpha: 1, showText: 'campaign' }); // campaign, survival, bossRush, timeAttack
@@ -5278,18 +5279,30 @@ const SpaceShooter = () => {
       intensity: flashIntensity
     };
 
-    // Add persistent scorch decals to make combat aftermath visible.
-    if (size !== 'small') {
-      const maxDecals = userSettingsRef.current?.performanceMode ? 20 : 40;
-      impactDecalsRef.current.push({
+    // Temporary pooled scorch marks (2-4s) keep the battlefield feeling alive without unbounded growth.
+    if (size !== 'small' && (size === 'boss' || size === 'large' || size === 'heavy' || Math.random() < 0.35)) {
+      const decals = impactDecalsRef.current;
+      const maxDecals = userSettingsRef.current?.performanceMode ? 24 : 48;
+      const isMajorBlast = size === 'boss' || size === 'large' || size === 'heavy';
+      const maxLifetime = isMajorBlast
+        ? 180 + Math.floor(Math.random() * 60) // 3.0s to 4.0s
+        : 120 + Math.floor(Math.random() * 80); // 2.0s to ~3.3s
+      const decal = {
         x,
         y,
-        radius: size === 'boss' ? 70 : (size === 'large' || size === 'heavy' ? 42 : 28),
-        alpha: size === 'boss' ? 0.35 : 0.22,
-        lifetime: size === 'boss' ? 540 : 360
-      });
-      if (impactDecalsRef.current.length > maxDecals) {
-        impactDecalsRef.current = impactDecalsRef.current.slice(-maxDecals);
+        radius: size === 'boss' ? 74 : (size === 'heavy' ? 50 : (size === 'large' ? 44 : 26)),
+        alpha: size === 'boss' ? 0.4 : (isMajorBlast ? 0.3 : 0.2),
+        lifetime: maxLifetime,
+        maxLifetime,
+        heat: isMajorBlast ? 1 : 0.7
+      };
+
+      if (decals.length < maxDecals) {
+        decals.push(decal);
+      } else {
+        const idx = impactDecalCursorRef.current % maxDecals;
+        decals[idx] = decal;
+        impactDecalCursorRef.current = idx + 1;
       }
     }
 
@@ -7002,14 +7015,15 @@ const SpaceShooter = () => {
         ctx.restore();
       }
 
-      // Draw persistent explosion scorch decals above deep background, below gameplay entities.
+      // Draw temporary scorch marks above deep background, below gameplay entities.
       if (impactDecalsRef.current.length > 0) {
         ctx.save();
         impactDecalsRef.current.forEach(d => {
-          const alpha = Math.max(0, d.alpha * (d.lifetime / 540));
+          const lifeRatio = Math.max(0, d.lifetime / Math.max(1, d.maxLifetime || 240));
+          const alpha = Math.max(0, d.alpha * lifeRatio);
           const g = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.radius);
-          g.addColorStop(0, `rgba(30, 20, 10, ${alpha})`);
-          g.addColorStop(0.7, `rgba(25, 15, 10, ${alpha * 0.6})`);
+          g.addColorStop(0, `rgba(35, 22, 12, ${alpha * (d.heat || 1)})`);
+          g.addColorStop(0.7, `rgba(25, 15, 10, ${alpha * 0.65})`);
           g.addColorStop(1, 'rgba(0, 0, 0, 0)');
           ctx.fillStyle = g;
           ctx.beginPath();
@@ -23804,11 +23818,10 @@ const SpaceShooter = () => {
       {
         const decals = impactDecalsRef.current;
         let w = 0;
-        const cap = userSettingsRef.current?.performanceMode ? 20 : 40;
+        const cap = userSettingsRef.current?.performanceMode ? 24 : 48;
         for (let i = 0; i < decals.length; i++) {
           const d = decals[i];
           d.lifetime -= 1;
-          d.alpha *= 0.998;
           if (d.lifetime > 0 && d.alpha > 0.02 && w < cap) decals[w++] = d;
         }
         decals.length = w;
