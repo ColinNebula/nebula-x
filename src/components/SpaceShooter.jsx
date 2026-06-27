@@ -2632,8 +2632,18 @@ const SpaceShooter = () => {
   const electricityRef = useRef([]); // Lightning bolts from powered Force
   const lastElectricityRef = useRef(0);
   const playerLaserRef = useRef({ charging: false, charge: 0, firing: false, duration: 0 }); // Player laser beam
-  const screenShakeRef = useRef({ intensity: 0, duration: 0 }); // Screen shake effect
-  const cameraRigRef = useRef({ driftX: 0, driftY: 0, kickX: 0, kickY: 0 }); // Camera drift/kick smoothing
+  const screenShakeRef = useRef({ intensity: 0, duration: 0, maxDuration: 0, direction: { x: 0, y: 0 }, spread: 1 }); // Screen shake envelope
+  const cameraRigRef = useRef({
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    driftX: 0,
+    driftY: 0,
+    driftVx: 0,
+    driftVy: 0,
+    idlePhase: Math.random() * Math.PI * 2
+  }); // Spring-damped camera rig
 
   // Graze System - reward near-misses
   const grazeRef = useRef({
@@ -5002,16 +5012,27 @@ const SpaceShooter = () => {
   }, [loadImageAsset]);
 
   // Trigger screen shake
-  const triggerScreenShake = useCallback((intensity, duration) => {
-    // Only apply shake if it's stronger than current shake
-    if (intensity > screenShakeRef.current.intensity) {
-      screenShakeRef.current = { intensity, duration };
+  const triggerScreenShake = useCallback((intensity, duration, direction = null, spread = 1) => {
+    const d = direction || { x: 0, y: 0 };
+    const mag = Math.hypot(d.x || 0, d.y || 0);
+    const dir = mag > 0.001 ? { x: d.x / mag, y: d.y / mag } : { x: 0, y: 0 };
+
+    const cur = screenShakeRef.current;
+    if (intensity > cur.intensity || duration > cur.duration) {
+      screenShakeRef.current = {
+        intensity: Math.max(intensity, cur.intensity * 0.92),
+        duration: Math.max(duration, cur.duration),
+        maxDuration: Math.max(duration, cur.maxDuration || 0),
+        direction: dir,
+        spread: Math.max(0.2, Math.min(1.2, spread))
+      };
     }
 
-    // Add a soft camera kick that eases out for extra impact feel.
+    // Impulse feeds spring camera so it eases back instead of snapping.
     const rig = cameraRigRef.current;
-    rig.kickX += (Math.random() - 0.5) * intensity * 0.6;
-    rig.kickY += (Math.random() - 0.5) * intensity * 0.6;
+    const jitter = intensity * 0.08;
+    rig.vx += (Math.random() - 0.5) * jitter + dir.x * intensity * 0.16;
+    rig.vy += (Math.random() - 0.5) * jitter + dir.y * intensity * 0.16;
   }, []);
 
   // Create shield impact effect
@@ -5275,9 +5296,17 @@ const SpaceShooter = () => {
       } catch (e) {}
     }
 
-    // Trigger screen shake based on explosion size
+    // Trigger directional screen shake based on explosion size and relative blast direction.
+    const player = playerRef.current;
+    const playerX = player ? player.x + PLAYER_WIDTH / 2 : GAME_WIDTH / 2;
+    const playerY = player ? player.y + PLAYER_HEIGHT / 2 : GAME_HEIGHT / 2;
+    const blastDx = playerX - x;
+    const blastDy = playerY - y;
+    const blastDist = Math.max(1, Math.hypot(blastDx, blastDy));
+    const blastDir = { x: blastDx / blastDist, y: blastDy / blastDist };
+
     if (size === 'boss') {
-      triggerScreenShake(12, 30); // Big shake for boss
+      triggerScreenShake(16, 34, blastDir, 0.45); // Big, directional boss shockwave
       // Trigger slow-motion and chromatic aberration for boss explosions
       if (applyTimeDilation) {
         timeScaleRef.current = 0.3; // 30% speed
@@ -5285,14 +5314,14 @@ const SpaceShooter = () => {
         setTimeout(() => { timeScaleRef.current = 1; }, 600); // Resume after 600ms
       }
     } else if (size === 'large' || size === 'heavy') {
-      triggerScreenShake(6, 15); // Medium shake
+      triggerScreenShake(9, 20, blastDir, 0.65); // Medium directional blast
       if (applyTimeDilation) {
         timeScaleRef.current = 0.84; // Very short global dip for punch without lingering slowdown
         chromaticAberrationRef.current = { active: true, intensity: 2.8, timer: 12 };
         setTimeout(() => { timeScaleRef.current = 1; }, 110);
       }
     } else if (size === 'missile') {
-      triggerScreenShake(4, 10); // Small shake
+      triggerScreenShake(6, 14, blastDir, 0.8); // Tighter directional pop
     }
 
     // Cinematic full-screen hit flash (brief and additive-feeling without extra passes).
@@ -6911,28 +6940,60 @@ const SpaceShooter = () => {
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
       ctx.restore();
 
-      // Apply screen shake
+      // Apply camera transform (directional shake + spring damping + calm micro drift)
       ctx.save();
       // Always reset transform first to prevent cumulative offset bugs
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      if (screenShakeRef.current.duration > 0) {
-        const shake = screenShakeRef.current;
-        const offsetX = (Math.random() - 0.5) * shake.intensity * 2;
-        const offsetY = (Math.random() - 0.5) * shake.intensity * 2;
-        ctx.translate(offsetX, offsetY);
-        shake.duration--;
-        shake.intensity *= 0.9; // Decay intensity
-      }
-
-      // Camera polish: soft velocity-follow drift + damping kick.
+      const shake = screenShakeRef.current;
       const rig = cameraRigRef.current;
       const playerVelX = playerRef.current?.vx || 0;
       const playerVelY = playerRef.current?.vy || 0;
-      rig.driftX = rig.driftX * 0.9 + playerVelX * 0.25;
-      rig.driftY = rig.driftY * 0.9 + playerVelY * 0.18;
-      rig.kickX *= 0.86;
-      rig.kickY *= 0.86;
-      ctx.translate(rig.driftX + rig.kickX, rig.driftY + rig.kickY);
+      const playerSpeed = Math.hypot(playerVelX, playerVelY);
+
+      if (shake.duration > 0) {
+        if (!shake.maxDuration || shake.maxDuration < shake.duration) {
+          shake.maxDuration = shake.duration;
+        }
+        const t = shake.duration / Math.max(1, shake.maxDuration);
+        const amp = shake.intensity * t;
+        const dir = shake.direction || { x: 0, y: 0 };
+        const spread = shake.spread ?? 1;
+        const jitterX = (Math.random() - 0.5) * amp * 2 * spread;
+        const jitterY = (Math.random() - 0.5) * amp * 2 * spread;
+        const axisWeight = 1 - Math.min(1, spread) * 0.7;
+
+        rig.vx += jitterX * 0.34 + dir.x * amp * axisWeight;
+        rig.vy += jitterY * 0.34 + dir.y * amp * axisWeight;
+
+        shake.duration--;
+        if (shake.duration <= 0) {
+          shake.intensity = Math.max(0, shake.intensity * 0.5);
+          shake.maxDuration = 0;
+        }
+      }
+
+      const calmFactor = Math.max(0, Math.min(1, 1 - playerSpeed / 2.5));
+      rig.idlePhase += 0.016;
+      const idleX = Math.sin(rig.idlePhase * 0.9) * 0.9 * calmFactor;
+      const idleY = Math.cos(rig.idlePhase * 1.2) * 0.65 * calmFactor;
+
+      const targetDriftX = playerVelX * 0.22 + idleX;
+      const targetDriftY = playerVelY * 0.16 + idleY;
+      rig.driftVx += (targetDriftX - rig.driftX) * 0.09;
+      rig.driftVy += (targetDriftY - rig.driftY) * 0.09;
+      rig.driftVx *= 0.82;
+      rig.driftVy *= 0.82;
+      rig.driftX += rig.driftVx;
+      rig.driftY += rig.driftVy;
+
+      rig.vx += (-rig.x) * 0.14;
+      rig.vy += (-rig.y) * 0.14;
+      rig.vx *= 0.8;
+      rig.vy *= 0.8;
+      rig.x += rig.vx;
+      rig.y += rig.vy;
+
+      ctx.translate(rig.driftX + rig.x, rig.driftY + rig.y);
 
       // Update zone transition effect
       if (zoneTransition) {
@@ -16643,7 +16704,7 @@ const SpaceShooter = () => {
         ctx.restore();
       }
 
-      // Enemy telegraphs: show imminent attack rings for boss and mini-boss.
+      // Enemy telegraphs: show imminent attack rings/cones/outlines before dangerous attacks.
       if (gameStateRef.current === 'playing') {
         const now = Date.now();
         const drawTelegraph = (x, y, radius, ratio, color) => {
@@ -16657,6 +16718,41 @@ const SpaceShooter = () => {
           ctx.shadowBlur = 14;
           ctx.beginPath();
           ctx.arc(x, y, radius + p * 18, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        };
+
+        const drawPulseOutline = (x, y, radius, ratio, color) => {
+          if (ratio < 0.5) return;
+          const pulse = 0.75 + Math.sin(now * 0.02 + x * 0.02) * 0.25;
+          ctx.save();
+          ctx.globalAlpha = (0.2 + ratio * 0.35) * pulse;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5 + ratio * 2;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        };
+
+        const drawConePreview = (x, y, angle, length, spread, ratio, color) => {
+          if (ratio < 0.65) return;
+          const coneAlpha = 0.08 + ratio * 0.12;
+          ctx.save();
+          ctx.globalAlpha = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + Math.cos(angle - spread) * length, y + Math.sin(angle - spread) * length);
+          ctx.lineTo(x + Math.cos(angle + spread) * length, y + Math.sin(angle + spread) * length);
+          ctx.closePath();
+          ctx.fillStyle = `${color}${Math.floor(coneAlpha * 255).toString(16).padStart(2, '0')}`;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 8;
+          ctx.fill();
           ctx.stroke();
           ctx.restore();
         };
@@ -16687,6 +16783,100 @@ const SpaceShooter = () => {
           const miniBossFamily = getAttackFamilyFromPattern(mb.attackPattern || 'standard');
           const miniBossTelegraphColor = ATTACK_FAMILY_COLORS[miniBossFamily]?.glow || mb.color || '#ffaa44';
           drawTelegraph(mb.x + mb.width / 2, mb.y + mb.height / 2, Math.max(mb.width, mb.height) * 0.45, mbRatio, miniBossTelegraphColor);
+        }
+
+        // Regular dangerous enemies: ring/cone/outline telegraphs based on attack family.
+        const player = playerRef.current;
+        const lowQualityTelegraph = perfMode || fpsRef.current.fps < 50 || enemiesRef.current.length > 80;
+        const maxTelegraphs = lowQualityTelegraph ? 18 : 42;
+        let telegraphCount = 0;
+
+        for (let i = 0; i < enemiesRef.current.length && telegraphCount < maxTelegraphs; i++) {
+          const enemy = enemiesRef.current[i];
+          if (!enemy || enemy.spawnInvulnerable) continue;
+
+          const ew = enemy.width || ENEMY_WIDTH;
+          const eh = enemy.height || ENEMY_HEIGHT;
+          const ex = enemy.x + ew / 2;
+          const ey = enemy.y + eh / 2;
+          if (ex < -80 || ex > GAME_WIDTH + 80 || ey < -80 || ey > GAME_HEIGHT + 80) continue;
+
+          let family = 'standard';
+          switch (enemy.type) {
+            case 'sniper': family = 'sniper'; break;
+            case 'bomber':
+            case 'mine': family = 'explosive'; break;
+            case 'spiral': family = 'spiral'; break;
+            case 'wave': family = 'wave'; break;
+            case 'teleporter': family = 'ambush'; break;
+            case 'turret':
+            case 'heavy': family = 'artillery'; break;
+            case 'fire': family = 'fire'; break;
+            case 'ice': family = 'ice'; break;
+            default: family = enemy.fromBehind ? 'ambush' : 'aimed'; break;
+          }
+
+          const telegraphColor = ATTACK_FAMILY_COLORS[family]?.glow || '#ff8888';
+          let ratio = 0;
+          let showRing = false;
+          let showOutline = false;
+          let showCone = false;
+          let coneAngle = 0;
+
+          if (enemy.type === 'sniper') {
+            if (enemy.targeting) {
+              ratio = Math.min(1, (enemy.targetTimer || 0) / Math.max(1, enemy.targetDuration || 45));
+              showRing = true;
+              showOutline = true;
+              showCone = true;
+              coneAngle = Number.isFinite(enemy.targetAngle) ? enemy.targetAngle : (player ? Math.atan2((player.y + PLAYER_HEIGHT / 2) - ey, (player.x + PLAYER_WIDTH / 2) - ex) : 0);
+            }
+          } else if (enemy.type === 'spiral' || enemy.type === 'wave') {
+            const maxCooldown = enemy.type === 'spiral' ? 25 : 15;
+            ratio = 1 - Math.max(0, Math.min(1, (enemy.attackCooldown || 0) / maxCooldown));
+            showRing = true;
+            showOutline = true;
+          } else if (enemy.type === 'teleporter') {
+            if (enemy.teleportCharging) {
+              ratio = Math.min(1, (enemy.teleportCharge || 0) / 30);
+              showOutline = true;
+            }
+          } else if (enemy.type === 'bomber' || enemy.type === 'mine') {
+            if (player) {
+              const pdx = (player.x + PLAYER_WIDTH / 2) - ex;
+              const pdy = (player.y + PLAYER_HEIGHT / 2) - ey;
+              const distRatio = 1 - Math.max(0, Math.min(1, Math.hypot(pdx, pdy) / (enemy.type === 'mine' ? 180 : 240)));
+              ratio = enemy.type === 'mine' && !enemy.armed ? distRatio * 0.5 : distRatio;
+              showOutline = ratio > 0.35;
+              showRing = ratio > 0.7;
+            }
+          } else if (enemy.canShoot) {
+            ratio = Math.min(1, (now - (enemy.lastShot || now)) / Math.max(1, ENEMY_FIRE_RATE));
+            showRing = true;
+            showOutline = true;
+            if (!lowQualityTelegraph && (enemy.type === 'turret' || enemy.type === 'heavy' || enemy.type === 'fire' || enemy.type === 'ice')) {
+              showCone = true;
+              if (enemy.type === 'turret' && Number.isFinite(enemy.angle)) {
+                coneAngle = enemy.angle;
+              } else {
+                coneAngle = player ? Math.atan2((player.y + PLAYER_HEIGHT / 2) - ey, (player.x + PLAYER_WIDTH / 2) - ex) : 0;
+              }
+            }
+          }
+
+          if (showRing) {
+            drawTelegraph(ex, ey, Math.max(ew, eh) * 0.5, ratio, telegraphColor);
+          }
+          if (showOutline) {
+            drawPulseOutline(ex, ey, Math.max(ew, eh) * 0.62, ratio, telegraphColor);
+          }
+          if (showCone) {
+            drawConePreview(ex, ey, coneAngle, Math.max(90, Math.min(220, 120 + (ratio * 80))), enemy.type === 'sniper' ? 0.14 : 0.22, ratio, telegraphColor);
+          }
+
+          if (showRing || showOutline || showCone) {
+            telegraphCount++;
+          }
         }
       }
 
@@ -18802,11 +18992,13 @@ const SpaceShooter = () => {
           chargeLevel: chargeLevel
         });
 
-        // Screen shake based on charge level
-        screenShakeRef.current = {
-          intensity: 8 + chargeLevel * 12,
-          duration: 15 + Math.floor(chargeLevel * 15)
-        };
+        // Wave cannon recoil: directional kick + stronger shake by charge.
+        const recoilIntensity = 8 + chargeLevel * 12;
+        triggerScreenShake(recoilIntensity, 15 + Math.floor(chargeLevel * 15), { x: -1, y: -0.15 }, 0.35);
+        const rig = cameraRigRef.current;
+        const recoilKick = 2.5 + chargeLevel * 5.5;
+        rig.vx -= recoilKick * 0.34;
+        rig.vy -= recoilKick * 0.1;
 
         waveCannonChargeRef.current = 0;
         isChargingRef.current = false;
