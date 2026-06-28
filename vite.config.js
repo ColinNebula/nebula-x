@@ -15,12 +15,12 @@ const excludeLargeFiles = () => ({
   }
 });
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     excludeLargeFiles()
   ],
-  base: '/',
+  base: command === 'build' ? './' : '/',
   publicDir: 'public',
   server: {
     port: 5173,
@@ -37,4 +37,4 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 1000 // Increase limit to 1000 kB to reduce warnings
   }
-})
+}))

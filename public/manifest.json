@@ -20,8 +20,8 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "orientation": "landscape",
@@ -42,7 +42,7 @@
       "name": "Play Game",
       "short_name": "Play",
       "description": "Jump straight into the action",
-      "url": "/",
+      "url": "./",
       "icons": [{ "src": "nebula-x-logo.png", "sizes": "512x512" }]
     }
   ]

@@ -1360,6 +1360,14 @@ const DEFAULT_USER_SETTINGS = {
   difficulty: 'normal', // easy, normal, hard
   performanceMode: false, // Reduced visual effects for better performance
   postProcessingTier: 'auto', // auto, off, low, medium, high
+  postAutoScale: true, // Auto-scale post FX by FPS tier
+  postFx: {
+    bloomLite: true,
+    vignette: true,
+    vignetteStrength: 35, // 0-100
+    scanlineStrength: 30, // 0-100
+    motionBlurQuality: 'auto' // auto, off, low, medium, high
+  },
   showFPS: false, // Display FPS counter
   controls: {
     moveUp: ['KeyW', 'ArrowUp'],
@@ -7233,6 +7241,28 @@ const SpaceShooter = () => {
                            enemyBulletsRef.current.length + explosionsRef.current.length +
                            pickupEffectsRef.current.length + powerupsRef.current.length;
 
+      const fpsNow = fpsRef.current.fps || 60;
+      const fpsTier = fpsNow < 45 ? 'low' : (fpsNow < 55 ? 'medium' : 'high');
+      const postAutoScale = userSettingsRef.current?.postAutoScale !== false;
+      const postFxSettings = {
+        ...DEFAULT_USER_SETTINGS.postFx,
+        ...(userSettingsRef.current?.postFx || {})
+      };
+      const userPostTier = userSettingsRef.current?.postProcessingTier || 'auto';
+      const postTier = userPostTier === 'auto'
+        ? (userSettingsRef.current?.performanceMode || fpsTier === 'low' ? 'low' : (fpsTier === 'medium' ? 'medium' : 'high'))
+        : userPostTier;
+
+      const motionBlurQualitySetting = postFxSettings.motionBlurQuality || 'auto';
+      let motionBlurQuality = motionBlurQualitySetting === 'auto'
+        ? (fpsTier === 'high' ? 'high' : (fpsTier === 'medium' ? 'medium' : 'low'))
+        : motionBlurQualitySetting;
+      if (postAutoScale) {
+        if (fpsTier === 'low' && motionBlurQuality !== 'off') motionBlurQuality = 'low';
+        if (fpsTier === 'medium' && motionBlurQuality === 'high') motionBlurQuality = 'medium';
+      }
+      if (perfMode && motionBlurQuality === 'high') motionBlurQuality = 'medium';
+
       starsRef.current.forEach(star => {
         if (star.layer === 'near') {
           // Near stars - draw as streaks with subtle zone tint
@@ -9227,15 +9257,15 @@ const SpaceShooter = () => {
       }
 
       // Add motion blur effect during dash
-      if (dash.active) {
-        const blurLength = 20;
+      if (dash.active && motionBlurQuality !== 'off') {
+        const blurLength = motionBlurQuality === 'high' ? 24 : (motionBlurQuality === 'medium' ? 18 : 12);
         const blurX = -dash.direction.x * blurLength;
         const blurY = -dash.direction.y * blurLength;
 
         ctx.save();
-        ctx.globalAlpha = 0.3;
+        ctx.globalAlpha = motionBlurQuality === 'high' ? 0.35 : (motionBlurQuality === 'medium' ? 0.28 : 0.2);
         ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = motionBlurQuality === 'high' ? 20 : (motionBlurQuality === 'medium' ? 14 : 8);
 
         const gradient = ctx.createLinearGradient(
           player.x + PLAYER_WIDTH / 2,
@@ -10574,24 +10604,26 @@ const SpaceShooter = () => {
         if (!isFinite(bullet.x) || !isFinite(bullet.y)) return;
 
 // Enhanced motion blur trails (reduce during high load)
-        const skipTrails = fpsRef.current.fps < 50 || bulletsRef.current.length > 200;
+  const trailPointCap = motionBlurQuality === 'high' ? 7 : (motionBlurQuality === 'medium' ? 5 : 3);
+  const blurAlphaMul = motionBlurQuality === 'high' ? 1 : (motionBlurQuality === 'medium' ? 0.8 : 0.55);
+  const skipTrails = motionBlurQuality === 'off' || fpsNow < 45 || bulletsRef.current.length > 200;
         if (!perfMode && !skipTrails && bullet.vx && bullet.vy) {
           // Use stable bullet.id — position-based keys change every frame and break the cache
           const bulletId = bullet.id != null ? bullet.id : (bullet.x + '_' + bullet.y);
           let trail = motionBlurTrailsRef.current.get(bulletId) || [];
 
-          // Add current position to trail (fewer positions during load)
+          // Add current position to trail (quality-scaled trail depth)
           trail.push({ x: bullet.x, y: bullet.y, alpha: 1 });
-          if (trail.length > 5) trail.shift();
+          if (trail.length > trailPointCap) trail.shift();
 
           // Draw trail with fading
           ctx.save();
           trail.forEach((pos, i) => {
-            const alpha = (i / trail.length) * 0.3;
+            const alpha = (i / trail.length) * 0.3 * blurAlphaMul;
             ctx.globalAlpha = alpha;
             ctx.fillStyle = bullet.color || '#ff8800';
             ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 2 + (i / trail.length) * 2, 0, Math.PI * 2);
+            ctx.arc(pos.x, pos.y, 1.5 + (i / trail.length) * (motionBlurQuality === 'high' ? 2.6 : 2), 0, Math.PI * 2);
             ctx.fill();
           });
           ctx.restore();
@@ -16932,13 +16964,11 @@ const SpaceShooter = () => {
       }
 
       // ========== POST-PROCESSING EFFECTS ==========
-      const userPostTier = userSettingsRef.current?.postProcessingTier || 'auto';
-      const postTier = userPostTier === 'auto'
-        ? (userSettingsRef.current?.performanceMode || fpsRef.current.fps < 45 ? 'low' : (fpsRef.current.fps < 55 ? 'medium' : 'high'))
-        : userPostTier;
+      const bloomLiteEnabled = postFxSettings.bloomLite !== false;
+      const bloomTierScale = postAutoScale ? (fpsTier === 'high' ? 1 : (fpsTier === 'medium' ? 0.75 : 0.5)) : 1;
 
       // Apply bloom/glow effect (skip if FPS is low or many entities)
-      const skipBloom = postTier === 'off' || postTier === 'low' || perfMode || fpsRef.current.fps < 50 || totalEntities > 400;
+      const skipBloom = !bloomLiteEnabled || postTier === 'off' || postTier === 'low' || perfMode || fpsNow < 42 || totalEntities > 400;
       if (!skipBloom && bloomCtxRef.current) {
         const bloomCtx = bloomCtxRef.current;
         const bloomCanvas = bloomCanvasRef.current;
@@ -16964,12 +16994,12 @@ const SpaceShooter = () => {
         }
         bloomCtx.putImageData(imageData, 0, 0);
 
-        // Blur the bloom layer multiple times for better glow
-        bloomCtx.filter = 'blur(8px)';
-        bloomCtx.globalAlpha = 0.5;
+        // Bloom-lite: lower-radius blur with dynamic intensity scaling.
+        bloomCtx.filter = `blur(${(5.5 * bloomTierScale).toFixed(1)}px)`;
+        bloomCtx.globalAlpha = 0.45 * bloomTierScale;
         bloomCtx.drawImage(bloomCanvas, 0, 0);
-        bloomCtx.filter = 'blur(16px)';
-        bloomCtx.globalAlpha = 0.4;
+        bloomCtx.filter = `blur(${(11 * bloomTierScale).toFixed(1)}px)`;
+        bloomCtx.globalAlpha = 0.3 * bloomTierScale;
         bloomCtx.drawImage(bloomCanvas, 0, 0);
         bloomCtx.filter = 'none';
         bloomCtx.globalAlpha = 1;
@@ -16977,7 +17007,7 @@ const SpaceShooter = () => {
         // Composite bloom back onto main canvas
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = 0.55 * bloomTierScale;
         ctx.drawImage(bloomCanvas, 0, 0);
         ctx.restore();
       }
@@ -17018,6 +17048,47 @@ const SpaceShooter = () => {
           ctx.globalAlpha = 0.4;
           ctx.drawImage(tempCanvas, -intensity, 0);
 
+          ctx.restore();
+        }
+      }
+
+      if (postTier !== 'off') {
+        const vignetteEnabled = postFxSettings.vignette !== false;
+        const rawVignetteStrength = Math.max(0, Math.min(100, postFxSettings.vignetteStrength || 0)) / 100;
+        const vignetteTierScale = postAutoScale ? (fpsTier === 'high' ? 1 : (fpsTier === 'medium' ? 0.8 : 0.6)) : 1;
+        const vignetteAlpha = vignetteEnabled ? rawVignetteStrength * 0.42 * vignetteTierScale : 0;
+        if (vignetteAlpha > 0.002) {
+          ctx.save();
+          const vignette = ctx.createRadialGradient(
+            GAME_WIDTH * 0.5,
+            GAME_HEIGHT * 0.5,
+            Math.min(GAME_WIDTH, GAME_HEIGHT) * 0.2,
+            GAME_WIDTH * 0.5,
+            GAME_HEIGHT * 0.5,
+            Math.max(GAME_WIDTH, GAME_HEIGHT) * 0.7
+          );
+          vignette.addColorStop(0, 'rgba(0,0,0,0)');
+          vignette.addColorStop(0.62, `rgba(0,0,0,${(vignetteAlpha * 0.5).toFixed(3)})`);
+          vignette.addColorStop(1, `rgba(0,0,0,${vignetteAlpha.toFixed(3)})`);
+          ctx.fillStyle = vignette;
+          ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+          ctx.restore();
+        }
+
+        const rawScanlineStrength = Math.max(0, Math.min(100, postFxSettings.scanlineStrength || 0)) / 100;
+        const scanlineTierScale = postAutoScale ? (fpsTier === 'high' ? 1 : (fpsTier === 'medium' ? 0.75 : 0.55)) : 1;
+        const scanlineAlpha = rawScanlineStrength * 0.22 * scanlineTierScale;
+        if (scanlineAlpha > 0.002) {
+          ctx.save();
+          ctx.strokeStyle = `rgba(0, 40, 70, ${scanlineAlpha.toFixed(3)})`;
+          ctx.lineWidth = 1;
+          const spacing = fpsTier === 'high' ? 2 : 3;
+          for (let y = 0; y < GAME_HEIGHT; y += spacing) {
+            ctx.beginPath();
+            ctx.moveTo(0, y + 0.5);
+            ctx.lineTo(GAME_WIDTH, y + 0.5);
+            ctx.stroke();
+          }
           ctx.restore();
         }
       }
@@ -27552,6 +27623,121 @@ const SpaceShooter = () => {
                       >
                         {userSettings.showFPS ? 'ON' : 'OFF'}
                       </button>
+                    </div>
+
+                    <div className="toggle-option">
+                      <label className="toggle-label">
+                        <span>🧠 Auto-Scale Post FX</span>
+                        <span className="toggle-desc">Adapts post-processing by FPS tier</span>
+                      </label>
+                      <button
+                        className={`toggle-button ${userSettings.postAutoScale !== false ? 'active' : ''}`}
+                        onClick={() => setUserSettings(prev => ({ ...prev, postAutoScale: !(prev.postAutoScale !== false) }))}
+                      >
+                        {userSettings.postAutoScale !== false ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    <div className="toggle-option">
+                      <label className="toggle-label">
+                        <span>✨ Bloom-Lite</span>
+                        <span className="toggle-desc">Soft glow pass with low GPU cost</span>
+                      </label>
+                      <button
+                        className={`toggle-button ${userSettings.postFx?.bloomLite !== false ? 'active' : ''}`}
+                        onClick={() => setUserSettings(prev => ({
+                          ...prev,
+                          postFx: {
+                            ...(prev.postFx || DEFAULT_USER_SETTINGS.postFx),
+                            bloomLite: !(prev.postFx?.bloomLite !== false)
+                          }
+                        }))}
+                      >
+                        {userSettings.postFx?.bloomLite !== false ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    <div className="toggle-option">
+                      <label className="toggle-label">
+                        <span>🕶️ Vignette</span>
+                        <span className="toggle-desc">Subtle edge darkening and focus</span>
+                      </label>
+                      <button
+                        className={`toggle-button ${userSettings.postFx?.vignette !== false ? 'active' : ''}`}
+                        onClick={() => setUserSettings(prev => ({
+                          ...prev,
+                          postFx: {
+                            ...(prev.postFx || DEFAULT_USER_SETTINGS.postFx),
+                            vignette: !(prev.postFx?.vignette !== false)
+                          }
+                        }))}
+                      >
+                        {userSettings.postFx?.vignette !== false ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    <div className="volume-control">
+                      <label>🕶️ Vignette Strength</label>
+                      <div className="slider-row">
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={userSettings.postFx?.vignetteStrength ?? DEFAULT_USER_SETTINGS.postFx.vignetteStrength}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            postFx: {
+                              ...(prev.postFx || DEFAULT_USER_SETTINGS.postFx),
+                              vignetteStrength: parseInt(e.target.value)
+                            }
+                          }))}
+                          className="volume-slider"
+                        />
+                        <span className="volume-value">{userSettings.postFx?.vignetteStrength ?? DEFAULT_USER_SETTINGS.postFx.vignetteStrength}%</span>
+                      </div>
+                    </div>
+
+                    <div className="volume-control">
+                      <label>📺 Scanline Strength</label>
+                      <div className="slider-row">
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={userSettings.postFx?.scanlineStrength ?? DEFAULT_USER_SETTINGS.postFx.scanlineStrength}
+                          onChange={(e) => setUserSettings(prev => ({
+                            ...prev,
+                            postFx: {
+                              ...(prev.postFx || DEFAULT_USER_SETTINGS.postFx),
+                              scanlineStrength: parseInt(e.target.value)
+                            }
+                          }))}
+                          className="volume-slider"
+                        />
+                        <span className="volume-value">{userSettings.postFx?.scanlineStrength ?? DEFAULT_USER_SETTINGS.postFx.scanlineStrength}%</span>
+                      </div>
+                    </div>
+
+                    <div className="volume-control">
+                      <label>🌫️ Motion Blur Quality</label>
+                      <div className="slider-row" style={{ gap: '8px' }}>
+                        {['auto', 'off', 'low', 'medium', 'high'].map(quality => (
+                          <button
+                            key={quality}
+                            className={`toggle-button ${(userSettings.postFx?.motionBlurQuality || DEFAULT_USER_SETTINGS.postFx.motionBlurQuality) === quality ? 'active' : ''}`}
+                            onClick={() => setUserSettings(prev => ({
+                              ...prev,
+                              postFx: {
+                                ...(prev.postFx || DEFAULT_USER_SETTINGS.postFx),
+                                motionBlurQuality: quality
+                              }
+                            }))}
+                            style={{ fontSize: '11px', minWidth: '58px' }}
+                          >
+                            {quality.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -1,23 +1,26 @@
 // Nebula X Service Worker - PWA Support
 const CACHE_NAME = 'nebula-x-v1';
 const GAME_CACHE = 'nebula-x-game-v1';
+const BASE_PATH = new URL('.', self.location.href).pathname;
+
+const withBase = (path) => `${BASE_PATH}${path.replace(/^\//, '')}`;
 
 // Critical assets to cache immediately
 const CORE_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/nebula-x-logo.png',
-  '/favicon.ico'
+  withBase('/'),
+  withBase('/index.html'),
+  withBase('/manifest.json'),
+  withBase('/nebula-x-logo.png'),
+  withBase('/favicon.ico')
 ];
 
 // Game assets to cache on first use (lazy cache)
 const GAME_ASSETS = [
-  '/explosions.png',
-  '/explosion2.png',
-  '/nebulax-bg.png',
-  '/game_physics.wasm',
-  '/game_physics.js'
+  withBase('/explosions.png'),
+  withBase('/explosion2.png'),
+  withBase('/nebulax-bg.png'),
+  withBase('/game_physics.wasm'),
+  withBase('/game_physics.js')
 ];
 
 // Install event - cache core assets
@@ -106,7 +109,7 @@ self.addEventListener('fetch', (event) => {
       .catch(() => {
         // Offline fallback for images
         if (request.destination === 'image') {
-          return caches.match('/nebula-x-logo.png');
+          return caches.match(withBase('/nebula-x-logo.png'));
         }
       })
   );
