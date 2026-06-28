@@ -20,7 +20,7 @@ export default defineConfig(({ command }) => ({
     react(),
     excludeLargeFiles()
   ],
-  base: command === 'build' ? './' : '/',
+  base: '/',
   publicDir: 'public',
   server: {
     port: 5173,
