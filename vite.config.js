@@ -29,8 +29,11 @@ export default defineConfig(({ command }) => ({
   },
   build: {
     outDir: 'build',
-    minify: false, // Disable minification to fix initialization issues
+    minify: command === 'build' ? 'esbuild' : false,
     target: 'es2020',
+    esbuild: command === 'build' ? {
+      drop: ['console', 'debugger']
+    } : undefined,
     rollupOptions: {
       // Mark optional WASM module as external (loaded at runtime if available)
       external: ['/game_physics.js']
